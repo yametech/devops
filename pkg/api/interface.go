@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/yoshiakiley/devops-zpk-server/pkg/service"
+	"github.com/yametech/devops-zpk-server/pkg/service"
 )
 
 type Extends interface {

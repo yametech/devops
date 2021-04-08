@@ -1,6 +1,6 @@
 package resource
 
-import "github.com/yoshiakiley/devops-zpk-server/pkg/core"
+import "github.com/yametech/devops-zpk-server/pkg/core"
 
 type ArtifactSpec struct {
 	Project   string `json:"project" bson:"project" gorm:"size:255;default:''"`

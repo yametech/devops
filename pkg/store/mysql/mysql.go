@@ -2,9 +2,9 @@ package mysql
 
 import (
 	"fmt"
-	"github.com/yoshiakiley/devops-zpk-server/pkg/core"
-	"github.com/yoshiakiley/devops-zpk-server/pkg/resource"
-	"github.com/yoshiakiley/devops-zpk-server/pkg/store"
+	"github.com/yametech/devops-zpk-server/pkg/core"
+	"github.com/yametech/devops-zpk-server/pkg/resource"
+	"github.com/yametech/devops-zpk-server/pkg/store"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"time"

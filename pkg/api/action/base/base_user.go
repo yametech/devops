@@ -6,5 +6,6 @@ import (
 )
 
 func (b *baseServer) CreateUser(g *gin.Context) {
+
 	g.JSON(http.StatusOK, "")
 }

@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/yoshiakiley/devops-zpk-server/pkg/core"
-	"github.com/yoshiakiley/devops-zpk-server/pkg/store"
+	"github.com/yametech/devops-zpk-server/pkg/core"
+	"github.com/yametech/devops-zpk-server/pkg/store"
 )
 
 type IService interface {

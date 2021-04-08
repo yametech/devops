@@ -1,6 +1,6 @@
 package store
 
-import "github.com/yoshiakiley/devops-zpk-server/pkg/core"
+import "github.com/yametech/devops-zpk-server/pkg/core"
 
 type IStore interface {
 	List(db, table string, result interface{}) error
