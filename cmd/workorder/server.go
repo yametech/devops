@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"github.com/yametech/devops-zpk-server/pkg/api"
-	"github.com/yametech/devops-zpk-server/pkg/api/action/workorder"
-	"github.com/yametech/devops-zpk-server/pkg/service"
-	"github.com/yametech/devops-zpk-server/pkg/store/mysql"
+	"github.com/yametech/devops/pkg/api"
+	"github.com/yametech/devops/pkg/api/action/workorder"
+	"github.com/yametech/devops/pkg/service"
+	"github.com/yametech/devops/pkg/store/mysql"
 )
 
 var storageUri, user, pw, database string

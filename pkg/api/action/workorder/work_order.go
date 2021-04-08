@@ -2,8 +2,8 @@ package workorder
 
 import (
 	"fmt"
-	"github.com/yametech/devops-zpk-server/pkg/api"
-	serviceUser "github.com/yametech/devops-zpk-server/pkg/service/user"
+	"github.com/yametech/devops/pkg/api"
+	serviceUser "github.com/yametech/devops/pkg/service/user"
 )
 
 type WorkOrder struct {

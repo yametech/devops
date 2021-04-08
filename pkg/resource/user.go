@@ -1,7 +1,7 @@
 package resource
 
 import (
-	"github.com/yametech/devops-zpk-server/pkg/core"
+	"github.com/yametech/devops/pkg/core"
 )
 
 type UserSpec struct {

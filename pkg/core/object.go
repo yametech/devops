@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/yametech/devops-zpk-server/pkg/utils"
+	"github.com/yametech/devops/pkg/utils"
 	"gorm.io/datatypes"
 	"time"
 )
