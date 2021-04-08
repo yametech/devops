@@ -1,4 +1,4 @@
-module github.com/yametech/devops-zpk-server
+module github.com/yametech/devops
 
 go 1.16
 
