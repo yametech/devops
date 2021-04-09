@@ -15,23 +15,49 @@ type Mysql struct {
 	Db  *gorm.DB
 }
 
-func (m *Mysql) List(db, table string, result interface{}) error {
-	tx := m.Db.Table(table).Find(&result)
+func (m *Mysql) Update(table, uuid string, dst interface{}) error {
+	tx := m.Db.Table(table).Where("uuid=?", uuid).Updates(dst)
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
 
-func (m *Mysql) GetByFilter(db, table string, filter map[string]interface{}, result interface{}) error {
-	panic("implement me")
+func (m *Mysql) List(table string, result interface{}) error {
+	tx := m.Db.Table(table).Find(result)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
 }
 
-func (m *Mysql) Del(db, table string, object interface{}) error {
-	panic("implement me")
+//
+//func (m *Mysql) Get(table string, filter map[string]interface{}, result interface{}) error {
+//	tx := m.Db.Table(table).Where(filter).Find(result)
+//	if tx.Error != nil {
+//		return tx.Error
+//	}
+//	return nil
+//}
+
+func (m *Mysql) GetByFilter(table string, filter map[string]interface{}, result interface{}) error {
+	tx := m.Db.Table(table).Where(filter).Find(result)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
 }
 
-func (m *Mysql) Apply(db, table string, object core.IObject) error {
+func (m *Mysql) Del(obj core.IObject) error {
+	tx := m.Db.Delete(obj)
+	if tx.Error != nil {
+		fmt.Println(tx.Error.Error())
+		return tx.Error
+	}
+	return nil
+}
+
+func (m *Mysql) Apply(object interface{}) error {
 	tx := m.Db.Create(object)
 	if tx.Error != nil {
 		return tx.Error

@@ -1,6 +1,8 @@
 package user
 
-import "github.com/yametech/devops/pkg/service"
+import (
+	"github.com/yametech/devops/pkg/service"
+)
 
 type User struct {
 	service.IService
@@ -9,6 +11,4 @@ type User struct {
 func NewUser(i service.IService) *User {
 	return &User{i}
 }
-
-
 

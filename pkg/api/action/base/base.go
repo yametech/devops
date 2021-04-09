@@ -21,7 +21,11 @@ func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 
 	//User
 	{
-		group.GET("/createUser", base.CreateUser)
+		group.GET("/users", base.ListUser)
+		group.GET("/user", base.GetUser)
+		group.POST("/user", base.CreateUser)
+		group.PUT("/user/:uuid", base.UpdateUser)
+		group.DELETE("user/:uuid", base.DeleteUser)
 	}
 
 	//User Role
