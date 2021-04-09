@@ -6,11 +6,12 @@ import (
 )
 
 type IService interface {
-	Create(table string, obj interface{}) error
-	Update(table, uuid string, target interface{}) error
-	Delete(table string, obj core.IObject) error
-	Query(table string, c map[string]interface{}) (interface{}, error)
-	QueryOne(table string, c map[string]interface{}, obj core.IObject) error
+	Create(obj interface{}) error
+	Save(obj interface{}) error
+	Update(src interface{}, target interface{}) error
+	Delete(obj interface{}) error
+	List(obj interface{}) error
+	Query(filter map[string]interface{}, obj interface{}) error
 	Range(table string, c map[string]interface{}, f func(core.IObject) error) error
 }
 
@@ -18,62 +19,51 @@ type BaseService struct {
 	store.IStore
 }
 
-func (b *BaseService) Create(table string, obj interface{}) error {
+func (b *BaseService) Create(obj interface{}) error {
 	err := b.Apply(obj)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
-func (b *BaseService) Update(table, uuid string, target interface{}) error {
-	err := b.IStore.Update(table, uuid, target)
+func (b *BaseService) Save(obj interface{}) error {
+	err := b.IStore.Save(obj)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *BaseService) Delete(table string, obj core.IObject) error {
-	obj.Delete()
-	err := b.Update(table, obj.GetUUID(), obj)
+func (b *BaseService) Update(src interface{}, target interface{}) error {
+	err := b.IStore.Update(src, target)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *BaseService) Query(table string, c map[string]interface{}) (interface{}, error) {
-	var results []map[string]interface{}
-	if c != nil {
-		err := b.GetByFilter(table, c, &results)
-		if err != nil {
-			return nil, err
-		}
-		return results, nil
-	}
-	err := b.List(table, &results)
-	if err != nil {
-		return nil, err
-	}
-	return results, nil
-
-}
-
-func (b *BaseService) QueryOne(table string, c map[string]interface{}, obj core.IObject) error {
-	if c != nil {
-		err := b.GetByFilter(table, c, obj)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	err := b.GetByFilter(table, nil, obj)
+func (b *BaseService) Delete(obj interface{}) error {
+	err := b.Del(obj)
 	if err != nil {
 		return err
 	}
 	return nil
+}
 
+func (b *BaseService) List(obj interface{}) error {
+	err := b.IStore.List(obj)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *BaseService) Query(filter map[string]interface{}, obj interface{}) error {
+	err := b.GetByFilter(filter, obj)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (b *BaseService) Range(table string, c map[string]interface{}, f func(core.IObject) error) error {

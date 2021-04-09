@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"fmt"
-	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource"
 	"github.com/yametech/devops/pkg/store"
 	"gorm.io/driver/mysql"
@@ -15,16 +14,48 @@ type Mysql struct {
 	Db  *gorm.DB
 }
 
-func (m *Mysql) Update(table, uuid string, dst interface{}) error {
-	tx := m.Db.Table(table).Where("uuid=?", uuid).Updates(dst)
+func (m *Mysql) Save(obj interface{}) error {
+	tx := m.Db.Save(obj)
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
 
-func (m *Mysql) List(table string, result interface{}) error {
-	tx := m.Db.Table(table).Find(result)
+func (m *Mysql) Update(src, dst interface{}) error {
+	tx := m.Db.Model(src).Updates(dst)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (m *Mysql) List(result interface{}) error {
+	tx := m.Db.Find(result)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (m *Mysql) GetByFilter(filter map[string]interface{}, result interface{}) error {
+	tx := m.Db.Where(filter).Find(result)
+	if tx.Error != nil || tx.RowsAffected == 0 {
+		return tx.Error
+	}
+	return nil
+}
+
+func (m *Mysql) Del(obj interface{}) error {
+	tx := m.Db.Delete(obj)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (m *Mysql) Apply(object interface{}) error {
+	tx := m.Db.Create(object)
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -39,31 +70,6 @@ func (m *Mysql) List(table string, result interface{}) error {
 //	}
 //	return nil
 //}
-
-func (m *Mysql) GetByFilter(table string, filter map[string]interface{}, result interface{}) error {
-	tx := m.Db.Table(table).Where(filter).Find(result)
-	if tx.Error != nil {
-		return tx.Error
-	}
-	return nil
-}
-
-func (m *Mysql) Del(obj core.IObject) error {
-	tx := m.Db.Delete(obj)
-	if tx.Error != nil {
-		fmt.Println(tx.Error.Error())
-		return tx.Error
-	}
-	return nil
-}
-
-func (m *Mysql) Apply(object interface{}) error {
-	tx := m.Db.Create(object)
-	if tx.Error != nil {
-		return tx.Error
-	}
-	return nil
-}
 
 var _ store.IStore = &Mysql{}
 
