@@ -20,10 +20,15 @@ func NewUser(i service.IService) *UserService {
 
 func (u *UserService) List(name string, page, pageSize int64) ([]interface{}, int64, error) {
 	offset := (page - 1) * pageSize
-	filter := map[string]interface{}{
-		"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + name + ".*", Options: "i"}},
+	filter := map[string]interface{}{}
+	if name != "" {
+		filter["metadata.name"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + name + ".*", Options: "i"}}
 	}
-	data, count, err := u.IService.ListByFilter(common.DefaultNamespace, common.User, filter, offset, pageSize)
+	sort := map[string]interface{}{
+		"metadata.version": -1,
+	}
+
+	data, count, err := u.IService.ListByFilter(common.DefaultNamespace, common.User, filter, sort, offset, pageSize)
 	if err != nil {
 		return nil, 0, err
 	}
