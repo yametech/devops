@@ -12,29 +12,14 @@ import (
 func (b *baseServer) ListUser(g *gin.Context) {
 	pageInt, _ := strconv.Atoi(g.DefaultQuery("page", "1"))
 	pageSizeInt, _ := strconv.Atoi(g.DefaultQuery("pagesize", "10"))
+	name := g.DefaultQuery("name", "")
 
-	data, count, err := b.User.List(pageInt, pageSizeInt)
+	results, count, err := b.UserService.List(name, int64(pageInt), int64(pageSizeInt))
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-	g.JSON(http.StatusOK, map[string]interface{}{"data": data, "count": count})
-}
-
-func (b *baseServer) GetUser(g *gin.Context) {
-	page := g.DefaultQuery("page", "1")
-	pageSize := g.DefaultQuery("pagesize", "10")
-	pageInt, _ := strconv.Atoi(page)
-	pageSizeInt, _ := strconv.Atoi(pageSize)
-
-	name, _ := g.GetQuery("name")
-	data, count, err := b.User.Query(map[string]interface{}{"name": name}, pageInt, pageSizeInt)
-	if err != nil {
-		api.RequestParamsError(g, "error", err)
-		return
-	}
-
-	g.JSON(http.StatusOK, map[string]interface{}{"data": data, "count": count})
+	g.JSON(http.StatusOK, map[string]interface{}{"data": results, "count": count})
 }
 
 func (b *baseServer) CreateUser(g *gin.Context) {
@@ -48,14 +33,33 @@ func (b *baseServer) CreateUser(g *gin.Context) {
 		api.RequestParamsError(g, "unmarshal json error", err)
 		return
 	}
-	user, err := b.User.Create(request)
+
+	err = b.UserService.Create(request)
 	if err != nil {
-		api.RequestParamsError(g, "create base error", err)
+		api.RequestParamsError(g, "create user error", err)
 		return
 	}
+	g.JSON(http.StatusOK, request)
+}
 
-	g.JSON(http.StatusOK, user)
+func (b *baseServer) GetUser(g *gin.Context) {
+	uuid := g.Param("uuid")
+	data, err := b.UserService.GetByUUID(uuid)
+	if err != nil {
+		api.RequestParamsError(g, "error", err)
+		return
+	}
+	g.JSON(http.StatusOK, data)
+}
 
+func (b *baseServer) DeleteUser(g *gin.Context) {
+	uuid := g.Param("uuid")
+	err := b.UserService.Delete(uuid)
+	if err != nil {
+		api.RequestParamsError(g, "delete fail", err)
+		return
+	}
+	g.JSON(http.StatusOK, nil)
 }
 
 func (b *baseServer) UpdateUser(g *gin.Context) {
@@ -66,12 +70,13 @@ func (b *baseServer) UpdateUser(g *gin.Context) {
 		api.RequestParamsError(g, "get rawData error", err)
 		return
 	}
-	request := make(map[string]interface{}, 0)
+	request := &apiResource.RequestUser{}
 	if err := json.Unmarshal(rawData, &request); err != nil {
 		api.RequestParamsError(g, "unmarshal json error", err)
 		return
 	}
-	user, err := b.User.Update(uuid, request)
+
+	user, _, err := b.UserService.Update(uuid, request)
 	if err != nil {
 		api.RequestParamsError(g, "update fail", err)
 		return
@@ -79,14 +84,4 @@ func (b *baseServer) UpdateUser(g *gin.Context) {
 
 	g.JSON(http.StatusOK, user)
 
-}
-
-func (b *baseServer) DeleteUser(g *gin.Context) {
-	uuid := g.Param("uuid")
-	err := b.User.Delete(uuid)
-	if err != nil {
-		api.RequestParamsError(g, "delete fail", err)
-		return
-	}
-	g.JSON(http.StatusOK, nil)
 }

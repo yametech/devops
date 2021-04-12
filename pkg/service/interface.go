@@ -6,70 +6,19 @@ import (
 )
 
 type IService interface {
-	Create(obj interface{}) error
-	Save(obj interface{}) error
-	Update(src interface{}, target interface{}) error
-	Delete(obj interface{}) error
-	List(table string, offset, limit int, isPreload bool, obj interface{}) (int64, error)
-	Query(table string, filter map[string]interface{}, offset, limit int, isPreload bool, obj interface{}) (int64, error)
-	Range(table string, c map[string]interface{}, f func(core.IObject) error) error
+	List(namespace, resource, labels string, skip, limit int64) ([]interface{}, int64, error)
+	ListByFilter(namespace, resource string, filter map[string]interface{}, skip, limit int64) ([]interface{}, int64, error)
+	GetByUUID(namespace, resource, uuid string, result interface{}) error
+	GetByFilter(namespace, resource string, result interface{}, filter map[string]interface{}) error
+	Create(namespace, resource string, object core.IObject) (core.IObject, error)
+	Apply(namespace, resource, uuid string, object core.IObject) (core.IObject, bool, error)
+	Delete(namespace, resource, uuid string) error
 }
 
 type BaseService struct {
-	store.IStore
+	store.IKVStore
 }
 
-func (b *BaseService) Create(obj interface{}) error {
-	err := b.Apply(obj)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (b *BaseService) Save(obj interface{}) error {
-	err := b.IStore.Save(obj)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *BaseService) Update(src interface{}, target interface{}) error {
-	err := b.IStore.Update(src, target)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *BaseService) Delete(obj interface{}) error {
-	err := b.Del(obj)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *BaseService) List(table string, offset, limit int, isPreload bool, obj interface{}) (int64, error) {
-	count, err := b.IStore.List(table, obj, offset, limit, isPreload, true)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
-}
-
-func (b *BaseService) Query(table string, filter map[string]interface{}, offset, limit int, isPreload bool, obj interface{}) (int64, error) {
-	count, err := b.GetByFilter(table, filter, obj, offset, limit, isPreload, true)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
-}
-
-func (b *BaseService) Range(table string, c map[string]interface{}, f func(core.IObject) error) error {
-	panic("implement me")
-}
-
-func NewBaseService(s store.IStore) IService {
+func NewBaseService(s store.IKVStore) IService {
 	return &BaseService{s}
 }

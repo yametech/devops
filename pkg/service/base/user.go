@@ -1,93 +1,85 @@
 package base
 
 import (
-	"fmt"
 	apiResource "github.com/yametech/devops/pkg/api/resource"
+	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource"
 	"github.com/yametech/devops/pkg/service"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type User struct {
+type UserService struct {
 	service.IService
 }
 
-func NewUser(i service.IService) *User {
-	return &User{i}
+func NewUser(i service.IService) *UserService {
+	return &UserService{i}
 }
 
-func (u *User) List(page, pageSize int) (*[]resource.User, int64, error) {
-	user := make([]resource.User, 0)
+func (u *UserService) List(name string, page, pageSize int64) ([]interface{}, int64, error) {
 	offset := (page - 1) * pageSize
-	count, err := u.IService.List("users", offset, pageSize, false, &user)
-	if err != nil {
-		return nil, count, err
+	filter := map[string]interface{}{
+		"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + name + ".*", Options: "i"}},
 	}
-	return &user, count, nil
+	data, count, err := u.IService.ListByFilter(common.DefaultNamespace, common.User, filter, offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	return data, count, nil
 
 }
 
-func (u *User) Query(filter map[string]interface{}, page, pageSize int) (*[]resource.User, int64, error) {
-	user := make([]resource.User, 0)
-	offset := (page - 1) * pageSize
-	count, err := u.IService.Query("users", filter, offset, pageSize, false, &user)
-	if err != nil {
-		return nil, count, err
-	}
-
-	return &user, count, nil
-}
-
-func (u *User) Create(request *apiResource.RequestUser) (*resource.User, error) {
+func (u *UserService) Create(reqUser *apiResource.RequestUser) error {
 	user := &resource.User{
 		Metadata: core.Metadata{
-			Name: request.Name,
-			Kind: request.Kind,
+			Name:   reqUser.Name,
+			Kind:   reqUser.Kind,
+			Labels: reqUser.Labels,
 		},
 		Spec: resource.UserSpec{
-			NickName: request.NickName,
-			Username: request.Username,
-			Password: request.Password,
+			Password: reqUser.Password,
+			NickName: reqUser.NickName,
 		},
 	}
 	user.GenerateVersion()
-	err := u.IService.Create(user)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
-}
-
-func (u *User) Update(uuid string, request map[string]interface{}) (*resource.User, error) {
-	user := &resource.User{}
-	count, err := u.IService.Query("users", map[string]interface{}{"uuid": uuid}, -1, -1, false, user)
-	if err != nil {
-		return nil, err
-	}
-	if count == 0 {
-		return nil, fmt.Errorf("user不存在")
-	}
-	err = u.IService.Update(user, request)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
-}
-
-func (u *User) Delete(uuid string) error {
-	user := &resource.User{} // "users", filter, offset, pageSize, false, &base
-	count, err := u.IService.Query("users", map[string]interface{}{"uuid": uuid}, -1, -1, false, user)
-	if err != nil {
-		return err
-	}
-	if count == 0 {
-		return fmt.Errorf("user不存在")
-	}
-	user.IsDelete = true
-	err = u.IService.Save(user)
+	_, err := u.IService.Create(common.DefaultNamespace, common.User, user)
 	if err != nil {
 		return err
 	}
 	return nil
+}
 
+func (u *UserService) GetByUUID(uuid string) (*resource.User, error) {
+	user := &resource.User{}
+	err := u.IService.GetByUUID(common.DefaultNamespace, common.User, uuid, user)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (u *UserService) Update(uuid string, reqUser *apiResource.RequestUser) (core.IObject, bool, error) {
+	user := &resource.User{
+		Metadata: core.Metadata{
+			Name:   reqUser.Name,
+			Kind:   reqUser.Kind,
+			Labels: reqUser.Labels,
+		},
+		Spec: resource.UserSpec{
+			Password: reqUser.Password,
+			NickName: reqUser.NickName,
+		},
+	}
+	user.GenerateVersion()
+	return u.IService.Apply(common.DefaultNamespace, common.User, uuid, user)
+}
+
+func (u *UserService) Delete(uuid string) error {
+	err := u.IService.Delete(common.DefaultNamespace, common.User, uuid)
+	if err != nil {
+		return err
+	}
+	return nil
 }

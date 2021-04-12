@@ -104,7 +104,7 @@ func Setup(uri, user, pw, database string, errC chan<- error) (*Mysql, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = conn.AutoMigrate(&resource.User{}, &resource.Artifact{})
+	err = conn.AutoMigrate(&resource.User{},)
 
 	if err != nil {
 		return nil, err
