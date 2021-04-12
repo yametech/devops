@@ -3,7 +3,7 @@ package base
 import (
 	"fmt"
 	"github.com/yametech/devops/pkg/api"
-	serviceUser "github.com/yametech/devops/pkg/service/user"
+	serviceUser "github.com/yametech/devops/pkg/service/base"
 )
 
 type baseServer struct {
@@ -22,15 +22,15 @@ func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 	//User
 	{
 		group.GET("/users", base.ListUser)
-		group.GET("/user", base.GetUser)
-		group.POST("/user", base.CreateUser)
-		group.PUT("/user/:uuid", base.UpdateUser)
-		group.DELETE("user/:uuid", base.DeleteUser)
+		group.GET("/base", base.GetUser)
+		group.POST("/base", base.CreateUser)
+		group.PUT("/base/:uuid", base.UpdateUser)
+		group.DELETE("base/:uuid", base.DeleteUser)
 	}
 
-	//User Role
+	// Artifact
 	{
-		//group.GET("/user-role, base.ListRole)
+		group.GET("/artifact", base.ListArtifact)
 	}
 
 	return base

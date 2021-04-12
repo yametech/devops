@@ -6,26 +6,35 @@ import (
 	"github.com/yametech/devops/pkg/api"
 	apiResource "github.com/yametech/devops/pkg/api/resource"
 	"net/http"
+	"strconv"
 )
 
 func (b *baseServer) ListUser(g *gin.Context) {
-	data, err := b.User.List()
+	pageInt, _ := strconv.Atoi(g.DefaultQuery("page", "1"))
+	pageSizeInt, _ := strconv.Atoi(g.DefaultQuery("pagesize", "10"))
+
+	data, count, err := b.User.List(pageInt, pageSizeInt)
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-	g.JSON(http.StatusOK, data)
+	g.JSON(http.StatusOK, map[string]interface{}{"data": data, "count": count})
 }
 
 func (b *baseServer) GetUser(g *gin.Context) {
+	page := g.DefaultQuery("page", "1")
+	pageSize := g.DefaultQuery("pagesize", "10")
+	pageInt, _ := strconv.Atoi(page)
+	pageSizeInt, _ := strconv.Atoi(pageSize)
+
 	name, _ := g.GetQuery("name")
-	user, err := b.User.Query(map[string]interface{}{"name": name})
+	data, count, err := b.User.Query(map[string]interface{}{"name": name}, pageInt, pageSizeInt)
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
 
-	g.JSON(http.StatusOK, user)
+	g.JSON(http.StatusOK, map[string]interface{}{"data": data, "count": count})
 }
 
 func (b *baseServer) CreateUser(g *gin.Context) {
@@ -41,7 +50,7 @@ func (b *baseServer) CreateUser(g *gin.Context) {
 	}
 	user, err := b.User.Create(request)
 	if err != nil {
-		api.RequestParamsError(g, "create user error", err)
+		api.RequestParamsError(g, "create base error", err)
 		return
 	}
 

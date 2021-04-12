@@ -3,7 +3,7 @@ package workorder
 import (
 	"fmt"
 	"github.com/yametech/devops/pkg/api"
-	serviceUser "github.com/yametech/devops/pkg/service/user"
+	serviceUser "github.com/yametech/devops/pkg/service/base"
 )
 
 type WorkOrder struct {

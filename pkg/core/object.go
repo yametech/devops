@@ -9,6 +9,7 @@ type IObject interface {
 	GetUUID() string
 	GetKind() string
 	Delete()
+	GenerateVersion() IObject
 }
 
 type Metadata struct {

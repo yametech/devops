@@ -10,8 +10,8 @@ type IService interface {
 	Save(obj interface{}) error
 	Update(src interface{}, target interface{}) error
 	Delete(obj interface{}) error
-	List(obj interface{}) error
-	Query(filter map[string]interface{}, obj interface{}) error
+	List(table string, offset, limit int, isPreload bool, obj interface{}) (int64, error)
+	Query(table string, filter map[string]interface{}, offset, limit int, isPreload bool, obj interface{}) (int64, error)
 	Range(table string, c map[string]interface{}, f func(core.IObject) error) error
 }
 
@@ -50,20 +50,20 @@ func (b *BaseService) Delete(obj interface{}) error {
 	return nil
 }
 
-func (b *BaseService) List(obj interface{}) error {
-	err := b.IStore.List(obj)
+func (b *BaseService) List(table string, offset, limit int, isPreload bool, obj interface{}) (int64, error) {
+	count, err := b.IStore.List(table, obj, offset, limit, isPreload, true)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return count, nil
 }
 
-func (b *BaseService) Query(filter map[string]interface{}, obj interface{}) error {
-	err := b.GetByFilter(filter, obj)
+func (b *BaseService) Query(table string, filter map[string]interface{}, offset, limit int, isPreload bool, obj interface{}) (int64, error) {
+	count, err := b.GetByFilter(table, filter, obj, offset, limit, isPreload, true)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return count, nil
 }
 
 func (b *BaseService) Range(table string, c map[string]interface{}, f func(core.IObject) error) error {

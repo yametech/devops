@@ -6,12 +6,17 @@ import (
 	"github.com/yametech/devops/pkg/store"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"time"
 )
 
 type Mysql struct {
 	Uri string
 	Db  *gorm.DB
+}
+
+func (m *Mysql) Dao(table string) *gorm.DB {
+	return m.Db.Table(table)
 }
 
 func (m *Mysql) Save(obj interface{}) error {
@@ -30,20 +35,34 @@ func (m *Mysql) Update(src, dst interface{}) error {
 	return nil
 }
 
-func (m *Mysql) List(result interface{}) error {
-	tx := m.Db.Find(result)
-	if tx.Error != nil {
-		return tx.Error
+func (m *Mysql) List(table string, result interface{}, offset, limit int, isPreload, isDelete bool) (int64, error) {
+	tx := m.Db.Table(table).Offset(offset).Limit(limit)
+	if isPreload {
+		tx.Preload(clause.Associations)
 	}
-	return nil
+	if isDelete {
+		tx.Where(map[string]interface{}{"is_delete": false})
+	}
+	tx.Find(result)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+	return tx.RowsAffected, nil
 }
 
-func (m *Mysql) GetByFilter(filter map[string]interface{}, result interface{}) error {
-	tx := m.Db.Where(filter).Find(result)
-	if tx.Error != nil || tx.RowsAffected == 0 {
-		return tx.Error
+func (m *Mysql) GetByFilter(table string, filter map[string]interface{}, result interface{}, offset, limit int, isPreload, isDelete bool) (int64, error) {
+	tx := m.Db.Table(table).Where(filter).Offset(offset).Limit(limit)
+	if isPreload {
+		tx.Preload(clause.Associations)
 	}
-	return nil
+	if isDelete {
+		tx.Where(map[string]interface{}{"is_delete": false})
+	}
+	tx.Find(result)
+	if tx.Error != nil || tx.RowsAffected == 0 {
+		return 0, tx.Error
+	}
+	return tx.RowsAffected, nil
 }
 
 func (m *Mysql) Del(obj interface{}) error {

@@ -1,6 +1,7 @@
-package user
+package base
 
 import (
+	"fmt"
 	apiResource "github.com/yametech/devops/pkg/api/resource"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource"
@@ -15,24 +16,26 @@ func NewUser(i service.IService) *User {
 	return &User{i}
 }
 
-func (u *User) List() (*[]resource.User, error) {
+func (u *User) List(page, pageSize int) (*[]resource.User, int64, error) {
 	user := make([]resource.User, 0)
-	err := u.IService.List(&user)
+	offset := (page - 1) * pageSize
+	count, err := u.IService.List("users", offset, pageSize, false, &user)
 	if err != nil {
-		return nil, err
+		return nil, count, err
 	}
-	return &user, nil
+	return &user, count, nil
 
 }
 
-func (u *User) Query(filter map[string]interface{}) (*[]resource.User, error) {
+func (u *User) Query(filter map[string]interface{}, page, pageSize int) (*[]resource.User, int64, error) {
 	user := make([]resource.User, 0)
-	err := u.IService.Query(filter, &user)
+	offset := (page - 1) * pageSize
+	count, err := u.IService.Query("users", filter, offset, pageSize, false, &user)
 	if err != nil {
-		return nil, err
+		return nil, count, err
 	}
 
-	return &user, nil
+	return &user, count, nil
 }
 
 func (u *User) Create(request *apiResource.RequestUser) (*resource.User, error) {
@@ -57,9 +60,12 @@ func (u *User) Create(request *apiResource.RequestUser) (*resource.User, error) 
 
 func (u *User) Update(uuid string, request map[string]interface{}) (*resource.User, error) {
 	user := &resource.User{}
-	err := u.IService.Query(map[string]interface{}{"uuid": uuid}, user)
+	count, err := u.IService.Query("users", map[string]interface{}{"uuid": uuid}, -1, -1, false, user)
 	if err != nil {
 		return nil, err
+	}
+	if count == 0 {
+		return nil, fmt.Errorf("user不存在")
 	}
 	err = u.IService.Update(user, request)
 	if err != nil {
@@ -69,10 +75,13 @@ func (u *User) Update(uuid string, request map[string]interface{}) (*resource.Us
 }
 
 func (u *User) Delete(uuid string) error {
-	user := &resource.User{}
-	err := u.IService.Query(map[string]interface{}{"uuid": uuid}, user)
+	user := &resource.User{} // "users", filter, offset, pageSize, false, &base
+	count, err := u.IService.Query("users", map[string]interface{}{"uuid": uuid}, -1, -1, false, user)
 	if err != nil {
 		return err
+	}
+	if count == 0 {
+		return fmt.Errorf("user不存在")
 	}
 	user.IsDelete = true
 	err = u.IService.Save(user)
