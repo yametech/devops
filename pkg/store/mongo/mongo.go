@@ -16,10 +16,11 @@ import (
 )
 
 const (
-	metadata     = "metadata"
-	version      = "version"
-	metadataName = "metadata.name"
-	metadataUUID = "metadata.uuid"
+	metadata       = "metadata"
+	version        = "version"
+	metadataName   = "metadata.name"
+	metadataUUID   = "metadata.uuid"
+	metadataDelete = "metadata.is_delete"
 )
 
 var _ store.IKVStore = &Mongo{}
@@ -90,30 +91,62 @@ func (m *Mongo) Close() error {
 	return m.client.Disconnect(ctx)
 }
 
-func (m *Mongo) List(namespace, resource, labels string) ([]interface{}, error) {
+func (m *Mongo) List(namespace, resource, labels string, skip, limit int64) ([]interface{}, int64, error) {
 	ctx := context.Background()
 	var filter = bson.D{{}}
 	if len(labels) > 0 {
 		filter = expr2labels(labels)
 	}
 	findOptions := options.Find()
-
+	findOptions.SetSkip(skip)
+	findOptions.SetLimit(limit)
 	cursor, err := m.client.
 		Database(namespace).
 		Collection(resource).
 		Find(ctx, filter, findOptions)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+	count, err := m.client.Database(namespace).Collection(resource).CountDocuments(ctx, filter, options.Count())
+	if err != nil {
+		return nil, 0, err
 	}
 	var _results []bson.M
 	if err := cursor.All(ctx, &_results); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	results := make([]interface{}, 0)
 	for index := range _results {
 		results = append(results, _results[index])
 	}
-	return results, nil
+	return results, count, nil
+}
+
+func (m *Mongo) ListByFilter(namespace, resource string, filter map[string]interface{}, skip, limit int64) ([]interface{}, int64, error) {
+	ctx := context.Background()
+	findOptions := options.Find()
+	findOptions.SetSkip(skip)
+	findOptions.SetLimit(limit)
+	cursor, err := m.client.
+		Database(namespace).
+		Collection(resource).
+		Find(ctx, map2filter(filter), findOptions)
+	if err != nil {
+		return nil, 0, err
+	}
+	count, err := m.client.Database(namespace).Collection(resource).CountDocuments(ctx, map2filter(filter), options.Count())
+	if err != nil {
+		return nil, 0, err
+	}
+	var _results []bson.M
+	if err := cursor.All(ctx, &_results); err != nil {
+		return nil, 0, err
+	}
+	results := make([]interface{}, 0)
+	for index := range _results {
+		results = append(results, _results[index])
+	}
+	return results, count, nil
 }
 
 func (m *Mongo) GetByFilter(namespace, resource string, result interface{}, filter map[string]interface{}) error {
@@ -123,19 +156,6 @@ func (m *Mongo) GetByFilter(namespace, resource string, result interface{}, filt
 		Database(namespace).
 		Collection(resource).
 		FindOne(ctx, map2filter(filter), findOneOptions)
-	if err := singleResult.Decode(result); err != nil {
-		if err == mongo.ErrNoDocuments {
-			return store.NotFound
-		}
-		return err
-	}
-	return nil
-}
-
-func (m *Mongo) Get(namespace, resource, name string, result interface{}) error {
-	query := bson.M{metadataName: name}
-	singleResult := m.client.Database(namespace).Collection(resource).
-		FindOne(context.Background(), query)
 	if err := singleResult.Decode(result); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return store.NotFound
@@ -185,8 +205,64 @@ func (m *Mongo) Create(namespace, resource string, object core.IObject) (core.IO
 	return object, nil
 }
 
-func (m *Mongo) Delete(namespace, resource, name string) error {
-	query := bson.M{metadataName: name}
+func (m *Mongo) Apply(namespace, resource, uuid string, object core.IObject) (core.IObject, bool, error) {
+	var query = bson.M{metadataUUID: uuid}
+
+	ctx := context.Background()
+	singleResult := m.client.Database(namespace).Collection(resource).FindOne(ctx, query)
+
+	if singleResult.Err() == mongo.ErrNoDocuments {
+		object.GenerateVersion()
+		_, err := m.client.Database(namespace).Collection(resource).InsertOne(ctx, object)
+		if err != nil {
+			return nil, false, err
+		}
+		return object, false, nil
+	}
+
+	old := object.Clone()
+	if err := singleResult.Decode(old); err != nil {
+		return nil, false, err
+	}
+
+	oldMap, err := core.ToMap(old)
+	if err != nil {
+		return nil, false, err
+	}
+	objectMap, err := core.ToMap(object)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if reflect.DeepEqual(oldMap["spec"], objectMap["spec"]) {
+		return old, false, nil
+	}
+
+	oldMap["spec"] = objectMap["spec"]
+
+	if err := core.EncodeFromMap(old, oldMap); err != nil {
+		return old, false, err
+	}
+
+	upsert := true
+	old.GenerateVersion() //update version
+	_, err = m.client.
+		Database(namespace).
+		Collection(resource).
+		ReplaceOne(ctx, query, old,
+			options.MergeReplaceOptions(
+				&options.ReplaceOptions{Upsert: &upsert},
+			),
+		)
+	if err != nil {
+		return nil, true, err
+	}
+
+	return old, true, nil
+}
+
+func (m *Mongo) Delete(namespace, resource, uuid string) error {
+	query := bson.M{metadataUUID: uuid}
 	ctx := context.Background()
 	_, err := m.client.Database(namespace).Collection(resource).DeleteOne(ctx, query)
 	if err != nil {

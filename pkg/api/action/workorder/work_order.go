@@ -8,14 +8,14 @@ import (
 
 type WorkOrder struct {
 	*api.Server
-	*serviceUser.User
+	*serviceUser.UserService
 }
 
 func NewWorkOrder(serviceName string, server *api.Server) *WorkOrder {
 
 	workOrder := &WorkOrder{
-		Server: server,
-		User:   serviceUser.NewUser(server.IService),
+		Server:      server,
+		UserService: serviceUser.NewUser(server.IService),
 	}
 	group := workOrder.Group(fmt.Sprintf("/%s", serviceName))
 

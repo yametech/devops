@@ -5,7 +5,7 @@ import (
 	"github.com/yametech/devops/pkg/api"
 	"github.com/yametech/devops/pkg/api/action/workorder"
 	"github.com/yametech/devops/pkg/service"
-	"github.com/yametech/devops/pkg/store/mysql"
+	"github.com/yametech/devops/pkg/store/mongo"
 )
 
 var storageUri, user, pw, database string
@@ -17,8 +17,10 @@ func main() {
 	flag.StringVar(&database, "database", "ccmose", "-database ccmose")
 	flag.Parse()
 
-	errC := make(chan error)
-	store, err := mysql.Setup(storageUri, user, pw, database, errC)
+	//errC := make(chan error)
+	//store, err := mysql.Setup(storageUri, user, pw, database, errC)
+	store, err, errC := mongo.NewMongo(storageUri)
+
 	if err != nil {
 		panic(err)
 	}

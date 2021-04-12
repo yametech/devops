@@ -3,34 +3,37 @@ package base
 import (
 	"fmt"
 	"github.com/yametech/devops/pkg/api"
-	serviceUser "github.com/yametech/devops/pkg/service/base"
+	baseService "github.com/yametech/devops/pkg/service/base"
 )
 
 type baseServer struct {
 	*api.Server
-	*serviceUser.User
+	*baseService.UserService
+	*baseService.UserProjectService
 }
 
 func NewBaseServer(serviceName string, server *api.Server) *baseServer {
-
 	base := &baseServer{
-		Server: server,
-		User:   serviceUser.NewUser(server.IService),
+		Server:             server,
+		UserService:        baseService.NewUser(server.IService),
+		UserProjectService: baseService.NewUserProjectService(server.IService),
 	}
 	group := base.Group(fmt.Sprintf("/%s", serviceName))
 
-	//User
+	//UserProjectService
 	{
 		group.GET("/users", base.ListUser)
-		group.GET("/base", base.GetUser)
-		group.POST("/base", base.CreateUser)
-		group.PUT("/base/:uuid", base.UpdateUser)
-		group.DELETE("base/:uuid", base.DeleteUser)
+		group.GET("/user/:uuid", base.GetUser)
+		group.POST("/user", base.CreateUser)
+		group.PUT("/user/:uuid", base.UpdateUser)
+		group.DELETE("/user/:uuid", base.DeleteUser)
 	}
 
-	// Artifact
+	// UserProject
 	{
-		group.GET("/artifact", base.ListArtifact)
+		group.POST("/project", base.CreateProject)
+		group.GET("/project", base.ListProject)
+
 	}
 
 	return base
