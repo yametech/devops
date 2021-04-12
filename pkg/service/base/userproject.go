@@ -19,7 +19,10 @@ func NewUserProjectService(i service.IService) *UserProjectService {
 
 func (u *UserProjectService) List(page, pageSize int64) ([]*apiResource.RespUserProject, int64, error) {
 	offset := (page - 1) * pageSize
-	unstructured, count, err := u.IService.List(common.DefaultNamespace, common.UserProject, "", offset, pageSize)
+	sort := map[string]interface{}{
+		"metadata.version": -1,
+	}
+	unstructured, count, err := u.IService.List(common.DefaultNamespace, common.UserProject, "", sort, offset, pageSize)
 	userProject, err := u.Structer(unstructured)
 	if err != nil {
 		return nil, 0, err

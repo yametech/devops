@@ -91,15 +91,14 @@ func (m *Mongo) Close() error {
 	return m.client.Disconnect(ctx)
 }
 
-func (m *Mongo) List(namespace, resource, labels string, skip, limit int64) ([]interface{}, int64, error) {
+func (m *Mongo) List(namespace, resource, labels string, sort map[string]interface{}, skip, limit int64) ([]interface{}, int64, error) {
 	ctx := context.Background()
 	var filter = bson.D{{}}
 	if len(labels) > 0 {
 		filter = expr2labels(labels)
 	}
 	findOptions := options.Find()
-	findOptions.SetSkip(skip)
-	findOptions.SetLimit(limit)
+	findOptions.SetSkip(skip).SetLimit(limit).SetSort(map2filter(sort))
 	cursor, err := m.client.
 		Database(namespace).
 		Collection(resource).
@@ -122,11 +121,10 @@ func (m *Mongo) List(namespace, resource, labels string, skip, limit int64) ([]i
 	return results, count, nil
 }
 
-func (m *Mongo) ListByFilter(namespace, resource string, filter map[string]interface{}, skip, limit int64) ([]interface{}, int64, error) {
+func (m *Mongo) ListByFilter(namespace, resource string, filter, sort map[string]interface{}, skip, limit int64) ([]interface{}, int64, error) {
 	ctx := context.Background()
 	findOptions := options.Find()
-	findOptions.SetSkip(skip)
-	findOptions.SetLimit(limit)
+	findOptions.SetSkip(skip).SetLimit(limit).SetSort(sort)
 	cursor, err := m.client.
 		Database(namespace).
 		Collection(resource).
