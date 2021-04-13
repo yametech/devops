@@ -55,10 +55,11 @@ type DeploySpec struct {
 	Replicas        string `json:"replicas" bson:"replicas"`
 	Policy          string `json:"policy" bson:"policy"`
 	CreateUserId    string `json:"create_user_id" bson:"create_user_id"`
+	AppName         string `json:"app_name" bson:"app_name"` // 只存英文名，appCode不需要，用name搜索
 
-	ServicePorts ServicePort  `json:"service_ports"`
-	DeployStatus DeployStatus `json:"artifact_status" bson:"artifact_status"`
-	Container    Container    `json:"container"`
+	ServicePorts []ServicePort `json:"service_ports"`
+	DeployStatus DeployStatus  `json:"artifact_status" bson:"artifact_status"`
+	Container    Container     `json:"container"`
 }
 
 type Deploy struct {
