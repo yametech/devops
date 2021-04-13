@@ -24,7 +24,7 @@ func main() {
 	appservice.NewAppServiceServer("appservice", server)
 
 	go func() {
-		if err := server.Run(":8080"); err != nil {
+		if err := server.Run(":8888"); err != nil {
 			errC <- err
 		}
 	}()
