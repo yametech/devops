@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/yametech/devops/pkg/api"
-	"github.com/yametech/devops/pkg/api/action/base"
+	"github.com/yametech/devops/pkg/api/action/appservice"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/store/mongo"
 )
@@ -14,8 +14,6 @@ func main() {
 	flag.StringVar(&storageUri, "storage_uri", "mongodb://127.0.0.1:27017/admin", "127.0.0.1:3306")
 	flag.Parse()
 
-	//errC := make(chan error)
-	//store, err := mysql.Setup(storageUri, user, pw, database, errC)
 	store, err, errC := mongo.NewMongo(storageUri)
 	if err != nil {
 		panic(err)
@@ -23,7 +21,7 @@ func main() {
 
 	baseService := service.NewBaseService(store)
 	server := api.NewServer(baseService)
-	base.NewBaseServer("baseserver", server)
+	appservice.NewAppServiceServer("appservice", server)
 
 	go func() {
 		if err := server.Run(":8080"); err != nil {
