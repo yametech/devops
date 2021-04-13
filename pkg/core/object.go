@@ -33,10 +33,12 @@ func (m *Metadata) GetKind() string {
 }
 
 func (m *Metadata) GenerateVersion() IObject {
-	m.CreatedTime = time.Now().Unix()
 	m.Version = time.Now().Unix()
 	if m.UUID == "" {
 		m.UUID = utils.NewSUID().String()
+	}
+	if m.CreatedTime == 0 {
+		m.CreatedTime = time.Now().Unix()
 	}
 	return m
 }
