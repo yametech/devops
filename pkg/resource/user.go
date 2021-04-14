@@ -4,6 +4,7 @@ import (
 	"github.com/yametech/devops/pkg/core"
 )
 
+//TODO:and this resource
 type UserSpec struct {
 	Password    string `json:"password" bson:"password"`
 	LastLogin   int64  `json:"last_login" bson:"last_login"`

@@ -4,6 +4,7 @@ import (
 	"github.com/yametech/devops/pkg/core"
 )
 
+//TODO:what is resource
 type RequestUser struct {
 	Name     string                 `json:"name"`
 	Kind     string                 `json:"kind"`

@@ -12,5 +12,8 @@ func main() {
 	flag.Parse()
 
 	store, err, errC := mongo.NewMongo(storageUri)
+	if err != nil {
+		panic(err)
+	}
 
 }
