@@ -22,6 +22,9 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 	{
 		group.GET("/app-project", cfaServer.ListAppProject)
 		group.POST("/app-project", cfaServer.CreateAppProject)
+		group.GET("/app-project/:uuid", cfaServer.RetrieveAppProject)
+		group.PUT("/app-project/:uuid", cfaServer.UpdateAppProject)
+		group.DELETE("/app-project/:uuid", cfaServer.DeleteAppProject)
 	}
 
 	return cfaServer
