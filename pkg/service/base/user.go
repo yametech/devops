@@ -18,7 +18,7 @@ func NewUser(i service.IService) *UserService {
 	return &UserService{i}
 }
 
-func (u *UserService) List(name string, page, pageSize int64) ([]interface{}, int64, error) {
+func (u *UserService) List(name string, page, pageSize int64) ([]interface{}, error) {
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
 	if name != "" {
@@ -28,11 +28,11 @@ func (u *UserService) List(name string, page, pageSize int64) ([]interface{}, in
 		"metadata.version": -1,
 	}
 
-	data, count, err := u.IService.ListByFilter(common.DefaultNamespace, common.User, filter, sort, offset, pageSize)
+	data, err := u.IService.ListByFilter(common.DefaultNamespace, common.User, filter, sort, offset, pageSize)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return data, count, nil
+	return data, nil
 
 }
 

@@ -17,17 +17,17 @@ func NewUserProjectService(i service.IService) *UserProjectService {
 	return &UserProjectService{i}
 }
 
-func (u *UserProjectService) List(page, pageSize int64) ([]*apiResource.RespUserProject, int64, error) {
+func (u *UserProjectService) List(page, pageSize int64) ([]*apiResource.RespUserProject, error) {
 	offset := (page - 1) * pageSize
 	sort := map[string]interface{}{
 		"metadata.version": -1,
 	}
-	unstructured, count, err := u.IService.List(common.DefaultNamespace, common.UserProject, "", sort, offset, pageSize)
+	unstructured, err := u.IService.List(common.DefaultNamespace, common.UserProject, "", sort, offset, pageSize)
 	userProject, err := u.Structer(unstructured)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return userProject, count, nil
+	return userProject, nil
 }
 
 func (u *UserProjectService) Create(reqUserProject *apiResource.RequestUserProject) error {
