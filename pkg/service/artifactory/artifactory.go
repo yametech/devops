@@ -9,6 +9,3 @@ type Artifactory struct {
 func NewArtifactory(i service.IService) *Artifactory {
 	return &Artifactory{i}
 }
-
-//TODO:how to go
-var _ service.IService = &Artifactory{}
