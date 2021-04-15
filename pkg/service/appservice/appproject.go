@@ -29,7 +29,7 @@ func (a *AppProjectService) List(search string) ([]*resource.AppProject, int64, 
 
 	// Get the BusinessLine
 	businessLine := &resource.AppProject{}
-	if err := a.Children(businessLine, sort, -1); err != nil {
+	if err := a.Children(businessLine, sort, 2); err != nil {
 		return nil, 0, err
 	}
 
@@ -57,42 +57,6 @@ func (a *AppProjectService) Create(req *resource.AppProject) error {
 	return nil
 }
 
-func (a *AppProjectService) GetByUUID(uuid string) ([]*resource.AppProject, error) {
-	app := &resource.AppProject{}
-	err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, uuid, app)
-
-	sort := map[string]interface{}{
-		"metadata.created_time": -1,
-	}
-	// return all BusinessLine
-	data := &resource.AppProject{}
-	if err != nil {
-		err = a.Children(data, sort, 0)
-		if err != nil {
-			return nil, err
-		}
-		return data.Children, nil
-	}
-
-	if err = utils.Clone(app, data); err != nil {
-		return nil, err
-	}
-
-	// return App
-	if data.Spec.AppType == resource.App {
-		return []*resource.AppProject{
-			data,
-		}, nil
-	}
-
-	// return Children
-	if err = a.Children(data, sort, 0); err != nil {
-		return nil, err
-	}
-
-	return data.Children, nil
-}
-
 func (a *AppProjectService) Update(uuid string, req *resource.AppProject) (core.IObject, bool, error) {
 	req.GenerateVersion()
 	return a.IService.Apply(common.DefaultNamespace, common.AppProject, uuid, req)
@@ -112,25 +76,20 @@ func (a *AppProjectService) Children(req *resource.AppProject, sort map[string]i
 	}
 
 	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, sort, 0, 0)
-	if err != nil {
-		return err
-	}
 	children := make([]*resource.AppProject, 0)
 	err = utils.Clone(data, &children)
 	if err != nil {
 		return err
 	}
-	for _, child := range children {
-		_child := child
-		if level == -1 {
-			err = a.Children(_child, sort, -1)
-		} else if level > 0 {
-			err = a.Children(_child, sort, level-1)
-		}
-		if err != nil {
-			return err
+	if level > 0 {
+		for _, child := range children {
+			_child := child
+			if err = a.Children(_child, sort, level-1); err != nil{
+				return err
+			}
 		}
 	}
+
 	req.Children = children
 	return nil
 }
@@ -180,10 +139,11 @@ func (a *AppProjectService) Search(search string, level int64) ([]*resource.AppP
 			}
 		}
 	}
+
 	// Get the children of BusinessLine
 	for _, child := range parents {
 		_child := child
-		if err := a.Children(_child, sort, -1); err != nil {
+		if err := a.Children(_child, sort, 1); err != nil {
 			return nil, 0, err
 		}
 	}

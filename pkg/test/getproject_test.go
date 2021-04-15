@@ -88,3 +88,7 @@ func TestGetAppProject(t *testing.T) {
 
 	fmt.Println("success")
 }
+
+func TestNil(t *testing.T) {
+	fmt.Println(len([]interface{}{}) > 0)
+}
