@@ -5,20 +5,23 @@ import "github.com/yametech/devops/pkg/core"
 type AppType uint8
 
 const (
-	Service AppType = iota
-	BusinessLine
+	BusinessLine AppType = iota
+	Service
 	App
 )
 
 type AppSpec struct {
-	AppType `json:"parent_app" bson:"parent_app"`
-	Desc    string   `json:"desc" bson:"desc"`
-	Owner   []string `json:"owner" bson:"owner"`
+	AppType   `json:"app_type" bson:"app_type"`
+	ParentApp string   `json:"parent_app" bson:"parent_app"`
+	RootApp   string   `json:"root_app" bson:"root_app"`
+	Desc      string   `json:"desc" bson:"desc"`
+	Owner     []string `json:"owner" bson:"owner"`
 }
 
 type AppProject struct {
 	core.Metadata `json:"metadata"`
-	Spec          AppSpec `json:"spec"`
+	Spec          AppSpec       `json:"spec"`
+	Children      []*AppProject `json:"children"`
 }
 
 func (ap *AppProject) Clone() core.IObject {
