@@ -88,3 +88,6 @@ func TestGetAppProject(t *testing.T) {
 
 	fmt.Println("success")
 }
+
+func TestGetData(t *testing.T) {
+}
