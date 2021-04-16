@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/r3labs/sse"
+	"github.com/r3labs/sse/v2"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/store"
 	"io/ioutil"
@@ -103,7 +103,7 @@ func (w WatchFlowRun) firstConnect() error {
 	return nil
 }
 
-func (w WatchFlowRun) artifactConnect() error {
+func (w WatchFlowRun) ArtifactConnect() error {
 	client := sse.NewClient(fmt.Sprintf("%s/watch?resource=flowrun?version=%d", common.EchoerUrl, Version))
 	fmt.Printf("%s/watch?resource=flowrun?version=%d", common.EchoerUrl, Version)
 	err := client.SubscribeRaw(func(msg *sse.Event) {
@@ -127,7 +127,7 @@ func main() {
 	if err := a.firstConnect(); err != nil {
 		panic(err)
 	}
-	if err := a.artifactConnect(); err != nil {
+	if err := a.ArtifactConnect(); err != nil {
 		panic(err)
 	}
 }
