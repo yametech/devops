@@ -1,6 +1,8 @@
 package appproject
 
-import "github.com/yametech/devops/pkg/core"
+import (
+	"github.com/yametech/devops/pkg/core"
+)
 
 type AppType uint8
 

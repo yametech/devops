@@ -39,7 +39,7 @@ func (a *AppProjectService) List(search string) ([]*apiResource.AppProjectRespon
 }
 
 func (a *AppProjectService) Create(req *appproject.AppProject) error {
-	if req.Metadata.Name == ""{
+	if req.Metadata.Name == "" {
 		return errors.New("The Name is requried")
 	}
 
@@ -47,8 +47,7 @@ func (a *AppProjectService) Create(req *appproject.AppProject) error {
 		"metadata.name": req.Name,
 	}
 
-
-	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppProject, req, filter); err == nil{
+	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppProject, req, filter); err == nil {
 		return errors.New("The Name is exist")
 	}
 
@@ -74,10 +73,10 @@ func (a *AppProjectService) Create(req *appproject.AppProject) error {
 
 func (a *AppProjectService) Update(uuid string, req *appproject.AppProject) (core.IObject, bool, error) {
 	dbObj := &appproject.AppProject{}
-	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, uuid, dbObj); err != nil{
+	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, uuid, dbObj); err != nil {
 		return nil, false, err
 	}
-	if dbObj.UUID == ""{
+	if dbObj.UUID == "" {
 		return nil, false, errors.New("The uuid is not exist")
 	}
 
@@ -90,18 +89,18 @@ func (a *AppProjectService) Update(uuid string, req *appproject.AppProject) (cor
 
 func (a *AppProjectService) Delete(uuid string) (bool, error) {
 	dbObj := &appproject.AppProject{}
-	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, uuid, dbObj); err != nil{
+	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, uuid, dbObj); err != nil {
 		return false, err
 	}
 	filter := map[string]interface{}{
 		"spec.parent_app": dbObj.Metadata.UUID,
 	}
 	children, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, nil, 0, 0)
-	if err != nil{
+	if err != nil {
 		return false, err
 	}
 
-	if len(children) > 0{
+	if len(children) > 0 {
 		return false, errors.New("This label has children labels, Please Delete them first")
 	}
 
@@ -119,7 +118,7 @@ func (a *AppProjectService) Children(req *apiResource.AppProjectResponse, sort m
 
 	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, sort, 0, 0)
 	children := make([]*apiResource.AppProjectResponse, 0)
-	if err = utils.Clone(data, &children); err != nil {
+	if err = utils.UnstructuredObjectToInstanceObj(data, &children); err != nil {
 		return err
 	}
 
@@ -160,7 +159,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.A
 		}
 
 		data := make([]*apiResource.AppProjectResponse, 0)
-		if err = utils.Clone(apps, &data); err != nil {
+		if err = utils.UnstructuredObjectToInstanceObj(apps, &data); err != nil {
 			return nil, 0, err
 		}
 
@@ -179,7 +178,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.A
 				}
 
 				rootResponse := &apiResource.AppProjectResponse{}
-				if err = utils.Clone(root, &rootResponse); err != nil {
+				if err = utils.UnstructuredObjectToInstanceObj(root, &rootResponse); err != nil {
 					return nil, 0, err
 				}
 				parentsMap[app.Spec.RootApp] = rootResponse

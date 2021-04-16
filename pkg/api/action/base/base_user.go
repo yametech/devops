@@ -5,16 +5,42 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/yametech/devops/pkg/api"
 	apiResource "github.com/yametech/devops/pkg/api/resource"
+	"io"
 	"net/http"
 	"strconv"
 )
+
+func (b *baseServer) WatchUser(g *gin.Context) {
+	version := g.DefaultQuery("version", "0")
+	objectChan, closed := b.UserService.Watch(version)
+
+	streamEndEvent := "STREAM_END"
+	g.Stream(func(w io.Writer) bool {
+		select {
+		case <-g.Writer.CloseNotify():
+			closed <- struct{}{}
+			close(closed)
+			g.SSEvent("", streamEndEvent)
+			return false
+		case object, ok := <-objectChan:
+			if !ok {
+				g.SSEvent("", streamEndEvent)
+				return false
+			}
+			g.SSEvent("", object)
+		}
+		return true
+	},
+	)
+
+}
 
 func (b *baseServer) ListUser(g *gin.Context) {
 	pageInt, _ := strconv.Atoi(g.DefaultQuery("page", "1"))
 	pageSizeInt, _ := strconv.Atoi(g.DefaultQuery("pagesize", "10"))
 	name := g.DefaultQuery("name", "")
 
-	results,  err := b.UserService.List(name, int64(pageInt), int64(pageSizeInt))
+	results, _, err := b.UserService.List(name, int64(pageInt), int64(pageSizeInt))
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return

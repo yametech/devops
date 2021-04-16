@@ -20,6 +20,11 @@ func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 	}
 	group := base.Group(fmt.Sprintf("/%s", serviceName))
 
+	// watch
+	{
+		group.GET("/userwatch", base.WatchUser)
+	}
+
 	//UserProjectService
 	{
 		group.GET("/users", base.ListUser)
