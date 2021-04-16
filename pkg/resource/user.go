@@ -2,7 +2,11 @@ package resource
 
 import (
 	"github.com/yametech/devops/pkg/core"
+	"github.com/yametech/devops/pkg/store"
+	"github.com/yametech/devops/pkg/store/gtm"
 )
+
+const UserKind core.Kind = "user"
 
 type UserSpec struct {
 	Password    string `json:"password" bson:"password"`
@@ -21,4 +25,17 @@ func (u *User) Clone() core.IObject {
 	result := &User{}
 	core.Clone(u, result)
 	return result
+}
+
+// User impl Coder
+func (*User) Decode(op *gtm.Op) (core.IObject, error) {
+	user := &User{}
+	if err := core.ObjectToResource(op.Data, user); err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func init() {
+	store.AddResourceCoder(string(UserKind), &User{})
 }
