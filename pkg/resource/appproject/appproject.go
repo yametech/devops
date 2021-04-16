@@ -1,4 +1,4 @@
-package resource
+package appproject
 
 import "github.com/yametech/devops/pkg/core"
 

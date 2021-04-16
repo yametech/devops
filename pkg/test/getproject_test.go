@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
-	"github.com/yametech/devops/pkg/resource"
+	"github.com/yametech/devops/pkg/resource/appproject"
 	"github.com/yametech/devops/pkg/store/mongo"
 	"io/ioutil"
 	"testing"
@@ -41,42 +41,42 @@ func TestGetAppProject(t *testing.T) {
 
 	store, _, _ := mongo.NewMongo("mongodb://127.0.0.1:27017/admin")
 	for _, data := range datas {
-		buinessLine := &resource.AppProject{
+		buinessLine := &appproject.AppProject{
 			Metadata: core.Metadata{
 				Name: data.Name,
 			},
-			Spec: resource.AppSpec{
+			Spec: appproject.AppSpec{
 				ParentApp: "",
 				RootApp:   "",
-				AppType:   resource.BusinessLine,
+				AppType:   appproject.BusinessLine,
 				Desc:      "",
 				Owner:     nil,
 			},
 		}
 		store.Create(common.DefaultNamespace, common.AppProject, buinessLine)
 		for _, services := range data.Children {
-			service := &resource.AppProject{
+			service := &appproject.AppProject{
 				Metadata: core.Metadata{
 					Name: services.Name,
 				},
-				Spec: resource.AppSpec{
+				Spec: appproject.AppSpec{
 					ParentApp: buinessLine.UUID,
 					RootApp:   buinessLine.UUID,
-					AppType:   resource.Service,
+					AppType:   appproject.Service,
 					Desc:      "",
 					Owner:     nil,
 				},
 			}
 			store.Create(common.DefaultNamespace, common.AppProject, service)
 			for _, apps := range services.Children {
-				app := &resource.AppProject{
+				app := &appproject.AppProject{
 					Metadata: core.Metadata{
 						Name: apps.Name,
 					},
-					Spec: resource.AppSpec{
+					Spec: appproject.AppSpec{
 						ParentApp: service.UUID,
 						RootApp:   service.Spec.RootApp,
-						AppType:   resource.App,
+						AppType:   appproject.App,
 						Desc:      apps.Desc,
 						Owner:     apps.Owner,
 					},
