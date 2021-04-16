@@ -29,16 +29,6 @@ func (s *Server) CreateAppProject(g *gin.Context) {
 	g.JSON(http.StatusOK, gin.H{"data": app})
 }
 
-func (s *Server) RetrieveAppProject(g *gin.Context) {
-	uuid := g.Param("uuid")
-	data, err := s.AppProjectService.GetByUUID(uuid)
-	if err != nil {
-		api.RequestParamsError(g, "error", err)
-		return
-	}
-	g.JSON(http.StatusOK, data)
-}
-
 func (s *Server) UpdateAppProject(g *gin.Context) {
 	uuid := g.Param("uuid")
 	var app resource.AppProject

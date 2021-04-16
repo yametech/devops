@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"fmt"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/store"
 	"github.com/yametech/devops/pkg/store/gtm"
@@ -91,7 +92,7 @@ func (m *Mongo) Close() error {
 	return m.client.Disconnect(ctx)
 }
 
-func (m *Mongo) List(namespace, resource, labels string, sort map[string]interface{}, skip, limit int64) ([]interface{}, int64, error) {
+func (m *Mongo) List(namespace, resource, labels string, sort map[string]interface{}, skip, limit int64) ([]interface{}, error) {
 	ctx := context.Background()
 	var filter = bson.D{{}}
 	if len(labels) > 0 {
@@ -104,24 +105,21 @@ func (m *Mongo) List(namespace, resource, labels string, sort map[string]interfa
 		Collection(resource).
 		Find(ctx, filter, findOptions)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	count, err := m.client.Database(namespace).Collection(resource).CountDocuments(ctx, filter, options.Count())
-	if err != nil {
-		return nil, 0, err
-	}
+
 	var _results []bson.M
 	if err := cursor.All(ctx, &_results); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	results := make([]interface{}, 0)
 	for index := range _results {
 		results = append(results, _results[index])
 	}
-	return results, count, nil
+	return results, nil
 }
 
-func (m *Mongo) ListByFilter(namespace, resource string, filter, sort map[string]interface{}, skip, limit int64) ([]interface{}, int64, error) {
+func (m *Mongo) ListByFilter(namespace, resource string, filter, sort map[string]interface{}, skip, limit int64) ([]interface{}, error) {
 	ctx := context.Background()
 	findOptions := options.Find()
 	findOptions.SetSkip(skip).SetLimit(limit).SetSort(sort)
@@ -130,21 +128,26 @@ func (m *Mongo) ListByFilter(namespace, resource string, filter, sort map[string
 		Collection(resource).
 		Find(ctx, map2filter(filter), findOptions)
 	if err != nil {
-		return nil, 0, err
-	}
-	count, err := m.client.Database(namespace).Collection(resource).CountDocuments(ctx, map2filter(filter), options.Count())
-	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	var _results []bson.M
 	if err := cursor.All(ctx, &_results); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	results := make([]interface{}, 0)
 	for index := range _results {
 		results = append(results, _results[index])
 	}
-	return results, count, nil
+	return results, nil
+}
+
+func (m *Mongo) Count(namespace, resource string, filter map[string]interface{}) (int64, error) {
+	ctx := context.Background()
+	count, err := m.client.Database(namespace).Collection(resource).CountDocuments(ctx, map2filter(filter), options.Count())
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (m *Mongo) GetByFilter(namespace, resource string, result interface{}, filter map[string]interface{}) error {
@@ -267,4 +270,39 @@ func (m *Mongo) Delete(namespace, resource, uuid string) error {
 		return err
 	}
 	return nil
+}
+
+func (m *Mongo) Watch2(namespace, resource string, resourceVersion int64, watch store.WatchInterface) {
+	ns := fmt.Sprintf("%s.%s", namespace, resource)
+	versionFilter := func(op *gtm.Op) bool {
+		return versionMatchFilter(op, resourceVersion)
+	}
+	ctx := gtm.Start(m.client,
+		&gtm.Options{
+			DirectReadNs:     []string{ns},
+			ChangeStreamNs:   []string{ns},
+			MaxAwaitTime:     10,
+			DirectReadFilter: versionFilter,
+		})
+
+	go func(watch store.WatchInterface) {
+		for {
+			select {
+			case err := <-ctx.ErrC:
+				watch.ErrorStop() <- err
+				return
+			case <-watch.CloseStop():
+				ctx.Stop()
+				return
+			case op, ok := <-ctx.OpC:
+				if !ok {
+					return
+				}
+				if err := watch.Handle(op); err != nil {
+					watch.ErrorStop() <- err
+					return
+				}
+			}
+		}
+	}(watch)
 }

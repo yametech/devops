@@ -1,6 +1,5 @@
 package common
 
-
 const (
 	DefaultNamespace = "devops"
 	User             = "user"

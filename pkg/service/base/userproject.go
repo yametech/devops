@@ -1,12 +1,12 @@
 package base
 
 import (
-	"encoding/json"
 	apiResource "github.com/yametech/devops/pkg/api/resource"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource"
 	"github.com/yametech/devops/pkg/service"
+	"github.com/yametech/devops/pkg/utils"
 )
 
 type UserProjectService struct {
@@ -22,8 +22,15 @@ func (u *UserProjectService) List(page, pageSize int64) ([]*apiResource.RespUser
 	sort := map[string]interface{}{
 		"metadata.version": -1,
 	}
-	unstructured, count, err := u.IService.List(common.DefaultNamespace, common.UserProject, "", sort, offset, pageSize)
+	unstructured, err := u.IService.List(common.DefaultNamespace, common.UserProject, "", sort, offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
 	userProject, err := u.Structer(unstructured)
+	if err != nil {
+		return nil, 0, err
+	}
+	count, err := u.IService.Count(common.DefaultNamespace, common.UserProject, map[string]interface{}{})
 	if err != nil {
 		return nil, 0, err
 	}
@@ -54,12 +61,9 @@ func (u *UserProjectService) Create(reqUserProject *apiResource.RequestUserProje
 func (u *UserProjectService) Structer(unstructured []interface{}) ([]*apiResource.RespUserProject, error) {
 	respUserProject := make([]*apiResource.RespUserProject, 0)
 	for _, project := range unstructured {
-		dataBytes, err := json.Marshal(project)
-		if err != nil {
-			return nil, err
-		}
 		userProject := apiResource.RespUserProject{}
-		err = json.Unmarshal(dataBytes, &userProject)
+		err := utils.UnstructuredObjectToInstanceObj(project, &userProject)
+
 		if err != nil {
 			return nil, err
 		}

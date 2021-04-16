@@ -1,6 +1,8 @@
 package resource
 
-import "github.com/yametech/devops/pkg/core"
+import (
+	"github.com/yametech/devops/pkg/core"
+)
 
 type AppType uint8
 
@@ -20,8 +22,7 @@ type AppSpec struct {
 
 type AppProject struct {
 	core.Metadata `json:"metadata"`
-	Spec          AppSpec       `json:"spec"`
-	Children      []*AppProject `json:"children"`
+	Spec          AppSpec `json:"spec"`
 }
 
 func (ap *AppProject) Clone() core.IObject {

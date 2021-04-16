@@ -6,11 +6,14 @@ import (
 	"time"
 )
 
+type Kind string
+
 type IObject interface {
 	GetUUID() string
 	GetKind() string
 	Delete()
 	GenerateVersion() IObject
+	GetResourceVersion() int64
 	Clone() IObject
 }
 
@@ -41,6 +44,10 @@ func (m *Metadata) GenerateVersion() IObject {
 		m.CreatedTime = time.Now().Unix()
 	}
 	return m
+}
+
+func (m *Metadata) GetResourceVersion() int64 {
+	return m.Version
 }
 
 func (m *Metadata) GetUUID() string {

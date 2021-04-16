@@ -18,6 +18,13 @@ func NewUser(i service.IService) *UserService {
 	return &UserService{i}
 }
 
+func (u *UserService) Watch(version string) (chan core.IObject, chan struct{}) {
+	objectChan := make(chan core.IObject, 32)
+	closed := make(chan struct{})
+	u.IService.Watch(common.DefaultNamespace, common.User, string(resource.UserKind), version, objectChan, closed)
+	return objectChan, closed
+}
+
 func (u *UserService) List(name string, page, pageSize int64) ([]interface{}, int64, error) {
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
@@ -28,7 +35,11 @@ func (u *UserService) List(name string, page, pageSize int64) ([]interface{}, in
 		"metadata.version": -1,
 	}
 
-	data, count, err := u.IService.ListByFilter(common.DefaultNamespace, common.User, filter, sort, offset, pageSize)
+	data, err := u.IService.ListByFilter(common.DefaultNamespace, common.User, filter, sort, offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	count, err := u.IService.Count(common.DefaultNamespace, common.User, filter)
 	if err != nil {
 		return nil, 0, err
 	}
