@@ -40,12 +40,12 @@ func (b *baseServer) ListUser(g *gin.Context) {
 	pageSizeInt, _ := strconv.Atoi(g.DefaultQuery("pagesize", "10"))
 	name := g.DefaultQuery("name", "")
 
-	results, count, err := b.UserService.List(name, int64(pageInt), int64(pageSizeInt))
+	results, _, err := b.UserService.List(name, int64(pageInt), int64(pageSizeInt))
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-	g.JSON(http.StatusOK, map[string]interface{}{"data": results, "count": count})
+	g.JSON(http.StatusOK, map[string]interface{}{"data": results})
 }
 
 func (b *baseServer) CreateUser(g *gin.Context) {
