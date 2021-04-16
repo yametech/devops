@@ -1,6 +1,7 @@
 package appservice
 
 import (
+	resource2 "github.com/yametech/devops/pkg/api/resource"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource"
@@ -18,7 +19,7 @@ func NewAppProjectService(i service.IService) *AppProjectService {
 	return &AppProjectService{i}
 }
 
-func (a *AppProjectService) List(search string) ([]*resource.AppProject, int64, error) {
+func (a *AppProjectService) List(search string) ([]*resource2.AppProjectResponse, int64, error) {
 	if search != "" {
 		return a.Search(search, 2)
 	}
@@ -28,8 +29,8 @@ func (a *AppProjectService) List(search string) ([]*resource.AppProject, int64, 
 	}
 
 	// Get the BusinessLine
-	businessLine := &resource.AppProject{}
-	if err := a.Children(businessLine, sort, 2); err != nil {
+	businessLine := &resource2.AppProjectResponse{}
+	if err := a.Children(businessLine, sort); err != nil {
 		return nil, 0, err
 	}
 
@@ -70,23 +71,26 @@ func (a *AppProjectService) Delete(uuid string) error {
 	return nil
 }
 
-func (a *AppProjectService) Children(req *resource.AppProject, sort map[string]interface{}, level int64) error {
+func (a *AppProjectService) Children(req *resource2.AppProjectResponse, sort map[string]interface{}) error {
 	filter := map[string]interface{}{
 		"spec.parent_app": req.UUID,
 	}
 
 	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, sort, 0, 0)
-	children := make([]*resource.AppProject, 0)
-	err = utils.Clone(data, &children)
-	if err != nil {
+	children := make([]*resource2.AppProjectResponse, 0)
+	if err = utils.Clone(data, &children); err != nil {
 		return err
 	}
-	if level > 0 {
-		for _, child := range children {
-			_child := child
-			if err = a.Children(_child, sort, level-1); err != nil{
-				return err
-			}
+
+	if req.Spec.AppType == resource.Service {
+		req.Children = children
+		return nil
+	}
+
+	for _, child := range children {
+		_child := child
+		if err = a.Children(_child, sort); err != nil {
+			return err
 		}
 	}
 
@@ -94,9 +98,9 @@ func (a *AppProjectService) Children(req *resource.AppProject, sort map[string]i
 	return nil
 }
 
-func (a *AppProjectService) Search(search string, level int64) ([]*resource.AppProject, int64, error) {
-	parentsMap := make(map[string]*resource.AppProject, 0)
-	parents := make([]*resource.AppProject, 0)
+func (a *AppProjectService) Search(search string, level int64) ([]*resource2.AppProjectResponse, int64, error) {
+	parentsMap := make(map[string]*resource2.AppProjectResponse, 0)
+	parents := make([]*resource2.AppProjectResponse, 0)
 	filter := make(map[string]interface{}, 0)
 	if search != "" {
 		filter["metadata.name"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}}
@@ -114,15 +118,14 @@ func (a *AppProjectService) Search(search string, level int64) ([]*resource.AppP
 			continue
 		}
 
-		// To []*resource.AppProject
-		data := make([]*resource.AppProject, 0)
+		data := make([]*resource2.AppProjectResponse, 0)
 		if err = utils.Clone(apps, &data); err != nil {
 			return nil, 0, err
 		}
 
 		// Get Root app
 		for _, app := range data {
-			if app.Spec.RootApp == "" {
+			if app.Spec.ParentApp == "" {
 				if _, ok := parentsMap[app.Metadata.UUID]; !ok {
 					parents = append(parents, app)
 				}
@@ -134,8 +137,12 @@ func (a *AppProjectService) Search(search string, level int64) ([]*resource.AppP
 					continue
 				}
 
-				parentsMap[app.Spec.RootApp] = root
-				parents = append(parents, root)
+				rootResponse := &resource2.AppProjectResponse{}
+				if err = utils.Clone(root, &rootResponse); err != nil {
+					return nil, 0, err
+				}
+				parentsMap[app.Spec.RootApp] = rootResponse
+				parents = append(parents, rootResponse)
 			}
 		}
 	}
@@ -143,7 +150,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*resource.AppP
 	// Get the children of BusinessLine
 	for _, child := range parents {
 		_child := child
-		if err := a.Children(_child, sort, 1); err != nil {
+		if err := a.Children(_child, sort); err != nil {
 			return nil, 0, err
 		}
 	}
