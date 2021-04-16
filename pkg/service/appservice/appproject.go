@@ -78,7 +78,7 @@ func (a *AppProjectService) Children(req *resource2.AppProjectResponse, sort map
 
 	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, sort, 0, 0)
 	children := make([]*resource2.AppProjectResponse, 0)
-	if err = utils.Clone(data, &children); err != nil {
+	if err = utils.UnstructuredObjectToInstanceObj(data, &children); err != nil {
 		return err
 	}
 
@@ -119,7 +119,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*resource2.App
 		}
 
 		data := make([]*resource2.AppProjectResponse, 0)
-		if err = utils.Clone(apps, &data); err != nil {
+		if err = utils.UnstructuredObjectToInstanceObj(apps, &data); err != nil {
 			return nil, 0, err
 		}
 
@@ -138,7 +138,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*resource2.App
 				}
 
 				rootResponse := &resource2.AppProjectResponse{}
-				if err = utils.Clone(root, &rootResponse); err != nil {
+				if err = utils.UnstructuredObjectToInstanceObj(root, &rootResponse); err != nil {
 					return nil, 0, err
 				}
 				parentsMap[app.Spec.RootApp] = rootResponse
