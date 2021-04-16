@@ -138,7 +138,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*resource2.App
 				}
 
 				rootResponse := &resource2.AppProjectResponse{}
-				if err = utils.Clone(root, &rootResponse); err != nil{
+				if err = utils.Clone(root, &rootResponse); err != nil {
 					return nil, 0, err
 				}
 				parentsMap[app.Spec.RootApp] = rootResponse
