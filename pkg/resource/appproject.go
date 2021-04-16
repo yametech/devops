@@ -21,7 +21,6 @@ type AppSpec struct {
 type AppProject struct {
 	core.Metadata `json:"metadata"`
 	Spec          AppSpec       `json:"spec"`
-	Children      []*AppProject `json:"children"`
 }
 
 func (ap *AppProject) Clone() core.IObject {
