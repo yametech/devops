@@ -1,4 +1,4 @@
-package main
+package controller
 
 import (
 	"encoding/json"
@@ -8,9 +8,13 @@ import (
 	"github.com/yametech/devops/pkg/store"
 	"io/ioutil"
 	"net/http"
+	"reflect"
+	"time"
 )
 
 var Version int
+
+var _ Controller = &WatchFlowRun{}
 
 type FlowRun struct {
 	Metadata struct {
@@ -72,62 +76,58 @@ type WatchFlowRun struct {
 	store.IKVStore
 }
 
+func NewWatchFlowRun(ikvStore store.IKVStore) *WatchFlowRun {
+	server := &WatchFlowRun{
+		ikvStore,
+	}
+	return server
+}
+
 func (w WatchFlowRun) Run() error {
-	panic("implement me")
+	fmt.Println(fmt.Sprintf("[Controller]%v start --> %v", reflect.TypeOf(w), time.Now()))
+	errC := make(chan error)
+	w.FirstConnect(errC)
+	w.ArtifactConnect(errC)
+	return <-errC
 }
 
-func (w WatchFlowRun) Stop() error {
-	panic("implement me")
-}
-
-//var _ Controller = &WatchFlowRun{}
-
-func (w WatchFlowRun) firstConnect() error {
-	resp, err := http.Get(fmt.Sprintf("%s/flowrun/flow_cd_1618485843706", common.EchoerUrl))
+func (w WatchFlowRun) FirstConnect(errC chan<- error) {
+	resp, err := http.Get(fmt.Sprintf("%s/flowrun/", common.EchoerUrl))
 	if err != nil {
-		return err
+		errC <- err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		errC <- err
 	}
-	var uBody FlowRun
+	var uBody []FlowRun
 	//fmt.Println(string(body))
 	if err := json.Unmarshal(body, &uBody); err != nil {
-		return err
+		errC <- err
 	}
-	fmt.Printf("%v", uBody.Metadata)
-	Version = uBody.Metadata.Version - 100
-	_ = Version
-	return nil
+	fmt.Println(uBody)
+	Version = uBody[0].Metadata.Version - 100
 }
 
-func (w WatchFlowRun) ArtifactConnect() error {
+func (w WatchFlowRun) ArtifactConnect(errC chan<- error) {
 	client := sse.NewClient(fmt.Sprintf("%s/watch?resource=flowrun?version=%d", common.EchoerUrl, Version))
-	fmt.Printf("%s/watch?resource=flowrun?version=%d", common.EchoerUrl, Version)
 	err := client.SubscribeRaw(func(msg *sse.Event) {
 		var a FlowRun
 		err := json.Unmarshal(msg.Data, &a)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Error When ArtifactConnect Unmarshal:", err)
+			errC <- err
 		}
 		fmt.Printf("%v\n", a.Metadata)
 		//b, _ := strconv.Atoi(a["metadata"]["version"])
 		//fmt.Println(b)
 	})
 	if err != nil {
-		return err
+		errC <- err
 	}
-	return nil
 }
 
-func main() {
-	var a WatchFlowRun
-	if err := a.firstConnect(); err != nil {
-		panic(err)
-	}
-	if err := a.ArtifactConnect(); err != nil {
-		panic(err)
-	}
+func HandleFlowrun() {
+
 }

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/yametech/devops/pkg/api"
 	"github.com/yametech/devops/pkg/api/action/artifactory"
+	"github.com/yametech/devops/pkg/controller"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/store/mongo"
 )
@@ -21,13 +22,20 @@ func main() {
 
 	baseService := service.NewBaseService(store)
 	server := api.NewServer(baseService)
+	//new artifactoryserver
 	artifactory.NewArtifactoryServer("artifactory", server)
-	//_, _ = errC, server
-
+	//run artifactoryserver
 	go func() {
 		if err := server.Run("127.0.0.1:8080"); err != nil {
 			errC <- err
 		}
+	}()
+
+	go func() {
+		if err := controller.NewWatchFlowRun(baseService).Run(); err != nil {
+			errC <- err
+		}
+
 	}()
 
 	if e := <-errC; e != nil {
