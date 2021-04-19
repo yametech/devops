@@ -6,4 +6,5 @@ const (
 	UserProject      = "userproject"
 	EchoerUrl        = "http://10.200.65.192:8080"
 	AppProject       = "appProject"
+	AppConfig        = "appconfig"
 )
