@@ -10,6 +10,7 @@ const (
 	Created ArtifactStatus = iota
 	Building
 	Built
+	BuiltFAIL
 )
 
 type ArtifactSpec struct {

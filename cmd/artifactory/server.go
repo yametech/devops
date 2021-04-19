@@ -12,7 +12,7 @@ import (
 var storageUri string
 
 func main() {
-	flag.StringVar(&storageUri, "storage_uri", "mongodb://106.13.211.154:27017/devops", "127.0.0.1:3306")
+	flag.StringVar(&storageUri, "storage_uri", "mongodb://127.0.0.1:27017/devops", "127.0.0.1:3306")
 	flag.Parse()
 
 	store, err, errC := mongo.NewMongo(storageUri)
@@ -35,7 +35,6 @@ func main() {
 		if err := controller.NewWatchFlowRun(baseService).Run(); err != nil {
 			errC <- err
 		}
-
 	}()
 
 	if e := <-errC; e != nil {

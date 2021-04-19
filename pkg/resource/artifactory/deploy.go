@@ -10,6 +10,7 @@ const (
 	NotDeployed DeployStatus = iota
 	Deploying
 	Deployed
+	DeployFail
 )
 
 type VolumeMountType uint8
