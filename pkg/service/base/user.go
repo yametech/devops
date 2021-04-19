@@ -44,7 +44,6 @@ func (u *UserService) List(name string, page, pageSize int64) ([]interface{}, in
 		return nil, 0, err
 	}
 	return data, count, nil
-
 }
 
 func (u *UserService) Create(reqUser *apiResource.RequestUser) error {
