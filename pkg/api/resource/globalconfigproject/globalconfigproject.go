@@ -1,4 +1,4 @@
-package resource
+package globalconfigproject
 
 import (
 	"github.com/yametech/devops/pkg/resource/globalconfig"

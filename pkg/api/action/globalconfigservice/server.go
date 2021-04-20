@@ -1,4 +1,4 @@
-package allconfigservice
+package globalconfigservice
 
 import (
 	"fmt"

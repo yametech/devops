@@ -1,10 +1,10 @@
-package allconfigservice
+package globalconfigservice
 
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/yametech/devops/pkg/api"
-	apiResource "github.com/yametech/devops/pkg/api/resource"
+	"github.com/yametech/devops/pkg/api/resource/globalconfigproject"
 	"net/http"
 )
 
@@ -25,7 +25,7 @@ func (s *Server) CreateGlobalConfig(g *gin.Context) {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-	request := &apiResource.RequestGlobalConfig{}
+	request := &globalconfigproject.RequestGlobalConfig{}
 	if err := json.Unmarshal(rawData, &request); err != nil {
 		api.RequestParamsError(g, "unmarshal json error", err)
 		return
@@ -45,7 +45,7 @@ func (s *Server) UpdateGlobalConfig(g *gin.Context) {
 		api.RequestParamsError(g, "get rawData error", err)
 		return
 	}
-	request := &apiResource.RequestGlobalConfig{}
+	request := &globalconfigproject.RequestGlobalConfig{}
 	if err := json.Unmarshal(rawData, &request); err != nil {
 		api.RequestParamsError(g, "unmarshal json error", err)
 		return

@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/yametech/devops/pkg/api"
-	"github.com/yametech/devops/pkg/api/action/allconfigservice"
+	"github.com/yametech/devops/pkg/api/action/globalconfigservice"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/store/mongo"
 )
@@ -23,7 +23,7 @@ func main() {
 	baseService := service.NewBaseService(store)
 	server := api.NewServer(baseService)
 
-	allconfigservice.NewAllServiceServer("globalconfig", server)
+	globalconfigservice.NewAllServiceServer("globalconfig", server)
 
 	go func() {
 		if err := server.Run(":8080"); err != nil {

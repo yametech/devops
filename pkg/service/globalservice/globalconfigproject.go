@@ -1,7 +1,7 @@
 package globalservice
 
 import (
-	apiresources "github.com/yametech/devops/pkg/api/resource"
+	"github.com/yametech/devops/pkg/api/resource/globalconfigproject"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/globalconfig"
@@ -31,7 +31,7 @@ func (a *AllConfigService) GetByUUID(name string, uuid string) (interface{}, err
 	return allies, nil
 }
 
-func (a *AllConfigService) Create(reqAll *apiresources.RequestGlobalConfig) error {
+func (a *AllConfigService) Create(reqAll *globalconfigproject.RequestGlobalConfig) error {
 	autoconfigure := &globalconfig.GlobalConfig{
 		Metadata: core.Metadata{
 			Name: reqAll.Name,
@@ -46,7 +46,7 @@ func (a *AllConfigService) Create(reqAll *apiresources.RequestGlobalConfig) erro
 	return err
 }
 
-func (a *AllConfigService) Update(uuid string, reqAll *apiresources.RequestGlobalConfig) (core.IObject, bool, error) {
+func (a *AllConfigService) Update(uuid string, reqAll *globalconfigproject.RequestGlobalConfig) (core.IObject, bool, error) {
 	autoconfigure := &globalconfig.GlobalConfig{
 		Metadata: core.Metadata{
 			Name: reqAll.Name,
