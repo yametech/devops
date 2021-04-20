@@ -1,58 +1,59 @@
 package allconfigservice
 
 import (
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/yametech/devops/pkg/api"
-	"github.com/yametech/devops/pkg/resource"
+	apiResource "github.com/yametech/devops/pkg/api/resource"
 	"net/http"
 )
 
-func (s *Server) ListAllConfigProject(g *gin.Context) {
-	search := g.Query("search")
-	uuid := g.Query("uuid")
-	count, name, data, err := s.AllConfigService.List(search, uuid)
+func (s *Server) ListGlobalConfig(g *gin.Context) {
+	search := g.DefaultQuery("search", "")
+	uuid := g.DefaultQuery("uuid", "")
+	res, err := s.AllConfigService.GetByUUID(search, uuid)
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-	g.JSON(http.StatusOK, gin.H{"count": count, "name": name, "content": data})
+	g.JSON(http.StatusOK, gin.H{"data": res})
 }
 
-func (s *Server) CreateAllConfigProject(g *gin.Context) {
-	var build resource.AllConfigProject
-	uuid, err := s.AllConfigService.Create(&build)
+func (s *Server) CreateGlobalConfig(g *gin.Context) {
+	rawData, err := g.GetRawData()
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
+		return
 	}
-	g.JSON(http.StatusOK, gin.H{"uuid": uuid})
+	request := &apiResource.RequestGlobalConfig{}
+	if err := json.Unmarshal(rawData, &request); err != nil {
+		api.RequestParamsError(g, "unmarshal json error", err)
+		return
+	}
+	err = s.AllConfigService.Create(request)
+	if err != nil {
+		api.RequestParamsError(g, "creat allConfig error", err)
+		return
+	}
+	g.JSON(http.StatusOK, request)
 }
 
-func (s *Server) UpdateAllConfigProject(g *gin.Context) {
+func (s *Server) UpdateGlobalConfig(g *gin.Context) {
 	uuid := g.Param("uuid")
-	name := g.PostForm("name")
-	value := g.PostForm("value")
-	var build resource.AllConfigProject
-	if err := g.ShouldBind(&build); err != nil {
-		api.RequestParamsError(g, "error", err)
-	}
-
-	data, update, err := s.AllConfigService.Update(name, uuid, value, &build)
+	rawData, err := g.GetRawData()
 	if err != nil {
-		api.RequestParamsError(g, "error", err)
+		api.RequestParamsError(g, "get rawData error", err)
+		return
 	}
-	g.JSON(http.StatusOK, gin.H{"data": data, "update": update})
-}
-
-func (s *Server) DeleteAllConfigProject(g *gin.Context) {
-	uuid := g.Param("uuid")
-	name := g.PostForm("name")
-	//var build resource.AllConfigProject
-	//if err:=g.ShouldBind(&build);err!=nil {
-	//	api.RequestParamsError(g,"error",err)
-	//}
-	err := s.AllConfigService.Delete(uuid, name)
+	request := &apiResource.RequestGlobalConfig{}
+	if err := json.Unmarshal(rawData, &request); err != nil {
+		api.RequestParamsError(g, "unmarshal json error", err)
+		return
+	}
+	data, _, err := s.AllConfigService.Update(uuid, request)
 	if err != nil {
-		api.RequestParamsError(g, "error", err)
+		api.RequestParamsError(g, "update fail", err)
+		return
 	}
-	g.JSON(http.StatusOK, gin.H{"delete": true})
+	g.JSON(http.StatusOK, gin.H{"data": data})
 }

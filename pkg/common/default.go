@@ -5,5 +5,5 @@ const (
 	User             = "user"
 	UserProject      = "userproject"
 	AppProject       = "appproject"
-	AllconfigProject = "AllconfigProject"
+	GlobalConfig     = "globalconfig"
 )
