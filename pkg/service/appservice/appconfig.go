@@ -19,7 +19,6 @@ func NewAppConfigService(i service.IService) *AppConfigService {
 func (a *AppConfigService) GetByFilter(req *appproject.AppConfig) error {
 	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppConfig, req, map[string]interface{}{
 		"spec.app": req.Spec.App,
-		"spec.config_type": req.Spec.ConfigType,
 	}); err != nil {
 		return err
 	}
@@ -40,12 +39,10 @@ func (a *AppConfigService) Update(req *appproject.AppConfig) (core.IObject, bool
 	dbObj := &appproject.AppConfig{}
 	a.IService.GetByFilter(common.DefaultNamespace, common.AppConfig, dbObj, map[string]interface{}{
 		"spec.app": app.Metadata.UUID,
-		"spec.config_type": req.Spec.ConfigType,
 	})
 
 	dbObj.Spec.Config = req.Spec.Config
 	dbObj.Spec.App = app.Metadata.UUID
-	dbObj.Spec.ConfigType = req.Spec.ConfigType
 
 	dbObj.GenerateVersion()
 	return a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj)

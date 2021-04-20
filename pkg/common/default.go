@@ -6,4 +6,5 @@ const (
 	UserProject      = "userproject"
 	AppProject       = "appproject"
 	AppConfig        = "appconfig"
+	WorkOrder        = "workorder"
 )

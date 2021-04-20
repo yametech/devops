@@ -6,6 +6,7 @@ import (
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/appproject"
+	"github.com/yametech/devops/pkg/resource/workorder"
 	"github.com/yametech/devops/pkg/store/mongo"
 	"io/ioutil"
 	"testing"
@@ -90,4 +91,6 @@ func TestGetAppProject(t *testing.T) {
 }
 
 func TestGetData(t *testing.T) {
+	w := &workorder.WorkOrder{}
+	w.GenerateNumber()
 }

@@ -11,7 +11,7 @@ import (
 var storageUri, user, pw, database string
 
 func main() {
-	flag.StringVar(&storageUri, "storage_uri", "127.0.0.1:3306", "127.0.0.1:3306")
+	flag.StringVar(&storageUri, "storage_uri", "mongodb://127.0.0.1:27017/admin", "127.0.0.1:3306")
 	flag.StringVar(&user, "base", "root", "-base root")
 	flag.StringVar(&pw, "pw", "123456", "-pw 123456")
 	flag.StringVar(&database, "database", "ccmose", "-database ccmose")

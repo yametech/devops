@@ -8,3 +8,7 @@ import (
 func (w *WorkOrder) ListWorkOrder(g *gin.Context) {
 	g.JSON(http.StatusOK, "")
 }
+
+func (w *WorkOrder) CreateWorkOrder(g *gin.Context){
+
+}

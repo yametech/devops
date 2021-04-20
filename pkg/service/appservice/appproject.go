@@ -20,7 +20,7 @@ func NewAppProjectService(i service.IService) *AppProjectService {
 	return &AppProjectService{i}
 }
 
-func (a *AppProjectService) List(search string) ([]*apiResource.AppProjectResponse, int64, error) {
+func (a *AppProjectService) List(search string) ([]*apiResource.AppProjectResponse, error) {
 	if search != "" {
 		return a.Search(search, 2)
 	}
@@ -32,10 +32,10 @@ func (a *AppProjectService) List(search string) ([]*apiResource.AppProjectRespon
 	// Get the BusinessLine
 	businessLine := &apiResource.AppProjectResponse{}
 	if err := a.Children(businessLine, sort); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
-	return businessLine.Children, int64(len(businessLine.Children)), nil
+	return businessLine.Children, nil
 }
 
 func (a *AppProjectService) Create(req *appproject.AppProject) error {
@@ -138,7 +138,7 @@ func (a *AppProjectService) Children(req *apiResource.AppProjectResponse, sort m
 	return nil
 }
 
-func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.AppProjectResponse, int64, error) {
+func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.AppProjectResponse, error) {
 	parentsMap := make(map[string]*apiResource.AppProjectResponse, 0)
 	parents := make([]*apiResource.AppProjectResponse, 0)
 	filter := make(map[string]interface{}, 0)
@@ -160,7 +160,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.A
 
 		data := make([]*apiResource.AppProjectResponse, 0)
 		if err = utils.UnstructuredObjectToInstanceObj(apps, &data); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 
 		// Get Root app
@@ -179,7 +179,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.A
 
 				rootResponse := &apiResource.AppProjectResponse{}
 				if err = utils.UnstructuredObjectToInstanceObj(root, &rootResponse); err != nil {
-					return nil, 0, err
+					return nil, err
 				}
 				parentsMap[app.Spec.RootApp] = rootResponse
 				parents = append(parents, rootResponse)
@@ -191,8 +191,8 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.A
 	for _, child := range parents {
 		_child := child
 		if err := a.Children(_child, sort); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
-	return parents, int64(len(parents)), nil
+	return parents, nil
 }
