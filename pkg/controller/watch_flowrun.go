@@ -14,8 +14,6 @@ import (
 	"time"
 )
 
-var Version int64
-
 var _ Controller = &WatchFlowRun{}
 
 type FlowRun struct {
@@ -85,7 +83,7 @@ func NewWatchFlowRun(ikvStore store.IKVStore) *WatchFlowRun {
 	return server
 }
 
-func (w WatchFlowRun) Run() error {
+func (w *WatchFlowRun) Run() error {
 	fmt.Println(fmt.Sprintf("[Controller]%v start --> %v", reflect.TypeOf(w), time.Now()))
 	errC := make(chan error)
 	go w.GetOldVersion(errC)
@@ -93,13 +91,14 @@ func (w WatchFlowRun) Run() error {
 	return <-errC
 }
 
-func (w WatchFlowRun) GetOldVersion(errC chan<- error) {
+func (w *WatchFlowRun) GetOldVersion(errC chan<- error) {
 	fmt.Printf("[Controller]%v begin func GetOldVersion.\n", reflect.TypeOf(w))
 	resp, err := http.Get(fmt.Sprintf("%s/flowrun/", common.EchoerUrl))
 	if err != nil {
 		errC <- err
 	}
 	if resp == nil {
+		fmt.Printf("[Controller]%v GetOldVersion res was empty.\n", reflect.TypeOf(w))
 		return
 	}
 	defer resp.Body.Close()
@@ -122,14 +121,15 @@ func (w WatchFlowRun) GetOldVersion(errC chan<- error) {
 	}
 }
 
-func (w WatchFlowRun) ArtifactConnect(errC chan<- error) {
-	Version = time.Now().Unix()
+func (w *WatchFlowRun) ArtifactConnect(errC chan<- error) {
+	Version := time.Now().Unix()
 	url := fmt.Sprintf("%s/watch?resource=flowrun?version=%d", common.EchoerUrl, Version)
 	fmt.Printf("[Controller]%v begin func ArtifactConnect and url: %s.\n", reflect.TypeOf(w), url)
 	client := sse.NewClient(url)
 	err := client.SubscribeRaw(func(msg *sse.Event) {
 		var a FlowRun
 		err := json.Unmarshal(msg.Data, &a)
+		//err = errors.New("new error")
 		if err != nil {
 			fmt.Println("Error When ArtifactConnect Unmarshal:", err)
 			errC <- err
@@ -144,14 +144,15 @@ func (w WatchFlowRun) ArtifactConnect(errC chan<- error) {
 	}
 }
 
-func (w WatchFlowRun) HandleFlowrun(run FlowRun) {
+func (w *WatchFlowRun) HandleFlowrun(run FlowRun) {
 	flowRunName := run.Metadata.Name
-	fmt.Printf("[Controller]%v get flowRun %s \n", reflect.TypeOf(w), run.Metadata.Name)
+	fmt.Printf("[Controller]%v HandleFlowrun get flowRun %s \n", reflect.TypeOf(w), run.Metadata.Name)
 	//Determine the type of split
 	switch {
 	case strings.Contains(flowRunName, "_"):
 		keyValue := strings.Split(flowRunName, "_")
 		if len(keyValue) != 2 || keyValue[0] != common.DefaultNamespace {
+			fmt.Printf("[Controller]%v HandleFlowrun result of split isn't two or not belongs to devops %s \n", reflect.TypeOf(w), run.Metadata.Name)
 			return
 		}
 		for _, flowStep := range run.Spec.Steps {

@@ -18,9 +18,11 @@ func NewArtifactoryServer(serviceName string, server *api.Server) *artifactorySe
 
 	//ArtifactoryServer
 	{
-		group.GET("/", func(c *gin.Context) {
+		group.GET("/:name", func(c *gin.Context) {
+			name := c.Param("name")
+			message := fmt.Sprintf("hello world %s ", name)
 			c.JSON(200, gin.H{
-				"message": "hello world",
+				"message": message,
 				"code":    200,
 			})
 		})
