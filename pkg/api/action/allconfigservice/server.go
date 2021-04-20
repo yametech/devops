@@ -3,7 +3,7 @@ package allconfigservice
 import (
 	"fmt"
 	"github.com/yametech/devops/pkg/api"
-	allConfigService "github.com/yametech/devops/pkg/service/allconfigservice"
+	allConfigService "github.com/yametech/devops/pkg/service/globalservice"
 )
 
 type Server struct {
@@ -20,10 +20,9 @@ func NewAllServiceServer(serviceName string, server *api.Server) *Server {
 
 	//allConfigProject
 	{
-		group.GET("/allConfig-project", allServer.ListAllConfigProject)
-		group.POST("/allConfig-project", allServer.CreateAllConfigProject)
-		group.PUT("/allConfig-project/:uuid", allServer.UpdateAllConfigProject)
-		group.DELETE("/allConfig-project/:uuid", allServer.DeleteAllConfigProject)
+		group.GET("/allConfig-project", allServer.ListGlobalConfig)
+		group.POST("/allConfig-project", allServer.CreateGlobalConfig)
+		group.PUT("/allConfig-project/:uuid", allServer.UpdateGlobalConfig)
 	}
 	return allServer
 }
