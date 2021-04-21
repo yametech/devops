@@ -206,7 +206,7 @@ func (m *Mongo) Create(namespace, resource string, object core.IObject) (core.IO
 	return object, nil
 }
 
-func (m *Mongo) Apply(namespace, resource, uuid string, object core.IObject) (core.IObject, bool, error) {
+func (m *Mongo) Apply(namespace, resource, uuid string, object core.IObject, forceApply bool) (core.IObject, bool, error) {
 	var query = bson.M{metadataUUID: uuid}
 
 	ctx := context.Background()
@@ -235,7 +235,7 @@ func (m *Mongo) Apply(namespace, resource, uuid string, object core.IObject) (co
 		return nil, false, err
 	}
 
-	if reflect.DeepEqual(oldMap["spec"], objectMap["spec"]) {
+	if reflect.DeepEqual(oldMap["spec"], objectMap["spec"]) && forceApply != true {
 		return old, false, nil
 	}
 
