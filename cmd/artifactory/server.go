@@ -23,10 +23,10 @@ func main() {
 	baseService := service.NewBaseService(store)
 	server := api.NewServer(baseService)
 	//new artifactoryserver
-	artifactory.NewArtifactoryServer("artifactory", server)
+	artifactory.NewArBaseServer("artifactory", server)
 	//run artifactoryserver
 	go func() {
-		if err := server.Run("127.0.0.1:8080"); err != nil {
+		if err := server.Run("8080"); err != nil {
 			errC <- err
 		}
 	}()
