@@ -28,8 +28,15 @@ func (u *UserService) Watch(version string) (chan core.IObject, chan struct{}) {
 func (u *UserService) List(name string, page, pageSize int64) ([]interface{}, int64, error) {
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
-	if name != "" {
-		filter["metadata.name"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + name + ".*", Options: "i"}}
+
+	filter["$or"] = []map[string]interface{}{
+		{ // 如果需要与查询的内容就写一起，只有与查询的情况就不需要用or包裹
+			"metadata.name":      bson.M{"$regex": primitive.Regex{Pattern: ".*" + name + ".*", Options: "i"}},
+			"metadata.is_delete": false,
+		},
+		{
+			"metadata.uuid": "RpQH4Orfi9svauYFNZ1",
+		},
 	}
 	sort := map[string]interface{}{
 		"metadata.version": -1,
@@ -89,7 +96,7 @@ func (u *UserService) Update(uuid string, reqUser *apiResource.RequestUser) (cor
 		},
 	}
 	user.GenerateVersion()
-	return u.IService.Apply(common.DefaultNamespace, common.User, uuid, user)
+	return u.IService.Apply(common.DefaultNamespace, common.User, uuid, user,false)
 }
 
 func (u *UserService) Delete(uuid string) error {
