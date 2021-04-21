@@ -30,8 +30,8 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 
 	// AppConfig
 	{
-		group.POST("/app-config", cfaServer.GetAppConfig)
-		group.PUT("/app-config", cfaServer.UpdateAppConfig)
+		group.GET("/app-config/:uuid", cfaServer.GetAppConfig)
+		group.POST("/app-config", cfaServer.UpdateAppConfig)
 	}
 
 	return cfaServer

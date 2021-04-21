@@ -31,7 +31,7 @@ func main() {
 	workorder.NewWorkOrder("workorder", server)
 
 	go func() {
-		if err := server.Run(":8080"); err != nil {
+		if err := server.Run(":8081"); err != nil {
 			errC <- err
 		}
 	}()

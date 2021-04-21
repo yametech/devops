@@ -12,7 +12,7 @@ func RequestParamsError(g *gin.Context, message string, err error) {
 
 
 func ResponseError(g *gin.Context, err error) {
-	g.JSON(http.StatusBadRequest, gin.H{"msg": err.Error(), "code": http.StatusBadRequest, "data": nil})
+	g.JSON(http.StatusOK, gin.H{"msg": err.Error(), "code": http.StatusBadRequest, "data": nil})
 	g.Abort()
 }
 

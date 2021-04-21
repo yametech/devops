@@ -91,6 +91,10 @@ func TestGetAppProject(t *testing.T) {
 }
 
 func TestGetData(t *testing.T) {
-	w := &workorder.WorkOrder{}
+	w := &workorder.WorkOrder{
+		Spec: workorder.Spec{
+			OrderType: 0,
+		},
+	}
 	w.GenerateNumber()
 }
