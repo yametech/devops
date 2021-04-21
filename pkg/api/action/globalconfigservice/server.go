@@ -8,10 +8,10 @@ import (
 
 type Server struct {
 	*api.Server
-	*allConfigService.AllConfigService
+	*allConfigService.GlobalConfigService
 }
 
-func NewAllServiceServer(serviceName string, server *api.Server) *Server {
+func NewGlobalServiceServer(serviceName string, server *api.Server) *Server {
 	allServer := &Server{
 		server,
 		allConfigService.NewAllConfigService(server.IService),

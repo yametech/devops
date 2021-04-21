@@ -23,7 +23,7 @@ func main() {
 	baseService := service.NewBaseService(store)
 	server := api.NewServer(baseService)
 
-	globalconfigservice.NewAllServiceServer("globalconfig", server)
+	globalconfigservice.NewGlobalServiceServer("globalconfig", server)
 
 	go func() {
 		if err := server.Run(":8080"); err != nil {

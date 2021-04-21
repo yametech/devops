@@ -11,7 +11,7 @@ import (
 func (s *Server) ListGlobalConfig(g *gin.Context) {
 	search := g.DefaultQuery("search", "")
 	uuid := g.DefaultQuery("uuid", "")
-	res, err := s.AllConfigService.GetByUUID(search, uuid)
+	res, err := s.GlobalConfigService.GetByUUID(search, uuid)
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
@@ -30,7 +30,7 @@ func (s *Server) CreateGlobalConfig(g *gin.Context) {
 		api.RequestParamsError(g, "unmarshal json error", err)
 		return
 	}
-	err = s.AllConfigService.Create(request)
+	err = s.GlobalConfigService.Create(request)
 	if err != nil {
 		api.RequestParamsError(g, "creat allConfig error", err)
 		return
@@ -50,7 +50,7 @@ func (s *Server) UpdateGlobalConfig(g *gin.Context) {
 		api.RequestParamsError(g, "unmarshal json error", err)
 		return
 	}
-	data, _, err := s.AllConfigService.Update(uuid, request)
+	data, _, err := s.GlobalConfigService.Update(uuid, request)
 	if err != nil {
 		api.RequestParamsError(g, "update fail", err)
 		return

@@ -8,15 +8,15 @@ import (
 	"github.com/yametech/devops/pkg/service"
 )
 
-type AllConfigService struct {
+type GlobalConfigService struct {
 	service.IService
 }
 
-func NewAllConfigService(i service.IService) *AllConfigService {
-	return &AllConfigService{i}
+func NewAllConfigService(i service.IService) *GlobalConfigService {
+	return &GlobalConfigService{i}
 }
 
-func (a *AllConfigService) GetByUUID(name string, uuid string) (interface{}, error) {
+func (a *GlobalConfigService) GetByUUID(name string, uuid string) (interface{}, error) {
 	allies := &globalconfig.GlobalConfig{}
 	if uuid != "" {
 		if err := a.IService.GetByUUID(common.DefaultNamespace, common.GlobalConfig, uuid, allies); err != nil {
@@ -31,7 +31,7 @@ func (a *AllConfigService) GetByUUID(name string, uuid string) (interface{}, err
 	return allies, nil
 }
 
-func (a *AllConfigService) Create(reqAll *globalconfigproject.RequestGlobalConfig) error {
+func (a *GlobalConfigService) Create(reqAll *globalconfigproject.RequestGlobalConfig) error {
 	autoconfigure := &globalconfig.GlobalConfig{
 		Metadata: core.Metadata{
 			Name: reqAll.Name,
@@ -46,7 +46,7 @@ func (a *AllConfigService) Create(reqAll *globalconfigproject.RequestGlobalConfi
 	return err
 }
 
-func (a *AllConfigService) Update(uuid string, reqAll *globalconfigproject.RequestGlobalConfig) (core.IObject, bool, error) {
+func (a *GlobalConfigService) Update(uuid string, reqAll *globalconfigproject.RequestGlobalConfig) (core.IObject, bool, error) {
 	autoconfigure := &globalconfig.GlobalConfig{
 		Metadata: core.Metadata{
 			Name: reqAll.Name,
