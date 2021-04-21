@@ -16,62 +16,6 @@ import (
 
 var _ Controller = &WatchFlowRun{}
 
-type FlowRun struct {
-	Metadata struct {
-		Name    string      `json:"name"`
-		Kind    string      `json:"kind"`
-		Version int         `json:"version"`
-		UUID    string      `json:"uuid"`
-		Labels  interface{} `json:"labels"`
-	} `json:"metadata"`
-	Spec struct {
-		Steps []struct {
-			Metadata struct {
-				Name    string      `json:"name"`
-				Kind    string      `json:"kind"`
-				Version int         `json:"version"`
-				UUID    string      `json:"uuid"`
-				Labels  interface{} `json:"labels"`
-			} `json:"metadata"`
-			Spec struct {
-				FlowID      string `json:"flow_id"`
-				FlowRunUUID string `json:"flow_run_uuid"`
-				ActionRun   struct {
-					ActionName   string `json:"action_name"`
-					ActionParams struct {
-						Branch      string `json:"branch"`
-						CodeType    string `json:"codeType"`
-						CommitID    string `json:"commitId"`
-						GitURL      string `json:"gitUrl"`
-						Output      string `json:"output"`
-						ProjectFile string `json:"projectFile"`
-						ProjectPath string `json:"projectPath"`
-						RetryCount  int    `json:"retryCount"`
-						ServiceName string `json:"serviceName"`
-					} `json:"action_params"`
-					ReturnStateMap struct {
-						FAIL    string `json:"FAIL"`
-						SUCCESS string `json:"SUCCESS"`
-					} `json:"return_state_map"`
-					Done bool `json:"done"`
-				} `json:"action_run"`
-				Response struct {
-					State string `json:"state"`
-				} `json:"response"`
-				Data            string      `json:"data"`
-				RetryCount      int         `json:"retry_count"`
-				GlobalVariables interface{} `json:"global_variables"`
-			} `json:"spec"`
-		} `json:"steps"`
-		HistoryStates  []string    `json:"history_states"`
-		LastState      string      `json:"last_state"`
-		CurrentState   string      `json:"current_state"`
-		LastEvent      string      `json:"last_event"`
-		LastErr        string      `json:"last_err"`
-		GlobalVariable interface{} `json:"global_variable"`
-	} `json:"spec"`
-}
-
 type WatchFlowRun struct {
 	store.IKVStore
 }
@@ -86,28 +30,32 @@ func NewWatchFlowRun(ikvStore store.IKVStore) *WatchFlowRun {
 func (w *WatchFlowRun) Run() error {
 	fmt.Println(fmt.Sprintf("[Controller]%v start --> %v", reflect.TypeOf(w), time.Now()))
 	errC := make(chan error)
-	go w.GetOldVersion(errC)
+	go w.GetOldFlownRun(errC)
 	go w.ArtifactConnect(errC)
 	return <-errC
 }
 
-func (w *WatchFlowRun) GetOldVersion(errC chan<- error) {
-	fmt.Printf("[Controller]%v begin func GetOldVersion.\n", reflect.TypeOf(w))
+//handler the old flowRun
+func (w *WatchFlowRun) GetOldFlownRun(errC chan<- error) {
+	fmt.Printf("[Controller]%v begin func GetOldFlownRun.\n", reflect.TypeOf(w))
 	resp, err := http.Get(fmt.Sprintf("%s/flowrun/", common.EchoerUrl))
 	if err != nil {
+		fmt.Printf("[Controller]%v GetOldFlownRun get url fail, err %s.\n", reflect.TypeOf(w), err)
 		errC <- err
 	}
 	if resp == nil {
-		fmt.Printf("[Controller]%v GetOldVersion res was empty.\n", reflect.TypeOf(w))
+		fmt.Printf("[Controller]%v GetOldFlownRun res was empty.\n", reflect.TypeOf(w))
 		return
 	}
 	defer resp.Body.Close()
 	body, err1 := ioutil.ReadAll(resp.Body)
 	if err1 != nil {
+		fmt.Printf("[Controller]%v GetOldFlownRun read resp fail, err %s.\n", reflect.TypeOf(w), err1)
 		errC <- err1
 	}
 	var uBody []FlowRun
 	if err := json.Unmarshal(body, &uBody); err != nil {
+		fmt.Printf("[Controller]%v GetOldFlownRun Unmarshal fail, err %s.\n", reflect.TypeOf(w), err)
 		errC <- err
 	}
 	//fmt.Println(string(body))
@@ -122,7 +70,7 @@ func (w *WatchFlowRun) GetOldVersion(errC chan<- error) {
 }
 
 func (w *WatchFlowRun) ArtifactConnect(errC chan<- error) {
-	Version := time.Now().Unix()
+	Version := time.Now().Unix() - 100
 	url := fmt.Sprintf("%s/watch?resource=flowrun?version=%d", common.EchoerUrl, Version)
 	fmt.Printf("[Controller]%v begin func ArtifactConnect and url: %s.\n", reflect.TypeOf(w), url)
 	client := sse.NewClient(url)

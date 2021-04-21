@@ -18,6 +18,6 @@ var (
 )
 
 func init() {
-	flag.StringVar(&EchoerCI, "echoerci", "artifactoryCI", "-echoerci = artifactoryCI")
-	flag.StringVar(&EchoerCD, "echoercd", "artifactoryCD", "-echoercd = artifactoryCD")
+	flag.StringVar(&EchoerCI, "echoerci", "artifactoryCI", "-echoerci=artifactoryCI")
+	flag.StringVar(&EchoerCD, "echoercd", "artifactoryCD", "-echoercd=artifactoryCD")
 }
