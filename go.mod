@@ -3,7 +3,6 @@ module github.com/yametech/devops
 go 1.16
 
 require (
-	github.com/gin-contrib/pprof v1.3.0
 	github.com/gin-gonic/gin v1.6.3
 	github.com/google/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
