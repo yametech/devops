@@ -1,4 +1,4 @@
-package base
+package artifactory
 
 import (
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
@@ -90,7 +90,7 @@ func (a *ArtifactService) Update(appname string, reqAr *apiResource.RequestArtif
 		},
 	}
 	ar.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.Artifactory, appname, ar)
+	return a.IService.Apply(common.DefaultNamespace, common.Artifactory, appname, ar, false)
 }
 
 func (a *ArtifactService) Delete(appname string) error {
