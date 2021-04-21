@@ -100,7 +100,7 @@ func (a *AppProjectService) Update(uuid string, request *apiResource.Request) (c
 	dbObj.Spec.Owner = req.Spec.Owner
 
 	dbObj.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.AppProject, uuid, dbObj)
+	return a.IService.Apply(common.DefaultNamespace, common.AppProject, uuid, dbObj, false)
 }
 
 func (a *AppProjectService) Delete(uuid string) (bool, error) {

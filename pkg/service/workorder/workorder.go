@@ -49,7 +49,7 @@ func (s *Service) Create(request *apiResource.Request) (core.IObject, error) {
 	return s.IService.Create(common.DefaultNamespace, common.WorkOrder, req)
 }
 
-func (s *Service) Get(uuid string) (core.IObject, error){
+func (s *Service) Get(uuid string) (core.IObject, error) {
 	order := &workorder.WorkOrder{}
 	if err := s.IService.GetByUUID(common.DefaultNamespace, common.WorkOrder, uuid, order); err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (s *Service) Update(uuid string, request *apiResource.Request) (core.IObjec
 	dbObj.Spec.Result = request.Result
 
 	dbObj.GenerateVersion()
-	return s.IService.Apply(common.DefaultNamespace, common.WorkOrder, dbObj.UUID, dbObj)
+	return s.IService.Apply(common.DefaultNamespace, common.WorkOrder, dbObj.UUID, dbObj, false)
 }
 
 func (s *Service) Delete(uuid string) (bool, error) {

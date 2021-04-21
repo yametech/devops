@@ -55,10 +55,9 @@ func (a *AppConfigService) Update(data *apiResource.AppConfigRequest) (core.IObj
 		"spec.app": app.Metadata.UUID,
 	})
 
-
 	dbObj.Spec.Config = req.Spec.Config
 	dbObj.Spec.App = app.Metadata.UUID
 
 	dbObj.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj)
+	return a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj, false)
 }

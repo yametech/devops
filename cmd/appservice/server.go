@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"github.com/gin-contrib/pprof"
 	"github.com/yametech/devops/pkg/api"
 	"github.com/yametech/devops/pkg/api/action/appservice"
 	"github.com/yametech/devops/pkg/service"
@@ -23,7 +22,7 @@ func main() {
 
 	baseService := service.NewBaseService(store)
 	server := api.NewServer(baseService)
-	pprof.Register(server.Engine)
+
 	appservice.NewAppServiceServer("appservice", server)
 
 	go func() {
