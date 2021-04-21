@@ -2,6 +2,7 @@ package workorder
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/yametech/devops/pkg/core"
 	"time"
@@ -51,7 +52,7 @@ type Spec struct {
 func (w *WorkOrder) GenerateNumber() error {
 	today := time.Now().Format("20060102")
 	if mark, ok := Mark[w.Spec.OrderType]; ok{
-		w.Spec.Number = fmt.Sprintf("%s%s", mark, today)
+		w.Spec.Number = fmt.Sprintf("%s%s-%s", mark, today, uuid.New().String())
 	}
 
 	fmt.Println(w.Spec.Number)

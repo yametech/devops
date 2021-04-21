@@ -14,7 +14,7 @@ func (w *WorkOrder) ListWorkOrder(g *gin.Context) {
 		api.ResponseError(g, errors.New("orderType need int type"))
 		return
 	}
-	//orderStatus, err := strconv.Atoi(g.DefaultQuery("order_status", "0"))
+	orderStatus, err := strconv.Atoi(g.DefaultQuery("order_status", "-1"))
 	search := g.Query("search")
 	page, err := strconv.ParseInt(g.DefaultQuery("page", "1"), 10, 64)
 	if err != nil {
@@ -27,7 +27,7 @@ func (w *WorkOrder) ListWorkOrder(g *gin.Context) {
 		return
 	}
 
-	orders, err := w.Service.List(orderType, search, page, pageSize)
+	orders, err := w.Service.List(orderType, orderStatus, search, page, pageSize)
 
 	if err != nil {
 		api.ResponseError(g, err)
