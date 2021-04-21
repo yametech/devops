@@ -7,7 +7,7 @@ import (
 type RequestGlobalConfig struct {
 	Request serverSpec `json:"request"`
 	Name    string     `json:"name"`
-	Type    string     `json:"type"`
+	Kind    string     `json:"kind"`
 	Content string     `json:"content"`
 }
 
