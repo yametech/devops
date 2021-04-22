@@ -26,7 +26,7 @@ func (a *AppProjectService) List(search string) ([]*apiResource.Response, error)
 	}
 
 	sort := map[string]interface{}{
-		"metadata.created_time": -1,
+		"metadata.created_time": 1,
 	}
 
 	// Get the BusinessLine
@@ -163,7 +163,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.R
 	}
 
 	sort := map[string]interface{}{
-		"metadata.created_time": -1,
+		"metadata.created_time": 1,
 	}
 
 	for ; level >= 0; level-- {
