@@ -57,5 +57,5 @@ func (a *GlobalConfigService) Update(uuid string, reqAll *globalconfigproject.Re
 		},
 	}
 	autoconfigure.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.GlobalConfig, uuid, autoconfigure)
+	return a.IService.Apply(common.DefaultNamespace, common.GlobalConfig, uuid, autoconfigure, false)
 }
