@@ -2,7 +2,7 @@ package core
 
 import (
 	"encoding/json"
-	"github.com/yametech/devops/pkg/utils"
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -38,7 +38,7 @@ func (m *Metadata) GetKind() string {
 func (m *Metadata) GenerateVersion() IObject {
 	m.Version = time.Now().Unix()
 	if m.UUID == "" {
-		m.UUID = utils.NewSUID().String()
+		m.UUID = uuid.New().String()
 	}
 	if m.CreatedTime == 0 {
 		m.CreatedTime = time.Now().Unix()

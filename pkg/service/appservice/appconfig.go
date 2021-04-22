@@ -48,5 +48,5 @@ func (a *AppConfigService) Update(req *appproject.AppConfig) (core.IObject, bool
 	dbObj.Spec.ConfigType = req.Spec.ConfigType
 
 	dbObj.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj)
+	return a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj,false)
 }

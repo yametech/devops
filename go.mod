@@ -3,8 +3,8 @@ module github.com/yametech/devops
 go 1.16
 
 require (
-	github.com/gin-contrib/pprof v1.3.0
 	github.com/gin-gonic/gin v1.6.3
+	github.com/google/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/r3labs/sse/v2 v2.3.2
 	github.com/serialx/hashring v0.0.0-20200727003509-22c0c7ab6b1b

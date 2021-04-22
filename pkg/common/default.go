@@ -7,9 +7,10 @@ const (
 	User             = "user"
 	UserProject      = "userproject"
 	EchoerUrl        = "http://10.200.65.192:8080"
-	AppProject       = "appProject"
 	Artifactory      = "artifactory"
 	AppConfig        = "appconfig"
+	AppProject       = "appproject"
+	GlobalConfig     = "globalconfig"
 )
 
 var (
