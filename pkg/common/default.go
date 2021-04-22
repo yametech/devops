@@ -11,6 +11,7 @@ const (
 	AppConfig        = "appconfig"
 	AppProject       = "appproject"
 	GlobalConfig     = "globalconfig"
+	WorkOrder        = "workorder"
 )
 
 var (

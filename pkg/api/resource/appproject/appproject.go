@@ -4,12 +4,12 @@ import (
 	"github.com/yametech/devops/pkg/resource/appproject"
 )
 
-type AppProjectResponse struct {
+type Response struct {
 	appproject.AppProject
-	Children []*AppProjectResponse `json:"children"`
+	Children []*Response `json:"children"`
 }
 
-type AppProjectRequest struct {
+type Request struct {
 	Name      string             `json:"name"`
 	AppType   appproject.AppType `json:"app_type"`
 	ParentApp string             `json:"parent_app"`
