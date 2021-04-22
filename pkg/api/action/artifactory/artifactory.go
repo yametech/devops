@@ -1,31 +1,113 @@
 package artifactory
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/yametech/devops/pkg/api"
+	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
+	"io"
+	"net/http"
+	"strconv"
 )
 
-type artifactoryServer struct {
-	*api.Server
+func (b *baseServer) WatchAr(g *gin.Context) {
+	version := g.DefaultQuery("version", "0")
+	objectChan, closed := b.ArtifactService.Watch(version)
+
+	streamEndEvent := "STREAM_END"
+	g.Stream(func(w io.Writer) bool {
+		select {
+		case <-g.Writer.CloseNotify():
+			closed <- struct{}{}
+			close(closed)
+			g.SSEvent("", streamEndEvent)
+			return false
+		case object, ok := <-objectChan:
+			if !ok {
+				g.SSEvent("", streamEndEvent)
+				return false
+			}
+			g.SSEvent("", object)
+		}
+		return true
+	},
+	)
+
 }
 
-func NewArtifactoryServer(serviceName string, server *api.Server) *artifactoryServer {
-	artifactory := &artifactoryServer{
-		server,
-	}
-	group := artifactory.Group(fmt.Sprintf("/%s", serviceName))
+func (b *baseServer) ListArtifact(g *gin.Context) {
+	pageInt, _ := strconv.Atoi(g.DefaultQuery("page", "1"))
+	pageSizeInt, _ := strconv.Atoi(g.DefaultQuery("pagesize", "10"))
+	name := g.DefaultQuery("name", "")
 
-	//ArtifactoryServer
-	{
-		group.GET("/:name", func(c *gin.Context) {
-			name := c.Param("name")
-			message := fmt.Sprintf("hello world %s ", name)
-			c.JSON(200, gin.H{
-				"message": message,
-				"code":    200,
-			})
-		})
+	results, _, err := b.ArtifactService.List(name, int64(pageInt), int64(pageSizeInt))
+	if err != nil {
+		api.RequestParamsError(g, "error", err)
+		return
 	}
-	return artifactory
+	g.JSON(http.StatusOK, map[string]interface{}{"data": results})
+}
+
+func (b *baseServer) CreateArtifact(g *gin.Context) {
+	rawData, err := g.GetRawData()
+	if err != nil {
+		api.RequestParamsError(g, "get rawData error", err)
+		return
+	}
+	request := &apiResource.RequestArtifact{}
+	if err := json.Unmarshal(rawData, request); err != nil {
+		api.RequestParamsError(g, "unmarshal json error", err)
+		return
+	}
+
+	err = b.ArtifactService.Create(request)
+	if err != nil {
+		api.RequestParamsError(g, "create user error", err)
+		return
+	}
+	g.JSON(http.StatusOK, request)
+}
+
+func (b *baseServer) GetArtifact(g *gin.Context) {
+	uuid := g.Param("uuid")
+	data, err := b.ArtifactService.GetByUUID(uuid)
+	if err != nil {
+		api.RequestParamsError(g, "error", err)
+		return
+	}
+	g.JSON(http.StatusOK, data)
+}
+
+func (b *baseServer) DeleteArtifact(g *gin.Context) {
+	uuid := g.Param("uuid")
+	err := b.ArtifactService.Delete(uuid)
+	if err != nil {
+		api.RequestParamsError(g, "delete fail", err)
+		return
+	}
+	g.JSON(http.StatusOK, nil)
+}
+
+func (b *baseServer) UpdateArtifact(g *gin.Context) {
+	uuid := g.Param("uuid")
+
+	rawData, err := g.GetRawData()
+	if err != nil {
+		api.RequestParamsError(g, "get rawData error", err)
+		return
+	}
+	request := &apiResource.RequestArtifact{}
+	if err := json.Unmarshal(rawData, &request); err != nil {
+		api.RequestParamsError(g, "unmarshal json error", err)
+		return
+	}
+
+	user, _, err := b.ArtifactService.Update(uuid, request)
+	if err != nil {
+		api.RequestParamsError(g, "update fail", err)
+		return
+	}
+
+	g.JSON(http.StatusOK, user)
+
 }
