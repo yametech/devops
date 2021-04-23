@@ -27,28 +27,34 @@ func (a *GlobalConfigService) List(page, pageSize int64) ([]interface{}, error) 
 	return unStruct, err
 }
 
-func (a *GlobalConfigService) Create(reqAll *globalconfigproject.RequestGlobalConfig) error {
+func (a *GlobalConfigService) Create(reqAll *globalconfigproject.RequestGlobalConfig) (core.IObject, error) {
 	autoconfigure := &globalconfig.GlobalConfig{
 		Spec: globalconfig.Spec{
-			Service: reqAll.Service,
+			Service:    reqAll.Service,
+			SortString: reqAll.SortString,
 		},
 	}
 	autoconfigure.GenerateVersion()
-	_, err := a.IService.Create(common.DefaultNamespace, common.GlobalConfig, autoconfigure)
-	return err
+	res, err := a.IService.Create(common.DefaultNamespace, common.GlobalConfig, autoconfigure)
+	return res, err
 }
 
-func (a *GlobalConfigService) Update(uuid string, reqAll *globalconfigproject.RequestGlobalConfig, forceApply bool) (core.IObject, bool, error) {
+func (a *GlobalConfigService) Update(uuid string, reqAll *globalconfigproject.RequestGlobalConfig) (core.IObject, bool, error) {
 	autoconfigure := &globalconfig.GlobalConfig{
+		Metadata: core.Metadata{
+			UUID: uuid,
+		},
 		Spec: globalconfig.Spec{
-			Service: reqAll.Service,
+			Service:    reqAll.Service,
+			SortString: reqAll.SortString,
 		},
 	}
 
 	autoconfigure.GenerateVersion()
-	updateObject, whether, err := a.IService.Apply(common.DefaultNamespace, common.GlobalConfig, uuid, autoconfigure, forceApply)
+	_, whether, err := a.IService.Apply(common.DefaultNamespace, common.GlobalConfig, uuid, autoconfigure, true)
 	if autoconfigure.Name == "" {
 		autoconfigure.Name = "全局配置服务"
 	}
-	return updateObject, whether, err
+
+	return autoconfigure, whether, err
 }

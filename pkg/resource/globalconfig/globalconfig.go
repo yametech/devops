@@ -2,8 +2,15 @@ package globalconfig
 
 import "github.com/yametech/devops/pkg/core"
 
+//type Number uint8
+//
+//const  (
+//	ServiceSequence Number = iota
+//)
+
 type Spec struct {
-	Service map[string]interface{} `json:"service" bson:"service"`
+	SortString []string               `json:"sort_string" bson:"sort_string"`
+	Service    map[string]interface{} `json:"service" bson:"service"`
 }
 
 type GlobalConfig struct {

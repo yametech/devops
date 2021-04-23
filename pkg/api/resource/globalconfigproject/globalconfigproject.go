@@ -4,8 +4,11 @@ import (
 	"github.com/yametech/devops/pkg/resource/globalconfig"
 )
 
+const RequestGlobalConfigUUID = "12345678"
+
 type RequestGlobalConfig struct {
-	Service map[string]interface{} `json:"service" bson:"service"`
+	SortString []string               `json:"sort_string" bson:"sort_string"`
+	Service    map[string]interface{} `json:"service" bson:"service"`
 }
 
 type ConfigResponse struct {
