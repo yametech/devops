@@ -10,6 +10,7 @@ const (
 	Artifactory      = "artifactory"
 	AppConfig        = "appconfig"
 	AppProject       = "appproject"
+	Namespace        = "namespace"
 	GlobalConfig     = "globalconfig"
 	WorkOrder        = "workorder"
 )

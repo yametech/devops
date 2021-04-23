@@ -10,6 +10,7 @@ type Server struct {
 	*api.Server
 	*appService.AppProjectService
 	*appService.AppConfigService
+	*appService.NamespaceService
 }
 
 func NewAppServiceServer(serviceName string, server *api.Server) *Server {
@@ -17,6 +18,7 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 		Server:            server,
 		AppProjectService: appService.NewAppProjectService(server.IService),
 		AppConfigService: appService.NewAppConfigService(server.IService),
+		NamespaceService: appService.NewNamespaceService(server.IService),
 	}
 	group := cfaServer.Group(fmt.Sprintf("/%s", serviceName))
 
@@ -32,6 +34,12 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 	{
 		group.GET("/app-config/:uuid", cfaServer.GetAppConfig)
 		group.POST("/app-config", cfaServer.UpdateAppConfig)
+	}
+
+	// Namespace
+	{
+		group.GET("/namespace", cfaServer.ListNamespaces)
+		group.POST("/namespace", cfaServer.CreateNamespace)
 	}
 
 	return cfaServer

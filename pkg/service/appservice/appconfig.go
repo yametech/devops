@@ -11,11 +11,17 @@ import (
 
 type AppConfigService struct {
 	service.IService
+	UpdateMap map[appproject.AppType]func(a service.IService, data *apiResource.AppConfigRequest) (*appproject.AppProject, error)
 }
 
 func NewAppConfigService(i service.IService) *AppConfigService {
-	return &AppConfigService{i}
+	updateMap := map[appproject.AppType]func(a service.IService, data *apiResource.AppConfigRequest) (*appproject.AppProject, error){
+		appproject.App: ExecAppType,
+		appproject.Namespace: ExecNameSpaceType,
+	}
+	return &AppConfigService{IService: i, UpdateMap: updateMap}
 }
+
 
 func (a *AppConfigService) GetByFilter(appid string) (core.IObject, error) {
 	req := &appproject.AppConfig{
@@ -34,15 +40,9 @@ func (a *AppConfigService) GetByFilter(appid string) (core.IObject, error) {
 }
 
 func (a *AppConfigService) Update(data *apiResource.AppConfigRequest) (core.IObject, bool, error) {
-	req := &appproject.AppConfig{
-		Spec: appproject.AppConfigSpec{
-			App:    data.App,
-			Config: data.Config,
-		},
-	}
 
 	app := &appproject.AppProject{}
-	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, req.Spec.App, app); err != nil {
+	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, data.App, app); err != nil {
 		return nil, false, errors.New("The app is not exist")
 	}
 
@@ -55,9 +55,36 @@ func (a *AppConfigService) Update(data *apiResource.AppConfigRequest) (core.IObj
 		"spec.app": app.Metadata.UUID,
 	})
 
-	dbObj.Spec.Config = req.Spec.Config
+	dbObj.Spec.Config = data.Config
 	dbObj.Spec.App = app.Metadata.UUID
 
 	dbObj.GenerateVersion()
 	return a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj, false)
+}
+
+
+func ExecAppType(a service.IService, data *apiResource.AppConfigRequest) (*appproject.AppProject, error) {
+	app := &appproject.AppProject{}
+	if err := a.GetByUUID(common.DefaultNamespace, common.AppProject, data.App, app); err != nil {
+		return nil, errors.New("The app is not exist")
+	}
+
+	if app.Spec.AppType != appproject.App {
+		return nil, errors.New("This is not an App type")
+	}
+
+	return app, nil
+}
+
+func ExecNameSpaceType(a service.IService, data *apiResource.AppConfigRequest) (*appproject.AppProject, error) {
+	app := &appproject.AppProject{}
+	if err := a.GetByUUID(common.DefaultNamespace, common.Namespace, data.App, app); err != nil {
+		return nil, errors.New("The namespace is not exist")
+	}
+
+	if app.Spec.AppType != appproject.Namespace {
+		return nil, errors.New("This is not an Namespace type")
+	}
+
+	return app, nil
 }

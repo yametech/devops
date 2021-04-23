@@ -72,13 +72,13 @@ func TestGetAppProject(t *testing.T) {
 			for _, apps := range services.Children {
 				app := &appproject.AppProject{
 					Metadata: core.Metadata{
-						Name: apps.Name,
+						Name: apps.Desc,
 					},
 					Spec: appproject.AppSpec{
 						ParentApp: service.UUID,
 						RootApp:   service.Spec.RootApp,
 						AppType:   appproject.App,
-						Desc:      apps.Desc,
+						Desc:      apps.Name,
 						Owner:     apps.Owner,
 					},
 				}
