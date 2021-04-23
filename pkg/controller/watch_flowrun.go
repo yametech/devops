@@ -176,7 +176,7 @@ func (w *WatchFlowRun) HandleFlowrun(run FlowRun) {
 				} else if flowStep.Spec.Response.State == "FAIL" && step.Spec.ArtifactStatus != artifactory.BuiltFAIL {
 					step.Spec.ArtifactStatus = artifactory.BuiltFAIL
 				}
-				_, _, err = w.Apply(common.DefaultNamespace, common.Artifactory, step.Metadata.UUID, step)
+				_, _, err = w.Apply(common.DefaultNamespace, common.Artifactory, step.Metadata.UUID, step, false)
 				if err != nil {
 					fmt.Printf("[Controller]%v error: step: %s, uuid: %s ,err: %s \n", reflect.TypeOf(w), common.EchoerCI, stepUUID, err.Error())
 				}
