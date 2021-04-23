@@ -128,7 +128,7 @@ func (w *WatchFlowRun) HandleFlowrun(run FlowRun) {
 				if err != nil {
 					fmt.Printf("[Controller]%v error: step: %s, uuid: %s ,err: %s \n", reflect.TypeOf(w), common.EchoerCI, stepUUID, err.Error())
 				}
-			//TODO:actionName EchoerCI
+			//TODO:actionName EchoerCD
 			case common.EchoerCD:
 				fmt.Println("TODO CD")
 			}
