@@ -18,7 +18,7 @@ type GlobalConfig struct {
 	Spec          Spec `json:"spec"`
 }
 
-func (all GlobalConfig) Clone() core.IObject {
+func (all *GlobalConfig) Clone() core.IObject {
 	result := &GlobalConfig{}
 	core.Clone(all, result)
 	return result

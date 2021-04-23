@@ -239,18 +239,17 @@ func (m *Mongo) Apply(namespace, resource, uuid string, object core.IObject, for
 		return old, false, nil
 	}
 
-	oldMap["spec"] = objectMap["spec"]
-
-	if err := core.EncodeFromMap(old, oldMap); err != nil {
+	objectMap["metadata"] = oldMap["metadata"]
+	if err := core.EncodeFromMap(object, objectMap); err != nil {
 		return old, false, err
 	}
 
 	upsert := true
-	old.GenerateVersion() //update version
+	object.GenerateVersion() //update version
 	_, err = m.client.
 		Database(namespace).
 		Collection(resource).
-		ReplaceOne(ctx, query, old,
+		ReplaceOne(ctx, query, object,
 			options.MergeReplaceOptions(
 				&options.ReplaceOptions{Upsert: &upsert},
 			),
@@ -259,7 +258,7 @@ func (m *Mongo) Apply(namespace, resource, uuid string, object core.IObject, for
 		return nil, true, err
 	}
 
-	return old, true, nil
+	return object, true, nil
 }
 
 func (m *Mongo) Delete(namespace, resource, uuid string) error {
