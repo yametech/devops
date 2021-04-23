@@ -5,14 +5,7 @@ import (
 )
 
 type RequestGlobalConfig struct {
-	Request serverSpec `json:"request"`
-	Name    string     `json:"name"`
-	Kind    string     `json:"kind"`
-	Content string     `json:"content"`
-}
-
-type serverSpec struct {
-	Service map[string]interface{} `json:"server" bson:"server"`
+	Service map[string]interface{} `json:"service" bson:"service"`
 }
 
 type ConfigResponse struct {

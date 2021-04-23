@@ -16,29 +16,21 @@ func NewAllConfigService(i service.IService) *GlobalConfigService {
 	return &GlobalConfigService{i}
 }
 
-func (a *GlobalConfigService) GetByUUID(name string, uuid string) (interface{}, error) {
-	allies := &globalconfig.GlobalConfig{}
-	if uuid != "" {
-		if err := a.IService.GetByUUID(common.DefaultNamespace, common.GlobalConfig, uuid, allies); err != nil {
-			return nil, err
-		}
+func (a *GlobalConfigService) List(page, pageSize int64) ([]interface{}, error) {
+	offset := (page - 1) * pageSize
+	sort := map[string]interface{}{
+		"metadata.version": -1,
 	}
-	if name != "" {
-		if val, ok := allies.Spec.Service[name]; ok {
-			return val, nil
-		}
-	}
-	return allies, nil
+
+	unStruct, err := a.IService.List(common.DefaultNamespace, common.GlobalConfig, "", sort, offset, pageSize)
+
+	return unStruct, err
 }
 
 func (a *GlobalConfigService) Create(reqAll *globalconfigproject.RequestGlobalConfig) error {
 	autoconfigure := &globalconfig.GlobalConfig{
-		Metadata: core.Metadata{
-			Name: reqAll.Name,
-			Kind: reqAll.Kind,
-		},
 		Spec: globalconfig.Spec{
-			Service: reqAll.Request.Service,
+			Service: reqAll.Service,
 		},
 	}
 	autoconfigure.GenerateVersion()
@@ -46,16 +38,17 @@ func (a *GlobalConfigService) Create(reqAll *globalconfigproject.RequestGlobalCo
 	return err
 }
 
-func (a *GlobalConfigService) Update(uuid string, reqAll *globalconfigproject.RequestGlobalConfig) (core.IObject, bool, error) {
+func (a *GlobalConfigService) Update(uuid string, reqAll *globalconfigproject.RequestGlobalConfig, forceApply bool) (core.IObject, bool, error) {
 	autoconfigure := &globalconfig.GlobalConfig{
-		Metadata: core.Metadata{
-			Name: reqAll.Name,
-			Kind: reqAll.Kind,
-		},
 		Spec: globalconfig.Spec{
-			Service: reqAll.Request.Service,
+			Service: reqAll.Service,
 		},
 	}
+
 	autoconfigure.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.GlobalConfig, uuid, autoconfigure)
+	updateObject, whether, err := a.IService.Apply(common.DefaultNamespace, common.GlobalConfig, uuid, autoconfigure, forceApply)
+	if autoconfigure.Name == "" {
+		autoconfigure.Name = "全局配置服务"
+	}
+	return updateObject, whether, err
 }

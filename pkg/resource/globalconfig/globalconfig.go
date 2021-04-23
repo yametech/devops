@@ -3,7 +3,7 @@ package globalconfig
 import "github.com/yametech/devops/pkg/core"
 
 type Spec struct {
-	Service map[string]interface{} `json:"allConfig" bson:"allConfig"`
+	Service map[string]interface{} `json:"service" bson:"service"`
 }
 
 type GlobalConfig struct {

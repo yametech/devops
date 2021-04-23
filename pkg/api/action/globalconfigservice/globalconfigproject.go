@@ -6,12 +6,13 @@ import (
 	"github.com/yametech/devops/pkg/api"
 	"github.com/yametech/devops/pkg/api/resource/globalconfigproject"
 	"net/http"
+	"strconv"
 )
 
 func (s *Server) ListGlobalConfig(g *gin.Context) {
-	search := g.DefaultQuery("search", "")
-	uuid := g.DefaultQuery("uuid", "")
-	res, err := s.GlobalConfigService.GetByUUID(search, uuid)
+	pageInt, _ := strconv.Atoi(g.DefaultQuery("page", "1"))
+	pageSizeInt, _ := strconv.Atoi(g.DefaultQuery("pageSize", "10"))
+	res, err := s.GlobalConfigService.List(int64(pageInt), int64(pageSizeInt))
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
@@ -50,10 +51,11 @@ func (s *Server) UpdateGlobalConfig(g *gin.Context) {
 		api.RequestParamsError(g, "unmarshal json error", err)
 		return
 	}
-	data, _, err := s.GlobalConfigService.Update(uuid, request)
+	applyForce := false
+	data, _, err := s.GlobalConfigService.Update(uuid, request, applyForce)
 	if err != nil {
 		api.RequestParamsError(g, "update fail", err)
 		return
 	}
-	g.JSON(http.StatusOK, gin.H{"data": data})
+	g.JSON(http.StatusOK, gin.H{"data": data, "code": 200, "msg": ""})
 }
