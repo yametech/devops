@@ -1,13 +1,17 @@
 package artifactory
 
 import (
+	"fmt"
+	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	arResource "github.com/yametech/devops/pkg/resource/artifactory"
 	"github.com/yametech/devops/pkg/service"
+	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 type ArtifactService struct {
@@ -65,6 +69,12 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 	if err != nil {
 		return err
 	}
+	//TODO:sendCIEcho
+	arCIInfo := &arResource.ArtifactCIInfo{}
+	_ = arCIInfo
+	if err := SendCIEcho(ar.Metadata.UUID, arCIInfo); err != nil {
+		fmt.Println(err)
+	}
 	return nil
 }
 
@@ -97,6 +107,34 @@ func (a *ArtifactService) Delete(appname string) error {
 	err := a.IService.Delete(common.DefaultNamespace, common.Artifactory, appname)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func SendCIEcho(uuid string, a *arResource.ArtifactCIInfo) error {
+	if uuid == "" {
+		return errors.New("UUID is not none")
+	}
+
+	flowRun := &flowrun.FlowRun{
+		EchoerUrl: common.EchoerUrl,
+		Name:      fmt.Sprintf("%s_%d", common.DefaultNamespace, time.Now().UnixNano()),
+	}
+	flowRunStep := map[string]string{
+		"SUCCESS": "done", "FAIL": "done",
+	}
+	flowRunAction, err := core.ToMap(a)
+	if err != nil {
+		return err
+	}
+
+	flowRunStepName := fmt.Sprintf("PRODCI_%s", uuid)
+	flowRun.AddStep(flowRunStepName, flowRunStep, common.EchoerCI, flowRunAction)
+
+	flowRunData := flowRun.Generate()
+	fmt.Println(flowRunData)
+	if !flowRun.Create(flowRunData) {
+		return errors.New("send fsm error")
 	}
 	return nil
 }

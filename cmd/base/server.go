@@ -26,7 +26,7 @@ func main() {
 	base.NewBaseServer("baseserver", server)
 
 	go func() {
-		if err := server.Run("127.0.0.1:8080"); err != nil {
+		if err := server.Run(":8080"); err != nil {
 			errC <- err
 		}
 	}()
