@@ -111,3 +111,14 @@ func (b *baseServer) UpdateArtifact(g *gin.Context) {
 	g.JSON(http.StatusOK, user)
 
 }
+
+func (b *baseServer) GetBranchList(g *gin.Context) {
+	gitPath := g.DefaultQuery("gitPath", "")
+
+	results, err := b.ArtifactService.GetBanch(gitPath)
+	if err != nil {
+		api.RequestParamsError(g, "error", err)
+		return
+	}
+	g.JSON(http.StatusOK, map[string]interface{}{"data": results})
+}

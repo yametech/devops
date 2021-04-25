@@ -26,11 +26,15 @@ func NewArBaseServer(serviceName string, server *api.Server) *baseServer {
 	//UserProjectService
 	{
 		group.GET("/artifact", base.ListArtifact)
-		group.GET("/artifact/:appname", base.GetArtifact)
+		group.GET("/artifact/:uuid", base.GetArtifact)
 		group.POST("/artifact", base.CreateArtifact)
-		group.PUT("/artifact/:appname", base.UpdateArtifact)
-		group.DELETE("/artifact/:appname", base.DeleteArtifact)
+		group.PUT("/artifact/:uuid", base.UpdateArtifact)
+		group.DELETE("/artifact/:uuid", base.DeleteArtifact)
 	}
 
+	//GetBranch
+	{
+		group.GET("/getbranch/:gitpath", base.GetBranchList)
+	}
 	return base
 }

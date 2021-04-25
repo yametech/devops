@@ -1,6 +1,9 @@
 package artifactory
 
 import (
+	"fmt"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/storage/memory"
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
@@ -8,6 +11,8 @@ import (
 	"github.com/yametech/devops/pkg/service"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/go-git/go-git/v5"
+	"strings"
 )
 
 type ArtifactService struct {
@@ -68,16 +73,16 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 	return nil
 }
 
-func (a *ArtifactService) GetByUUID(appname string) (*arResource.Artifact, error) {
+func (a *ArtifactService) GetByUUID(uuid string) (*arResource.Artifact, error) {
 	ar := &arResource.Artifact{}
-	err := a.IService.GetByUUID(common.DefaultNamespace, common.Artifactory, appname, ar)
+	err := a.IService.GetByUUID(common.DefaultNamespace, common.Artifactory, uuid, ar)
 	if err != nil {
 		return nil, err
 	}
 	return ar, nil
 }
 
-func (a *ArtifactService) Update(appname string, reqAr *apiResource.RequestArtifact) (core.IObject, bool, error) {
+func (a *ArtifactService) Update(uuid string, reqAr *apiResource.RequestArtifact) (core.IObject, bool, error) {
 	ar := &arResource.Artifact{
 		Spec: arResource.ArtifactSpec{
 			GitUrl:   reqAr.GitUrl,
@@ -90,13 +95,34 @@ func (a *ArtifactService) Update(appname string, reqAr *apiResource.RequestArtif
 		},
 	}
 	ar.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.Artifactory, appname, ar, false)
+	return a.IService.Apply(common.DefaultNamespace, common.Artifactory, uuid, ar, false)
 }
 
-func (a *ArtifactService) Delete(appname string) error {
-	err := a.IService.Delete(common.DefaultNamespace, common.Artifactory, appname)
+func (a *ArtifactService) Delete(uuid string) error {
+	err := a.IService.Delete(common.DefaultNamespace, common.Artifactory, uuid)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (a *ArtifactService) GetBanch(gitpath string) ([]string, error) {
+	url := fmt.Sprintf("http://%s:%s@%s", common.GitUser, common.GitPW, gitpath)
+	r, _ := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
+		URL: url,
+		SingleBranch:false,
+		NoCheckout:true,
+		Depth: 1,
+	})
+	var sliceBranch []string
+	referenceIter, _ := r.References()
+	err := referenceIter.ForEach(func(c *plumbing.Reference) error {
+		if strings.Contains(string(c.Name()), "refs/remotes/origin/"){
+			sliceTemp := strings.Split(string(c.Name()), "refs/remotes/origin/")
+			sliceBranch = append(sliceBranch, sliceTemp[len(sliceTemp)-1])
+		}
+		return nil
+	})
+	return sliceBranch, err
+
 }

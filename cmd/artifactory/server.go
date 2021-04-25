@@ -26,7 +26,7 @@ func main() {
 	artifactory.NewArBaseServer("artifactory", server)
 	//run artifactoryserver
 	go func() {
-		if err := server.Run("8080"); err != nil {
+		if err := server.Run(":8080"); err != nil {
 			errC <- err
 		}
 	}()
