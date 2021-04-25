@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func (b *baseServer) WatchAr(g *gin.Context) {
@@ -110,4 +111,22 @@ func (b *baseServer) UpdateArtifact(g *gin.Context) {
 
 	g.JSON(http.StatusOK, user)
 
+}
+
+func (b *baseServer) GetBranchList(g *gin.Context) {
+	gitPath := g.Query("gitpath")
+
+	if strings.Contains(gitPath, "http://") {
+		sliceTemp := strings.Split(gitPath, "http://")
+		gitPath = sliceTemp[len(sliceTemp)-1]
+	} else if strings.Contains(gitPath, "https://") {
+		sliceTemp := strings.Split(gitPath, "https://")
+		gitPath = sliceTemp[len(sliceTemp)-1]
+	}
+	results, err := b.ArtifactService.GetBanch(gitPath)
+	if err != nil {
+		api.RequestParamsError(g, "error", err)
+		return
+	}
+	g.JSON(http.StatusOK, map[string]interface{}{"code": http.StatusOK, "data": results})
 }
