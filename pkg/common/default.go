@@ -11,7 +11,6 @@ const (
 	AppConfig        = "appconfig"
 	AppProject       = "appproject"
 	GlobalConfig     = "globalconfig"
-
 )
 
 var (

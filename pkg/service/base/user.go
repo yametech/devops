@@ -95,7 +95,7 @@ func (u *UserService) Update(uuid string, reqUser *apiResource.RequestUser) (cor
 		},
 	}
 	user.GenerateVersion()
-	return u.IService.Apply(common.DefaultNamespace, common.User, uuid, user,false)
+	return u.IService.Apply(common.DefaultNamespace, common.User, uuid, user, false)
 }
 
 func (u *UserService) Delete(uuid string) error {

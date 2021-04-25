@@ -20,27 +20,40 @@ func NewAppProjectService(i service.IService) *AppProjectService {
 	return &AppProjectService{i}
 }
 
-func (a *AppProjectService) List(search string) ([]*apiResource.AppProjectResponse, int64, error) {
+func (a *AppProjectService) List(search string) ([]*apiResource.Response, error) {
 	if search != "" {
 		return a.Search(search, 2)
 	}
 
 	sort := map[string]interface{}{
-		"metadata.created_time": -1,
+		"metadata.created_time": 1,
 	}
 
 	// Get the BusinessLine
-	businessLine := &apiResource.AppProjectResponse{}
+	businessLine := &apiResource.Response{}
 	if err := a.Children(businessLine, sort); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
-	return businessLine.Children, int64(len(businessLine.Children)), nil
+	return businessLine.Children, nil
 }
 
-func (a *AppProjectService) Create(req *appproject.AppProject) error {
+func (a *AppProjectService) Create(request *apiResource.Request) (core.IObject, error) {
+
+	req := &appproject.AppProject{
+		Metadata: core.Metadata{
+			Name: request.Name,
+		},
+		Spec: appproject.AppSpec{
+			AppType:   request.AppType,
+			ParentApp: request.ParentApp,
+			Desc:      request.Desc,
+			Owner:     request.Owner,
+		},
+	}
+
 	if req.Metadata.Name == "" {
-		return errors.New("The Name is requried")
+		return nil, errors.New("The Name is requried")
 	}
 
 	filter := map[string]interface{}{
@@ -48,14 +61,14 @@ func (a *AppProjectService) Create(req *appproject.AppProject) error {
 	}
 
 	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppProject, req, filter); err == nil {
-		return errors.New("The Name is exist")
+		return nil, errors.New("The Name is exist")
 	}
 
 	req.GenerateVersion()
 	parent := &appproject.AppProject{}
 	if req.Spec.ParentApp != "" {
 		if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, req.Spec.ParentApp, parent); err != nil {
-			return err
+			return nil, err
 		}
 
 		if parent.Spec.RootApp != "" {
@@ -64,14 +77,17 @@ func (a *AppProjectService) Create(req *appproject.AppProject) error {
 			req.Spec.RootApp = parent.Metadata.UUID
 		}
 	}
-	_, err := a.IService.Create(common.DefaultNamespace, common.AppProject, req)
-	if err != nil {
-		return err
-	}
-	return nil
+	return a.IService.Create(common.DefaultNamespace, common.AppProject, req)
 }
 
-func (a *AppProjectService) Update(uuid string, req *appproject.AppProject) (core.IObject, bool, error) {
+func (a *AppProjectService) Update(uuid string, request *apiResource.Request) (core.IObject, bool, error) {
+	req := &appproject.AppProject{
+		Spec: appproject.AppSpec{
+			Owner: request.Owner,
+			Desc:  request.Desc,
+		},
+	}
+
 	dbObj := &appproject.AppProject{}
 	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, uuid, dbObj); err != nil {
 		return nil, false, err
@@ -111,13 +127,13 @@ func (a *AppProjectService) Delete(uuid string) (bool, error) {
 	return true, nil
 }
 
-func (a *AppProjectService) Children(req *apiResource.AppProjectResponse, sort map[string]interface{}) error {
+func (a *AppProjectService) Children(req *apiResource.Response, sort map[string]interface{}) error {
 	filter := map[string]interface{}{
 		"spec.parent_app": req.UUID,
 	}
 
 	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, sort, 0, 0)
-	children := make([]*apiResource.AppProjectResponse, 0)
+	children := make([]*apiResource.Response, 0)
 	if err = utils.UnstructuredObjectToInstanceObj(data, &children); err != nil {
 		return err
 	}
@@ -138,16 +154,16 @@ func (a *AppProjectService) Children(req *apiResource.AppProjectResponse, sort m
 	return nil
 }
 
-func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.AppProjectResponse, int64, error) {
-	parentsMap := make(map[string]*apiResource.AppProjectResponse, 0)
-	parents := make([]*apiResource.AppProjectResponse, 0)
+func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.Response, error) {
+	parentsMap := make(map[string]*apiResource.Response, 0)
+	parents := make([]*apiResource.Response, 0)
 	filter := make(map[string]interface{}, 0)
 	if search != "" {
 		filter["metadata.name"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}}
 	}
 
 	sort := map[string]interface{}{
-		"metadata.created_time": -1,
+		"metadata.created_time": 1,
 	}
 
 	for ; level >= 0; level-- {
@@ -158,9 +174,9 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.A
 			continue
 		}
 
-		data := make([]*apiResource.AppProjectResponse, 0)
+		data := make([]*apiResource.Response, 0)
 		if err = utils.UnstructuredObjectToInstanceObj(apps, &data); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 
 		// Get Root app
@@ -177,9 +193,9 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.A
 					continue
 				}
 
-				rootResponse := &apiResource.AppProjectResponse{}
+				rootResponse := &apiResource.Response{}
 				if err = utils.UnstructuredObjectToInstanceObj(root, &rootResponse); err != nil {
-					return nil, 0, err
+					return nil, err
 				}
 				parentsMap[app.Spec.RootApp] = rootResponse
 				parents = append(parents, rootResponse)
@@ -191,8 +207,8 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.A
 	for _, child := range parents {
 		_child := child
 		if err := a.Children(_child, sort); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
-	return parents, int64(len(parents)), nil
+	return parents, nil
 }

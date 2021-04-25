@@ -16,46 +16,45 @@ func NewAllConfigService(i service.IService) *GlobalConfigService {
 	return &GlobalConfigService{i}
 }
 
-func (a *GlobalConfigService) GetByUUID(name string, uuid string) (interface{}, error) {
-	allies := &globalconfig.GlobalConfig{}
-	if uuid != "" {
-		if err := a.IService.GetByUUID(common.DefaultNamespace, common.GlobalConfig, uuid, allies); err != nil {
-			return nil, err
-		}
+func (a *GlobalConfigService) List(page, pageSize int64) ([]interface{}, error) {
+	offset := (page - 1) * pageSize
+	sort := map[string]interface{}{
+		"metadata.version": -1,
 	}
-	if name != "" {
-		if val, ok := allies.Spec.Service[name]; ok {
-			return val, nil
-		}
-	}
-	return allies, nil
+
+	unStruct, err := a.IService.List(common.DefaultNamespace, common.GlobalConfig, "", sort, offset, pageSize)
+
+	return unStruct, err
 }
 
-func (a *GlobalConfigService) Create(reqAll *globalconfigproject.RequestGlobalConfig) error {
+func (a *GlobalConfigService) Create(reqAll *globalconfigproject.RequestGlobalConfig) (core.IObject, error) {
 	autoconfigure := &globalconfig.GlobalConfig{
-		Metadata: core.Metadata{
-			Name: reqAll.Name,
-			Kind: reqAll.Kind,
-		},
 		Spec: globalconfig.Spec{
-			Service: reqAll.Request.Service,
+			Service:    reqAll.Service,
+			SortString: reqAll.SortString,
 		},
 	}
 	autoconfigure.GenerateVersion()
-	_, err := a.IService.Create(common.DefaultNamespace, common.GlobalConfig, autoconfigure)
-	return err
+	res, err := a.IService.Create(common.DefaultNamespace, common.GlobalConfig, autoconfigure)
+	return res, err
 }
 
 func (a *GlobalConfigService) Update(uuid string, reqAll *globalconfigproject.RequestGlobalConfig) (core.IObject, bool, error) {
 	autoconfigure := &globalconfig.GlobalConfig{
 		Metadata: core.Metadata{
-			Name: reqAll.Name,
-			Kind: reqAll.Kind,
+			UUID: uuid,
 		},
 		Spec: globalconfig.Spec{
-			Service: reqAll.Request.Service,
+			Service:    reqAll.Service,
+			SortString: reqAll.SortString,
 		},
 	}
+
 	autoconfigure.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.GlobalConfig, uuid, autoconfigure)
+	_, whether, err := a.IService.Apply(common.DefaultNamespace, common.GlobalConfig, uuid, autoconfigure, true)
+	if autoconfigure.Name == "" {
+		autoconfigure.Name = "全局配置服务"
+	}
+
+	return autoconfigure, whether, err
 }

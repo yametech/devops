@@ -3,53 +3,33 @@ package appservice
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/yametech/devops/pkg/api"
-	"github.com/yametech/devops/pkg/resource/appproject"
-	"net/http"
 	apiResource "github.com/yametech/devops/pkg/api/resource/appproject"
+	"github.com/yametech/devops/pkg/resource/appproject"
 )
 
 func (s *Server) GetAppConfig(g *gin.Context) {
-	var data apiResource.AppConfigRequest
-	if err := g.ShouldBindJSON(&data); err != nil {
-		api.RequestParamsError(g, "error", err)
+	uuid := g.Param("uuid")
+	config, err := s.AppConfigService.GetByFilter(uuid)
+	if err != nil {
+		api.ResponseSuccess(g, &appproject.AppConfig{})
+		return
 	}
 
-	config := &appproject.AppConfig{
-		Spec: appproject.AppConfigSpec{
-			App: data.App,
-			ConfigType: data.ConfigType,
-		},
-	}
-
-	if err := s.AppConfigService.GetByFilter(config); err != nil {
-		api.RequestParamsError(g, "error", err)
-	}
-
-	g.JSON(http.StatusOK, gin.H{
-		"data": config,
-	})
+	api.ResponseSuccess(g, config)
 }
 
 func (s *Server) UpdateAppConfig(g *gin.Context) {
-	var data apiResource.AppConfigRequest
+	data := &apiResource.AppConfigRequest{}
 	if err := g.ShouldBindJSON(&data); err != nil {
-		api.RequestParamsError(g, "error", err)
+		api.ResponseError(g, err)
+		return
 	}
 
-	config := &appproject.AppConfig{
-		Spec: appproject.AppConfigSpec{
-			App: data.App,
-			ConfigType: data.ConfigType,
-			Config: data.Config,
-		},
-	}
-	result, update, err := s.AppConfigService.Update(config)
+	result, update, err := s.AppConfigService.Update(data)
 	if err != nil {
-		api.RequestParamsError(g, "error", err)
+		api.ResponseError(g, err)
+		return
 	}
 
-	g.JSON(http.StatusOK, gin.H{
-		"data":   result,
-		"update": update,
-	})
+	api.ResponseSuccess(g, gin.H{"results": result, "update": update})
 }
