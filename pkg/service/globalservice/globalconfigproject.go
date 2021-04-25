@@ -35,7 +35,7 @@ func (a *GlobalConfigService) Create(reqAll *globalconfigproject.RequestGlobalCo
 	autoconfigure := &globalconfig.GlobalConfig{
 		Metadata: core.Metadata{
 			Name: reqAll.Name,
-			Kind: reqAll.Type,
+			Kind: reqAll.Kind,
 		},
 		Spec: globalconfig.Spec{
 			Service: reqAll.Request.Service,
@@ -50,7 +50,7 @@ func (a *GlobalConfigService) Update(uuid string, reqAll *globalconfigproject.Re
 	autoconfigure := &globalconfig.GlobalConfig{
 		Metadata: core.Metadata{
 			Name: reqAll.Name,
-			Kind: reqAll.Type,
+			Kind: reqAll.Kind,
 		},
 		Spec: globalconfig.Spec{
 			Service: reqAll.Request.Service,
