@@ -11,6 +11,8 @@ const (
 	AppConfig        = "appconfig"
 	AppProject       = "appproject"
 	Namespace        = "namespace"
+	History          = "history"
+	Resource         = "resource"
 	GlobalConfig     = "globalconfig"
 	WorkOrder        = "workorder"
 )
