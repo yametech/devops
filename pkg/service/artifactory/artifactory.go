@@ -2,16 +2,18 @@ package artifactory
 
 import (
 	"fmt"
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	arResource "github.com/yametech/devops/pkg/resource/artifactory"
 	"github.com/yametech/devops/pkg/service"
+	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"github.com/go-git/go-git/v5"
 	"strings"
 	"time"
 )
@@ -19,37 +21,6 @@ import (
 type ArtifactService struct {
 	service.IService
 }
-
-func NewArtifact(i service.IService) *ArtifactService {
-	return &ArtifactService{i}
-}
-
-func (a *ArtifactService) Watch(version string) (chan core.IObject, chan struct{}) {
-	objectChan := make(chan core.IObject, 32)
-	closed := make(chan struct{})
-	a.IService.Watch(common.DefaultNamespace, common.Artifactory, string(arResource.ArtifactKind), version, objectChan, closed)
-	return objectChan, closed
-}
-
-func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}, int64, error) {
-	offset := (page - 1) * pageSize
-	filter := map[string]interface{}{}
-	if name != "" {
-		filter["metadata.name"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + name + ".*", Options: "i"}}
-	}
-	sort := map[string]interface{}{
-		"metadata.version": -1,
-	}
-
-	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.Artifactory, filter, sort, offset, pageSize)
-	if err != nil {
-		return nil, 0, err
-	}
-	count, err := a.IService.Count(common.DefaultNamespace, common.Artifactory, filter)
-	if err != nil {
-		return nil, 0, err
-	}
-	return data, count, nil
 
 func NewArtifact(i service.IService) *ArtifactService {
 	return &ArtifactService{i}
@@ -111,16 +82,16 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 	return nil
 }
 
-func (a *ArtifactService) GetByUUID(appname string) (*arResource.Artifact, error) {
+func (a *ArtifactService) GetByUUID(uuid string) (*arResource.Artifact, error) {
 	ar := &arResource.Artifact{}
-	err := a.IService.GetByUUID(common.DefaultNamespace, common.Artifactory, appname, ar)
+	err := a.IService.GetByUUID(common.DefaultNamespace, common.Artifactory, uuid, ar)
 	if err != nil {
 		return nil, err
 	}
 	return ar, nil
 }
 
-func (a *ArtifactService) Update(appname string, reqAr *apiResource.RequestArtifact) (core.IObject, bool, error) {
+func (a *ArtifactService) Update(uuid string, reqAr *apiResource.RequestArtifact) (core.IObject, bool, error) {
 	ar := &arResource.Artifact{
 		Spec: arResource.ArtifactSpec{
 			GitUrl:   reqAr.GitUrl,
@@ -133,11 +104,11 @@ func (a *ArtifactService) Update(appname string, reqAr *apiResource.RequestArtif
 		},
 	}
 	ar.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.Artifactory, appname, ar, false)
+	return a.IService.Apply(common.DefaultNamespace, common.Artifactory, uuid, ar, false)
 }
 
-func (a *ArtifactService) Delete(appname string) error {
-	err := a.IService.Delete(common.DefaultNamespace, common.Artifactory, appname)
+func (a *ArtifactService) Delete(uuid string) error {
+	err := a.IService.Delete(common.DefaultNamespace, common.Artifactory, uuid)
 	if err != nil {
 		return err
 	}
@@ -172,72 +143,18 @@ func SendCIEcho(uuid string, a *arResource.ArtifactCIInfo) error {
 	return nil
 }
 
-func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
-	ar := &arResource.Artifact{
-		Spec: arResource.ArtifactSpec{
-			GitUrl:   reqAr.GitUrl,
-			AppName:  reqAr.AppName,
-			Branch:   reqAr.Branch,
-			Tag:      reqAr.Tag,
-			Remarks:  reqAr.Remarks,
-			Language: reqAr.Language,
-			Images:   reqAr.ImagesHub,
-		},
-	}
-
-	ar.GenerateVersion()
-	_, err := a.IService.Create(common.DefaultNamespace, common.Artifactory, ar)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *ArtifactService) GetByUUID(uuid string) (*arResource.Artifact, error) {
-	ar := &arResource.Artifact{}
-	err := a.IService.GetByUUID(common.DefaultNamespace, common.Artifactory, uuid, ar)
-	if err != nil {
-		return nil, err
-	}
-	return ar, nil
-}
-
-func (a *ArtifactService) Update(uuid string, reqAr *apiResource.RequestArtifact) (core.IObject, bool, error) {
-	ar := &arResource.Artifact{
-		Spec: arResource.ArtifactSpec{
-			GitUrl:   reqAr.GitUrl,
-			AppName:  reqAr.AppName,
-			Branch:   reqAr.Branch,
-			Tag:      reqAr.Tag,
-			Remarks:  reqAr.Remarks,
-			Language: reqAr.Language,
-			Images:   reqAr.ImagesHub,
-		},
-	}
-	ar.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.Artifactory, uuid, ar, false)
-}
-
-func (a *ArtifactService) Delete(uuid string) error {
-	err := a.IService.Delete(common.DefaultNamespace, common.Artifactory, uuid)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (a *ArtifactService) GetBanch(gitpath string) ([]string, error) {
 	url := fmt.Sprintf("http://%s:%s@%s", common.GitUser, common.GitPW, gitpath)
 	r, _ := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-		URL: url,
-		SingleBranch:false,
-		NoCheckout:true,
-		Depth: 1,
+		URL:          url,
+		SingleBranch: false,
+		NoCheckout:   true,
+		Depth:        1,
 	})
 	var sliceBranch []string
 	referenceIter, _ := r.References()
 	err := referenceIter.ForEach(func(c *plumbing.Reference) error {
-		if strings.Contains(string(c.Name()), "refs/remotes/origin/"){
+		if strings.Contains(string(c.Name()), "refs/remotes/origin/") {
 			sliceTemp := strings.Split(string(c.Name()), "refs/remotes/origin/")
 			sliceBranch = append(sliceBranch, sliceTemp[len(sliceTemp)-1])
 		}
