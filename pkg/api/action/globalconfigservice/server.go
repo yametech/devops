@@ -21,8 +21,8 @@ func NewGlobalServiceServer(serviceName string, server *api.Server) *Server {
 	//allConfigProject
 	{
 		group.GET("/allConfig-project", allServer.ListGlobalConfig)
-		group.POST("/allConfig-project", allServer.CreateGlobalConfig)
-		group.PUT("/allConfig-project/:uuid", allServer.UpdateGlobalConfig)
+		//group.POST("/allConfig-project", allServer.CreateGlobalConfig)
+		group.POST("/allConfig-project", allServer.UpdateGlobalConfig)
 	}
 	return allServer
 }
