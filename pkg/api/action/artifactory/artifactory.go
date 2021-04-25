@@ -46,10 +46,10 @@ func (b *baseServer) ListArtifact(g *gin.Context) {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-
 	data := map[string]interface{}{"results": results}
 	data["count"] = count
-	api.ResponseSuccess(g, data, "")
+	api.ResponseSuccess(g, data)
+	//g.JSON(http.StatusOK, map[string]interface{}{"data": results})
 }
 
 func (b *baseServer) CreateArtifact(g *gin.Context) {
@@ -64,12 +64,12 @@ func (b *baseServer) CreateArtifact(g *gin.Context) {
 		return
 	}
 
-	res, err := b.ArtifactService.Create(request)
+	err = b.ArtifactService.Create(request)
 	if err != nil {
-		api.RequestParamsError(g, "create artifact error", err)
+		api.RequestParamsError(g, "create user error", err)
 		return
 	}
-	api.ResponseSuccess(g, res, "")
+	g.JSON(http.StatusOK, request)
 }
 
 func (b *baseServer) GetArtifact(g *gin.Context) {
@@ -79,9 +79,7 @@ func (b *baseServer) GetArtifact(g *gin.Context) {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-
-	result := map[string]interface{}{"results": data}
-	api.ResponseSuccess(g, result, "")
+	g.JSON(http.StatusOK, data)
 }
 
 func (b *baseServer) DeleteArtifact(g *gin.Context) {
@@ -91,7 +89,7 @@ func (b *baseServer) DeleteArtifact(g *gin.Context) {
 		api.RequestParamsError(g, "delete fail", err)
 		return
 	}
-	api.ResponseSuccess(g, nil, "删除成功")
+	g.JSON(http.StatusOK, nil)
 }
 
 func (b *baseServer) UpdateArtifact(g *gin.Context) {
@@ -120,24 +118,18 @@ func (b *baseServer) UpdateArtifact(g *gin.Context) {
 
 func (b *baseServer) GetBranchList(g *gin.Context) {
 	gitPath := g.Query("gitpath")
-	gitPath = strings.Replace(gitPath, ".git", "", -1)
-	sliceTemp := strings.Split(gitPath, "/")
-	org, name := "", ""
-	if len(sliceTemp) >= 2 {
-		org = sliceTemp[len(sliceTemp)-2]
-		name = sliceTemp[len(sliceTemp)-1]
-	} else {
-		return
+
+	if strings.Contains(gitPath, "http://") {
+		sliceTemp := strings.Split(gitPath, "http://")
+		gitPath = sliceTemp[len(sliceTemp)-1]
+	} else if strings.Contains(gitPath, "https://") {
+		sliceTemp := strings.Split(gitPath, "https://")
+		gitPath = sliceTemp[len(sliceTemp)-1]
 	}
-
 	results, err := b.ArtifactService.GetBranch(gitPath)
-
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-
-	data := map[string]interface{}{"results": results}
-	data["count"] = len(results)
-	api.ResponseSuccess(g, data, "")
+	g.JSON(http.StatusOK, map[string]interface{}{"code": http.StatusOK, "data": results})
 }
