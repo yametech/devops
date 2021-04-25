@@ -34,7 +34,7 @@ func NewArBaseServer(serviceName string, server *api.Server) *baseServer {
 
 	//GetBranch
 	{
-		group.GET("/getbranch/:gitpath", base.GetBranchList)
+		group.GET("/getbranch", base.GetBranchList)
 	}
 	return base
 }
