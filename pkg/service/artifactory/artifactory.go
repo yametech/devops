@@ -151,7 +151,8 @@ func (a *ArtifactService) GetBanch(gitpath string) ([]string, error) {
 		NoCheckout:   true,
 		Depth:        1,
 	})
-	var sliceBranch []string
+
+	sliceBranch := make([]string, 0)
 	referenceIter, _ := r.References()
 	err := referenceIter.ForEach(func(c *plumbing.Reference) error {
 		if strings.Contains(string(c.Name()), "refs/remotes/origin/") {
