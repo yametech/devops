@@ -5,7 +5,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage/memory"
-	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
@@ -81,7 +80,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 			Tag:      reqAr.Tag,
 			Remarks:  reqAr.Remarks,
 			Language: reqAr.Language,
-			Images:   reqAr.ImagesHub,
+			Registry: reqAr.Registry,
 		},
 	}
 
@@ -91,11 +90,12 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 		return err
 	}
 	//TODO:sendCIEcho
-	arCIInfo := &arResource.ArtifactCIInfo{}
-	_ = arCIInfo
-	if err := SendCIEcho(ar.Metadata.UUID, arCIInfo); err != nil {
-		fmt.Println(err)
-	}
+	//arCIInfo := &arResource.ArtifactCIInfo{}
+	//sendCIInfo, err := core.ToMap(arCIInfo)
+	//if SendEchoer(ar.Metadata.UUID, common.EchoerCI, sendCIInfo) {
+	//	//TODO:change CIStatus
+	//	return nil
+	//}
 	return nil
 }
 
@@ -117,7 +117,7 @@ func (a *ArtifactService) Update(uuid string, reqAr *apiResource.RequestArtifact
 			Tag:      reqAr.Tag,
 			Remarks:  reqAr.Remarks,
 			Language: reqAr.Language,
-			Images:   reqAr.ImagesHub,
+			Registry: reqAr.Registry,
 		},
 	}
 	ar.GenerateVersion()
@@ -132,9 +132,10 @@ func (a *ArtifactService) Delete(uuid string) error {
 	return nil
 }
 
-func SendCIEcho(uuid string, a *arResource.ArtifactCIInfo) error {
-	if uuid == "" {
-		return errors.New("UUID is not none")
+func SendEchoer(stepName string, actionName string, a map[string]interface{}) bool {
+	if stepName == "" {
+		fmt.Println("UUID is not none")
+		return false
 	}
 
 	flowRun := &flowrun.FlowRun{
@@ -144,23 +145,20 @@ func SendCIEcho(uuid string, a *arResource.ArtifactCIInfo) error {
 	flowRunStep := map[string]string{
 		"SUCCESS": "done", "FAIL": "done",
 	}
-	flowRunAction, err := core.ToMap(a)
-	if err != nil {
-		return err
-	}
 
-	flowRunStepName := fmt.Sprintf("PRODCI_%s", uuid)
-	flowRun.AddStep(flowRunStepName, flowRunStep, common.EchoerCI, flowRunAction)
+	flowRunStepName := fmt.Sprintf("%s_%s", common.DefaultNamespace, stepName)
+	flowRun.AddStep(flowRunStepName, flowRunStep, actionName, a)
 
 	flowRunData := flowRun.Generate()
 	fmt.Println(flowRunData)
 	if !flowRun.Create(flowRunData) {
-		return errors.New("send fsm error")
+		fmt.Println("send fsm error")
+		return false
 	}
-	return nil
+	return true
 }
 
-func (a *ArtifactService) GetBanch(gitpath string) ([]string, error) {
+func (a *ArtifactService) GetBranch(gitpath string) ([]string, error) {
 	url := fmt.Sprintf("http://%s:%s@%s", common.GitUser, common.GitPW, gitpath)
 	r, _ := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
 		URL:          url,

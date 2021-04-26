@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	flag.StringVar(&EchoerCI, "echoerci", "artifactoryCI", "-echoerci=artifactoryCI")
-	flag.StringVar(&EchoerCD, "echoercd", "artifactoryCD", "-echoercd=artifactoryCD")
-	flag.StringVar(&GitUser, "gituser", "gituser", "-gituser=git_user")
-	flag.StringVar(&GitPW, "gitpw", "gitpw", "-gitpw=git_password")
+	flag.StringVar(&EchoerCI, "echoerci", EchoerCI, "-echoerci=artifactoryCI")
+	flag.StringVar(&EchoerCD, "echoercd", EchoerCD, "-echoercd=artifactoryCD")
+	flag.StringVar(&GitUser, "gituser", GitUser, "-gituser=git_user")
+	flag.StringVar(&GitPW, "gitpw", GitPW, "-gitpw=git_password")
 
 }

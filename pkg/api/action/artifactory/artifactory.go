@@ -123,7 +123,7 @@ func (b *baseServer) GetBranchList(g *gin.Context) {
 		sliceTemp := strings.Split(gitPath, "https://")
 		gitPath = sliceTemp[len(sliceTemp)-1]
 	}
-	results, err := b.ArtifactService.GetBanch(gitPath)
+	results, err := b.ArtifactService.GetBranch(gitPath)
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
