@@ -11,6 +11,7 @@ import (
 	"github.com/yametech/devops/pkg/core"
 	arResource "github.com/yametech/devops/pkg/resource/artifactory"
 	"github.com/yametech/devops/pkg/service"
+	"github.com/yametech/devops/pkg/utils"
 	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -56,6 +57,9 @@ func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}
 }
 
 func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
+
+	
+
 	gitPath := ""
 	if strings.Contains(reqAr.GitUrl, "http://") {
 		sliceTemp := strings.Split(reqAr.GitUrl, "http://")
@@ -66,10 +70,8 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 	}
 
 	if len(reqAr.Tag) == 0 {
-		commithash, err := GetHeadHash(gitPath)
-		if err != nil {
-			reqAr.Tag = commithash
-		}
+		reqAr.Tag = utils.NewSUID().String()
+
 	}
 	ar := &arResource.Artifact{
 		Spec: arResource.ArtifactSpec{
@@ -177,19 +179,4 @@ func (a *ArtifactService) GetBanch(gitpath string) ([]string, error) {
 		return nil
 	})
 	return sliceBranch, err
-}
 
-func GetHeadHash(gitpath string) (string, error) {
-	url := fmt.Sprintf("http://%s:%s@%s", common.GitUser, common.GitPW, gitpath)
-	r, _ := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-		URL:          url,
-		SingleBranch: false,
-		NoCheckout:   true,
-		Depth:        1,
-	})
-	ref, err := r.Head()
-	if ref != nil {
-		return ref.Hash().String(), err
-	}
-	return "", err
-}
