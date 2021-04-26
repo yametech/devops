@@ -24,5 +24,5 @@ func TestCreatCIfsl(t *testing.T) {
 	//c, _ := json.Marshal(b)
 	//fmt.Println(b)
 	//fmt.Println(string(c))
-	artifactory2.SendEcho("", common.EchoerCI, b)
+	artifactory2.SendEchoer("", common.EchoerCI, b)
 }

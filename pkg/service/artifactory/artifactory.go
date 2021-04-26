@@ -75,7 +75,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 	//TODO:sendCIEcho
 	//arCIInfo := &arResource.ArtifactCIInfo{}
 	//sendCIInfo, err := core.ToMap(arCIInfo)
-	//if SendEcho(ar.Metadata.UUID, common.EchoerCI, sendCIInfo) {
+	//if SendEchoer(ar.Metadata.UUID, common.EchoerCI, sendCIInfo) {
 	//	//TODO:change CIStatus
 	//	return nil
 	//}
@@ -115,7 +115,7 @@ func (a *ArtifactService) Delete(uuid string) error {
 	return nil
 }
 
-func SendEcho(stepName string, actionName string, a map[string]interface{}) bool {
+func SendEchoer(stepName string, actionName string, a map[string]interface{}) bool {
 	if stepName == "" {
 		fmt.Println("UUID is not none")
 		return false
@@ -141,7 +141,7 @@ func SendEcho(stepName string, actionName string, a map[string]interface{}) bool
 	return true
 }
 
-func (a *ArtifactService) GetBanch(gitpath string) ([]string, error) {
+func (a *ArtifactService) GetBranch(gitpath string) ([]string, error) {
 	url := fmt.Sprintf("http://%s:%s@%s", common.GitUser, common.GitPW, gitpath)
 	r, _ := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
 		URL:          url,
