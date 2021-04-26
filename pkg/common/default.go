@@ -7,6 +7,7 @@ const (
 	User             = "user"
 	UserProject      = "userproject"
 	EchoerUrl        = "http://10.200.65.192:8080"
+	WorkOrderStatus  = "http://127.0.0.1:8081/workorder/status"
 	Artifactory      = "artifactory"
 	AppConfig        = "appconfig"
 	AppProject       = "appproject"

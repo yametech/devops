@@ -1,12 +1,13 @@
 package appservice
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/appproject"
 	"github.com/yametech/devops/pkg/common"
-	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/appproject"
+	"github.com/yametech/devops/pkg/resource/workorder"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/utils"
 )
@@ -18,8 +19,6 @@ type AppConfigService struct {
 func NewAppConfigService(i service.IService) *AppConfigService {
 	return &AppConfigService{IService: i}
 }
-
-
 
 func (a *AppConfigService) GetByFilter(appid string) (*apiResource.AppConfigResponse, error) {
 	req := &appproject.AppConfig{
@@ -52,33 +51,54 @@ func (a *AppConfigService) GetByFilter(appid string) (*apiResource.AppConfigResp
 	}
 
 	response := apiResource.AppConfigResponse{
-		Config: req,
+		Config:    req,
 		Resources: resource,
 	}
 
 	return &response, nil
 }
 
-func (a *AppConfigService) Update(data *apiResource.AppConfigRequest) (core.IObject, bool, error) {
+func (a *AppConfigService) Update(data *apiResource.AppConfigRequest) (*apiResource.AppConfigResponse, bool, error) {
 
-	app := &appproject.AppProject{}
-	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, data.App, app); err != nil {
-		return nil, false, errors.New("The app is not exist")
+	// check the workorder status
+	url := fmt.Sprintf("%s?relation=%s&order_type=%d", common.WorkOrderStatus, data.App, workorder.Resources)
+	resp, err := utils.Request("GET", url, nil, nil)
+	if err != nil {
+		return nil, false, errors.New("Can not Get the worker order status")
 	}
 
-	if app.Spec.AppType != appproject.App {
-		return nil, false, errors.New("This is not an App type")
+	status := utils.WorkOrderStatusResponse{}
+	if err = json.Unmarshal(resp, &status); err != nil {
+		return nil, false, err
 	}
 
-	// Merging request resources from the same namespace
+	if status.Data == workorder.Checking {
+		return nil, false, errors.New("the worker order is checking, can not submit the data")
+	}
 
-
-	// check the resource
-	for _, resource := range data.Resources {
+	// check Cpus and Memories
+	checkMap := make(map[string]*appproject.Resource)
+	for parentId, total := range data.Totals {
 		parent := &appproject.Resource{}
-		if err := a.IService.GetByUUID(common.DefaultNamespace, common.Resource, resource.ParentApp, parent); err != nil {
+		if err := a.IService.GetByUUID(common.DefaultNamespace, common.Resource, parentId, parent); err != nil {
 			return nil, false, errors.New("The resource is not exist")
 		}
+		checkMap[parentId] = parent
+		limitCpu := int(((parent.Spec.Cpus - (parent.Spec.CpuRemain - total.Cpu)) / parent.Spec.Cpus) * 100)
+		if limitCpu > parent.Spec.Threshold {
+			err := fmt.Sprintf("CPU total resources exceed %d", parent.Spec.Threshold)
+			return nil, false, errors.New(err)
+		}
+		limitMemory := int(((parent.Spec.Memories - (parent.Spec.MemoryRemain - total.Memory)) / parent.Spec.Memory) * 100)
+		if limitMemory > parent.Spec.Threshold {
+			err := fmt.Sprintf("Memory total resources exceed %d", parent.Spec.Threshold)
+			return nil, false, errors.New(err)
+		}
+	}
+
+	// check the other resources
+	for _, resource := range data.Resources {
+		parent := checkMap[resource.ParentApp]
 		if !parent.Spec.Approval {
 			continue
 		}
@@ -91,40 +111,24 @@ func (a *AppConfigService) Update(data *apiResource.AppConfigRequest) (core.IObj
 		if resource.Pod > parent.Spec.Pod {
 			return nil, false, errors.New("The Pod resource exceeds limit")
 		}
-		limitCpu := int(((parent.Spec.Cpus - (parent.Spec.CpuRemain - resource.Cpu)) / parent.Spec.Cpus) * 100)
-		if limitCpu > parent.Spec.Threshold{
-			err := fmt.Sprintf("CPU total resources exceed %d", parent.Spec.Threshold)
-			return nil, false, errors.New(err)
-		}
-		limitMemory := int(((parent.Spec.Memories - (parent.Spec.MemoryRemain - resource.Memory)) / parent.Spec.Memory) * 100)
-		if limitMemory > parent.Spec.Threshold{
-			err := fmt.Sprintf("Memory total resources exceed %d", parent.Spec.Threshold)
-			return nil, false, errors.New(err)
-		}
 	}
 
+	// update the Resources Config
+	updateResource := make([]*appproject.Resource, 0)
 	for _, resource := range data.Resources {
-		parent := &appproject.Resource{}
-		if err := a.IService.GetByUUID(common.DefaultNamespace, common.Resource, resource.ParentApp, parent); err != nil {
-			return nil, false, errors.New("The resource is not exist")
-		}
-
+		parent := checkMap[resource.ParentApp]
 		res := &appproject.Resource{}
-		if err := a.IService.GetByUUID(common.DefaultNamespace, common.Resource, resource.App, res); err != nil {
-			return nil, false, errors.New("The resource is not exist")
-		}
+		a.IService.GetByUUID(common.DefaultNamespace, common.Resource, resource.UUID, res)
 
 		originParent := &appproject.Resource{}
-		if err := a.IService.GetByUUID(common.DefaultNamespace, common.Resource, res.Spec.ParentApp, originParent); err != nil {
-			return nil, false, errors.New("The resource is not exist")
-		}
+		if err := a.IService.GetByUUID(common.DefaultNamespace, common.Resource, res.Spec.ParentApp, originParent); err == nil {
+			originParent.Spec.CpuRemain += res.Spec.Cpu
+			originParent.Spec.MemoryRemain += res.Spec.Memory
 
-		originParent.Spec.CpuRemain += res.Spec.Cpu
-		originParent.Spec.MemoryRemain += res.Spec.Memory
-
-		originParent.GenerateVersion()
-		if _, _, err := a.IService.Apply(common.DefaultNamespace, common.Resource, originParent.UUID, originParent, false); err != nil {
-			return nil, false, err
+			originParent.GenerateVersion()
+			if _, _, err := a.IService.Apply(common.DefaultNamespace, common.Resource, originParent.UUID, originParent, false); err != nil {
+				return nil, false, err
+			}
 		}
 
 		parent.Spec.CpuRemain -= resource.Cpu
@@ -137,12 +141,55 @@ func (a *AppConfigService) Update(data *apiResource.AppConfigRequest) (core.IObj
 
 		res.Spec.Cpu = resource.Cpu
 		res.Spec.Memory = resource.Memory
+		res.Spec.Pod = resource.Pod
 		res.Spec.ParentApp = parent.UUID
+		res.Spec.App = resource.App
+		res.Metadata.Name = resource.Name
 
 		res.GenerateVersion()
 		if _, _, err := a.IService.Apply(common.DefaultNamespace, common.Resource, res.UUID, res, false); err != nil {
 			return nil, false, err
 		}
+
+		updateResource = append(updateResource, res)
+
+		// create history
+		app := &appproject.AppProject{}
+		if err := a.IService.GetByUUID(common.DefaultNamespace, common.Namespace, parent.Spec.App, app); err != nil {
+			return nil, false, errors.New("the Namespace is not found")
+		}
+
+		// Get Creator
+
+		history := &appproject.ConfigHistory{
+			Spec: appproject.HistorySpec{
+				App: res.Spec.App,
+				History: map[string]interface{}{
+					"creator":        "",
+					"name":           res.Name,
+					"namespace":      app.Spec.Desc,
+					"pod":            res.Spec.Pod,
+					"cpu_limit":      parent.Spec.Cpu,
+					"memory_limit":   parent.Spec.Memory,
+					"cpu_require":    res.Spec.Cpu,
+					"memory_require": res.Spec.Memory,
+				},
+			},
+		}
+
+		if _, err := a.IService.Create(common.DefaultNamespace, common.History, history); err != nil {
+			return nil, false, errors.New("the history create failed")
+		}
+	}
+
+	// update config
+	app := &appproject.AppProject{}
+	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, data.App, app); err != nil {
+		return nil, false, errors.New("The app is not exist")
+	}
+
+	if app.Spec.AppType != appproject.App {
+		return nil, false, errors.New("This is not an App type")
 	}
 
 	dbObj := &appproject.AppConfig{}
@@ -154,7 +201,17 @@ func (a *AppConfigService) Update(data *apiResource.AppConfigRequest) (core.IObj
 	dbObj.Spec.App = app.Metadata.UUID
 
 	dbObj.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj, false)
+	_, _, err = a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj, false)
+	if err != nil {
+		return nil, false, err
+	}
+
+	result := &apiResource.AppConfigResponse{
+		Config:    dbObj,
+		Resources: updateResource,
+	}
+
+	return result, true, nil
 }
 
 func (a *AppConfigService) History(appid string, page, pageSize int64) ([]interface{}, error) {

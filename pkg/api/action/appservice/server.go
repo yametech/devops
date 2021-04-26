@@ -36,6 +36,7 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 	{
 		group.GET("/app-config/:uuid", cfaServer.GetAppConfig)
 		group.POST("/app-config", cfaServer.UpdateAppConfig)
+		group.GET("/history/:uuid", cfaServer.ConfigHistory)
 	}
 
 	// Namespace

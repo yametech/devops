@@ -8,6 +8,7 @@ import (
 	"github.com/yametech/devops/pkg/resource/appproject"
 	"github.com/yametech/devops/pkg/resource/workorder"
 	"github.com/yametech/devops/pkg/store/mongo"
+	"github.com/yametech/devops/pkg/utils"
 	"io/ioutil"
 	"testing"
 )
@@ -90,11 +91,24 @@ func TestGetAppProject(t *testing.T) {
 	fmt.Println("success")
 }
 
-func TestGetData(t *testing.T) {
+func TestGenerateNumber(t *testing.T) {
 	w := &workorder.WorkOrder{
 		Spec: workorder.Spec{
 			OrderType: 0,
 		},
 	}
 	w.GenerateNumber()
+}
+
+func TestRequest(t *testing.T) {
+	url := fmt.Sprintf("http://127.0.0.1:8081/workorder/status?relation=%s&order_type=%d",
+		"57a093fb-d7fe-4875-b764-8da053994531", 1)
+	body, _ := utils.Request("GET",
+		url, nil, nil)
+
+	fmt.Println(body)
+	data := make(map[string]interface{})
+	json.Unmarshal(body, &data)
+	fmt.Println(data)
+	fmt.Println(data["data"])
 }
