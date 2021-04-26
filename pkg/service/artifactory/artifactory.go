@@ -57,8 +57,21 @@ func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}
 }
 
 func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
+
+	
+
+	gitPath := ""
+	if strings.Contains(reqAr.GitUrl, "http://") {
+		sliceTemp := strings.Split(reqAr.GitUrl, "http://")
+		gitPath = sliceTemp[len(sliceTemp)-1]
+	} else if strings.Contains(reqAr.GitUrl, "https://") {
+		sliceTemp := strings.Split(gitPath, "https://")
+		gitPath = sliceTemp[len(sliceTemp)-1]
+	}
+
 	if len(reqAr.Tag) == 0 {
 		reqAr.Tag = utils.NewSUID().String()
+
 	}
 	ar := &arResource.Artifact{
 		Spec: arResource.ArtifactSpec{
@@ -166,4 +179,4 @@ func (a *ArtifactService) GetBanch(gitpath string) ([]string, error) {
 		return nil
 	})
 	return sliceBranch, err
-}
+
