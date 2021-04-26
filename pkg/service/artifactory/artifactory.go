@@ -78,7 +78,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 			Tag:      reqAr.Tag,
 			Remarks:  reqAr.Remarks,
 			Language: reqAr.Language,
-			Images:   reqAr.ImagesHub,
+			Registry: reqAr.Registry,
 		},
 	}
 
@@ -115,7 +115,7 @@ func (a *ArtifactService) Update(uuid string, reqAr *apiResource.RequestArtifact
 			Tag:      reqAr.Tag,
 			Remarks:  reqAr.Remarks,
 			Language: reqAr.Language,
-			Images:   reqAr.ImagesHub,
+			Registry: reqAr.Registry,
 		},
 	}
 	ar.GenerateVersion()
