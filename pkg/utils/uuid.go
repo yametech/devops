@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/binary"
+	"github.com/google/uuid"
 	"net"
+	"strings"
 	"sync"
 	"time"
 )
@@ -173,4 +175,11 @@ func digTo62(_val int64, _digs byte, _sb *bytes.Buffer) {
 	if negative {
 		_sb.WriteByte('-')
 	}
+}
+
+func GoogleUUID() string {
+	uuidStr := uuid.New().String()
+	uuidList := strings.Split(uuidStr, "-")
+	uuidStr = strings.Join(uuidList, "")
+	return uuidStr
 }
