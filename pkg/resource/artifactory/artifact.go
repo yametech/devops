@@ -12,6 +12,7 @@ const ArtifactKind core.Kind = "artifact"
 
 const (
 	Created ArtifactStatus = iota
+	InitializeFail
 	Building
 	Built
 	BuiltFAIL
