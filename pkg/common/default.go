@@ -15,6 +15,7 @@ const (
 	History          = "history"
 	Resource         = "resource"
 	GlobalConfig     = "globalconfig"
+	WorkOrder        = "workorder"
 )
 
 var (

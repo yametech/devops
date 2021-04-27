@@ -61,6 +61,28 @@ func (n *NamespaceService) List() ([]*apiResource.Response, error) {
 	return parents, nil
 }
 
+func (n *NamespaceService) ListByLevel(level int) (interface{}, error) {
+
+	appType := appproject.AppType(level)
+
+	levelDataBaseMap := map[appproject.AppType]string{
+		appproject.BusinessLine: common.AppProject,
+		appproject.Service: common.AppProject,
+		appproject.App: common.AppProject,
+		appproject.Namespace: common.Namespace,
+	}
+
+	filter := map[string]interface{}{
+		"spec.app_type": level,
+	}
+
+	sort := map[string]interface{}{
+		"metadata.created_time": 1,
+	}
+
+	return n.IService.ListByFilter(common.DefaultNamespace, levelDataBaseMap[appType], filter, sort, 0, 0)
+}
+
 func (n *NamespaceService) Create(request *apiResource.Request) (core.IObject, error) {
 
 	req := &appproject.AppProject{

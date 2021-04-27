@@ -34,6 +34,7 @@ func (n *NamespaceConfigService) GetByFilter(appid string) (core.IObject, error)
 }
 
 func (n *NamespaceConfigService) Update(data *apiResource.NameSpaceRequest) (core.IObject, bool, error) {
+
 	app := &appproject.AppProject{}
 	if err := n.GetByUUID(common.DefaultNamespace, common.Namespace, data.App, app); err != nil {
 		return nil, false, errors.New("The namespace is not exist")
@@ -43,11 +44,23 @@ func (n *NamespaceConfigService) Update(data *apiResource.NameSpaceRequest) (cor
 		return nil, false, errors.New("This is not an Namespace type")
 	}
 
-
 	dbObj := &appproject.Resource{}
 	n.IService.GetByFilter(common.DefaultNamespace, common.Resource, dbObj, map[string]interface{}{
 		"spec.app": app.Metadata.UUID,
 	})
+
+	// create history
+	// Get creator
+	history := &appproject.ConfigHistory{
+		Spec: appproject.HistorySpec{
+			App: dbObj.Spec.App,
+			History: map[string]interface{}{
+				"creator": "",
+				"cpu_before": dbObj.Spec.Cpu,
+				"memory_before": dbObj.Spec.Memory,
+			},
+		},
+	}
 
 	dbObj.Spec.App = app.Metadata.UUID
 	dbObj.Spec.Threshold = data.Threshold
@@ -57,5 +70,19 @@ func (n *NamespaceConfigService) Update(data *apiResource.NameSpaceRequest) (cor
 	dbObj.Spec.Pod = data.Pod
 
 	dbObj.GenerateVersion()
-	return n.IService.Apply(common.DefaultNamespace, common.Resource, dbObj.UUID, dbObj, false)
+
+	result, update, err := n.IService.Apply(common.DefaultNamespace, common.Resource, dbObj.UUID, dbObj, false)
+	if err != nil {
+		return nil, false, err
+	}
+
+	history.Spec.History["cpu_now"] = dbObj.Spec.Cpu
+	history.Spec.History["memory_now"] = dbObj.Spec.Memory
+
+
+	if _, err = n.IService.Create(common.DefaultNamespace, common.History, history); err != nil {
+		return nil, false, errors.New("the history create failed")
+	}
+
+	return result, update, nil
 }
