@@ -10,6 +10,7 @@ import (
 	"github.com/yametech/devops/pkg/resource/workorder"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/utils"
+	apiWorkorder "github.com/yametech/devops/pkg/api/resource/workorder"
 )
 
 type AppConfigService struct {
@@ -67,7 +68,7 @@ func (a *AppConfigService) Update(data *apiResource.AppConfigRequest) (*apiResou
 		return nil, false, errors.New("Can not Get the worker order status")
 	}
 
-	status := utils.WorkOrderStatusResponse{}
+	status := &apiWorkorder.WorkOrderStatusResponse{}
 	if err = json.Unmarshal(resp, &status); err != nil {
 		return nil, false, err
 	}
@@ -212,6 +213,10 @@ func (a *AppConfigService) Update(data *apiResource.AppConfigRequest) (*apiResou
 	}
 
 	return result, true, nil
+}
+
+func (a *AppConfigService) DeleteResource(uuid string) error {
+	return a.IService.Delete(common.DefaultNamespace, common.Resource, uuid)
 }
 
 func (a *AppConfigService) History(appid string, page, pageSize int64) ([]interface{}, error) {

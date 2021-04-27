@@ -3,16 +3,9 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/yametech/devops/pkg/resource/workorder"
 	"io/ioutil"
 	"net/http"
 )
-
-type WorkOrderStatusResponse struct {
-	Code int                   `json:"code"`
-	Data workorder.OrderStatus `json:"data"`
-	Msg  string                `json:"msg"`
-}
 
 func Request(method string, url string, data map[string]interface{}, headers map[string]string) ([]byte, error) {
 	client := &http.Client{}

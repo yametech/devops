@@ -12,3 +12,9 @@ type Request struct {
 	Check                 map[string]interface{} `json:"check"`
 	Result                map[string]interface{} `json:"result"`
 }
+
+type WorkOrderStatusResponse struct {
+	Code int                   `json:"code"`
+	Data workorder.OrderStatus `json:"data"`
+	Msg  string                `json:"msg"`
+}
