@@ -41,12 +41,15 @@ func (b *baseServer) ListArtifact(g *gin.Context) {
 	pageSizeInt, _ := strconv.Atoi(g.DefaultQuery("pagesize", "10"))
 	name := g.DefaultQuery("name", "")
 
-	results, _, err := b.ArtifactService.List(name, int64(pageInt), int64(pageSizeInt))
+	results, count, err := b.ArtifactService.List(name, int64(pageInt), int64(pageSizeInt))
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-	g.JSON(http.StatusOK, map[string]interface{}{"data": results})
+	data := map[string]interface{}{"results": results}
+	data["count"] = count
+	api.ResponseSuccess(g, data)
+	//g.JSON(http.StatusOK, map[string]interface{}{"data": results})
 }
 
 func (b *baseServer) CreateArtifact(g *gin.Context) {

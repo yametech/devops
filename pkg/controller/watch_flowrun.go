@@ -30,7 +30,7 @@ func NewWatchFlowRun(ikvStore store.IKVStore) *WatchFlowRun {
 func (w *WatchFlowRun) Run() error {
 	fmt.Println(fmt.Sprintf("[Controller]%v start --> %v", reflect.TypeOf(w), time.Now()))
 	errC := make(chan error)
-	w.ArtifactConnect(errC)
+	go w.ArtifactConnect(errC)
 	return <-errC
 }
 
@@ -121,6 +121,7 @@ func (w *WatchFlowRun) HandleFlowRun(run *FlowRun) {
 				if err != nil {
 					fmt.Printf("[Controller]%v error: step: %s, uuid: %s ,err: %s \n", reflect.TypeOf(w), common.EchoerCI, stepUUID, err.Error())
 				}
+				fmt.Printf("[Controller]%v msg: step: %s, uuid: %s status updata done! \n", reflect.TypeOf(w), common.EchoerCI, stepUUID)
 			//TODO:actionName EchoerCD
 			case common.EchoerCD:
 				fmt.Println("TODO CD")
