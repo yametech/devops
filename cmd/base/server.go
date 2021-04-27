@@ -11,7 +11,7 @@ import (
 var storageUri string
 
 func main() {
-	flag.StringVar(&storageUri, "storage_uri", "mongodb://127.0.0.1:27017/admin", "127.0.0.1:3306")
+	flag.StringVar(&storageUri, "storage_uri", "mongodb://10.200.10.46:27017/admin", "127.0.0.1:3306")
 	flag.Parse()
 
 	//errC := make(chan error)
@@ -26,7 +26,7 @@ func main() {
 	base.NewBaseServer("baseserver", server)
 
 	go func() {
-		if err := server.Run("127.0.0.1:8080"); err != nil {
+		if err := server.Run(":8080"); err != nil {
 			errC <- err
 		}
 	}()
