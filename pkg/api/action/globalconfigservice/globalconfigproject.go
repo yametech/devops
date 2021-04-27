@@ -16,7 +16,7 @@ func (s *Server) ListGlobalConfig(g *gin.Context) {
 		api.ResponseError(g, err)
 		return
 	}
-	api.ResponseSuccess(g, res)
+	api.ResponseSuccess(g, res, "")
 }
 
 func (s *Server) CreateGlobalConfig(g *gin.Context) {
@@ -35,7 +35,7 @@ func (s *Server) CreateGlobalConfig(g *gin.Context) {
 		api.ResponseError(g, err)
 		return
 	}
-	api.ResponseSuccess(g, res)
+	api.ResponseSuccess(g, res, "")
 }
 
 func (s *Server) UpdateGlobalConfig(g *gin.Context) {
@@ -54,5 +54,5 @@ func (s *Server) UpdateGlobalConfig(g *gin.Context) {
 		api.ResponseError(g, err)
 		return
 	}
-	api.ResponseSuccess(g, data)
+	api.ResponseSuccess(g, data, "")
 }
