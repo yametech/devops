@@ -1,7 +1,6 @@
 package artifactory
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -15,7 +14,6 @@ import (
 	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -88,7 +86,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 		reqAr.Tag = utils.NewSUID().String()
 	}
 
-	appName := fmt.Sprintf("%s-%d", reqAr.AppName, a.GetAppNumber(reqAr.AppName)+1)
+	appName := fmt.Sprintf("%s-%d", reqAr.AppName, time.Now().UnixNano())
 
 	ar := &arResource.Artifact{
 		Metadata: core.Metadata{
@@ -112,27 +110,44 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 	if err != nil {
 		return err
 	}
-	//TODO:sendCIEcho
+	go a.SendCI(ar)
+	return nil
+}
+
+func (a *ArtifactService) SendCI(ar *arResource.Artifact) {
 	arCIInfo := &arResource.ArtifactCIInfo{
-		Branch:      reqAr.Branch,
-		CodeType:    reqAr.Language,
-		CommitID:    reqAr.Tag,
-		GitUrl:      reqAr.GitUrl,
-		OutPut:      registry,
-		ProjectPath: reqAr.ProjectPath,
-		ProjectFile: reqAr.ProjectFile,
+		Branch:      ar.Spec.Branch,
+		CodeType:    ar.Spec.Language,
+		CommitID:    ar.Spec.Tag,
+		GitUrl:      ar.Spec.GitUrl,
+		OutPut:      ar.Spec.Registry,
+		ProjectPath: ar.Spec.ProjectPath,
+		ProjectFile: ar.Spec.ProjectFile,
 		RetryCount:  15,
-		ServiceName: reqAr.AppName,
+		ServiceName: ar.Spec.AppName,
 	}
 	sendCIInfo, err := core.ToMap(arCIInfo)
 	if err != nil {
-		return err
+		ar.Spec.ArtifactStatus = arResource.InitializeFail
+		_, _, err = a.IService.Apply(common.DefaultNamespace, common.Artifactory, ar.UUID, ar, false)
+		if err != nil {
+			fmt.Printf("sendci initialize save error %s", err)
+		}
+		return
 	}
-	if SendEchoer(ar.Metadata.UUID, common.EchoerCI, sendCIInfo) {
-		//TODO:change CIStatus
-		return nil
+	if !SendEchoer(ar.Metadata.UUID, common.EchoerCI, sendCIInfo) {
+		ar.Spec.ArtifactStatus = arResource.InitializeFail
+		_, _, err = a.IService.Apply(common.DefaultNamespace, common.Artifactory, ar.UUID, ar, false)
+		if err != nil {
+			fmt.Printf("sendci sendEchoer fail save error %s", err)
+		}
+		return
 	}
-	return nil
+	ar.Spec.ArtifactStatus = arResource.Building
+	_, _, err = a.IService.Apply(common.DefaultNamespace, common.Artifactory, ar.UUID, ar, false)
+	if err != nil {
+		fmt.Printf("sendci sendEchoer success save error %s", err)
+	}
 }
 
 func (a *ArtifactService) GetByUUID(uuid string) (*arResource.Artifact, error) {
@@ -219,27 +234,12 @@ func (a *ArtifactService) GetBranch(gitpath string) ([]string, error) {
 }
 
 func (a *ArtifactService) GetAppNumber(appName string) int {
-	data, _, err := a.List(appName, 1, 0)
+	filter := map[string]interface{}{
+		"spec.app_name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + appName + ".*", Options: "i"}},
+	}
+	count, err := a.IService.Count(common.DefaultNamespace, common.Artifactory, filter)
 	if err != nil {
 		return 0
 	}
-	b, err := json.Marshal(data)
-	c := make([]*arResource.Artifact, 0)
-	err = json.Unmarshal(b, &c)
-	if err != nil {
-		fmt.Println(err)
-		return 0
-	}
-	var number = 0
-	for _, v := range c {
-		sliceName := strings.Split(v.Metadata.Name, "-")
-		i, _ := strconv.Atoi(sliceName[len(sliceName)-1])
-		if err != nil {
-			return 0
-		}
-		if i > number {
-			number = i
-		}
-	}
-	return number
+	return int(count) + 1
 }
