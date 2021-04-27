@@ -7,6 +7,7 @@ import (
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/workorder"
 	"github.com/yametech/devops/pkg/service"
+	"github.com/yametech/devops/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -24,11 +25,11 @@ func (s *Service) List(orderType int, orderStatus int, search string, page, page
 
 	filter := make(map[string]interface{})
 
-	if orderStatus == -1{
+	if orderStatus == -1 {
 		filter["$or"] = []map[string]interface{}{
 			{
 				"spec.order_type": orderType,
-				"spec.number":      bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+				"spec.number":     bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 			},
 			{
 				"spec.order_type": orderType,
@@ -39,17 +40,17 @@ func (s *Service) List(orderType int, orderStatus int, search string, page, page
 			//	"spec.creator":      bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 			//},
 		}
-	}else{
+	} else {
 		filter["$or"] = []map[string]interface{}{
 			{
-				"spec.order_type": orderType,
+				"spec.order_type":   orderType,
 				"spec.order_status": orderStatus,
-				"spec.number":      bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+				"spec.number":       bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 			},
 			{
-				"spec.order_type": orderType,
+				"spec.order_type":   orderType,
 				"spec.order_status": orderStatus,
-				"spec.title":      bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+				"spec.title":        bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 			},
 			//{
 			//	"spec.order_type": orderType,
@@ -71,10 +72,12 @@ func (s *Service) Create(request *apiResource.Request) (core.IObject, error) {
 		Spec: workorder.Spec{
 			OrderType: request.OrderType,
 			Title:     request.Title,
+			Relation:  request.Relation,
 			Attribute: request.Attribute,
 			Apply:     request.Apply,
 			Check:     request.Check,
 			Result:    request.Result,
+			OrderStatus: 1,
 		},
 	}
 
@@ -98,6 +101,7 @@ func (s *Service) Update(uuid string, request *apiResource.Request) (core.IObjec
 		return nil, false, errors.New("The workorder is not exist")
 	}
 
+	dbObj.Spec.OrderStatus = request.OrderStatus
 	dbObj.Spec.Title = request.Title
 	dbObj.Spec.Attribute = request.Attribute
 	dbObj.Spec.Apply = request.Apply
@@ -113,4 +117,27 @@ func (s *Service) Delete(uuid string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func (s *Service) GetWorkOrderStatus(relation string, orderType int) (workorder.OrderStatus, error) {
+
+	filter := map[string]interface{}{
+		"spec.relation": relation,
+		"spec.order_type": orderType,
+	}
+	sort := map[string]interface{}{
+		"metadata.created_time": -1,
+	}
+
+	data, _ := s.IService.ListByFilter(common.DefaultNamespace, common.WorkOrder, filter, sort, 0 , 1)
+	if len(data) == 0{
+		return workorder.None, errors.New("The workorder is not exist")
+	}
+
+	order := make([]*workorder.WorkOrder, 0)
+	if err := utils.UnstructuredObjectToInstanceObj(data, &order); err != nil {
+		return workorder.None, err
+	}
+
+	return order[0].Spec.OrderStatus, nil
 }

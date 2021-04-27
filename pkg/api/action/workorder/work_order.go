@@ -20,11 +20,12 @@ func NewWorkOrder(serviceName string, server *api.Server) *WorkOrder {
 	group := workOrder.Group(fmt.Sprintf("/%s", serviceName))
 
 	{
-		group.GET("/workorder", workOrder.ListWorkOrder)
-		group.POST("/workorder", workOrder.CreateWorkOrder)
-		group.GET("/workorder/:uuid", workOrder.GetWorkOrder)
-		group.PUT("/workorder/:uuid", workOrder.UpdateWorkOrder)
-		group.DELETE("/workorder/:uuid", workOrder.DeteleWorkOrder)
+		group.GET("/order", workOrder.ListWorkOrder)
+		group.POST("/order", workOrder.CreateWorkOrder)
+		group.GET("/order/:uuid", workOrder.GetWorkOrder)
+		group.PUT("/order/:uuid", workOrder.UpdateWorkOrder)
+		group.DELETE("/order/:uuid", workOrder.DeteleWorkOrder)
+		group.GET("/status", workOrder.GetWorkOrderStatus)
 	}
 
 	return workOrder
