@@ -11,7 +11,8 @@ import (
 type OrderStatus uint8
 
 const (
-	WaitCommit OrderStatus = iota // 待提交
+	None       OrderStatus = iota // 不存在
+	WaitCommit                    // 待提交
 	Checking                      // 审核中
 	Rejected                      // 驳回
 	Finish                        // 完成
@@ -41,6 +42,7 @@ type Spec struct {
 	OrderType   `json:"order_type" bson:"order_type"`
 	OrderStatus `json:"order_status" bson:"order_status"`
 	Number      string                 `json:"number" bson:"number"`
+	Relation    string                 `json:"relation" bson:"relation"`
 	Title       string                 `json:"title" bson:"title"`
 	Creator     string                 `json:"creator" bson:"creator"`
 	Attribute   map[string]interface{} `json:"attribute" bson:"attribute"`
@@ -51,11 +53,10 @@ type Spec struct {
 
 func (w *WorkOrder) GenerateNumber() error {
 	today := time.Now().Format("20060102")
-	if mark, ok := Mark[w.Spec.OrderType]; ok{
+	if mark, ok := Mark[w.Spec.OrderType]; ok {
 		w.Spec.Number = fmt.Sprintf("%s%s-%s", mark, today, uuid.New().String())
 	}
 
-	fmt.Println(w.Spec.Number)
 	return errors.New("Have no this type workorder")
 }
 
