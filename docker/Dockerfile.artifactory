@@ -16,12 +16,12 @@ RUN go mod download
 ADD . .
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a --ldflags "-extldflags -static"  -o appservice cmd/appservice/*.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a --ldflags "-extldflags -static"  -o artifactory cmd/artifactory/*.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM harbor.ym/devops/alpine:1.0
 WORKDIR /
-COPY --from=builder /workspace/appservice .
+COPY --from=builder /workspace/artifactory .
 
-ENTRYPOINT ["./appservice"]
+ENTRYPOINT ["./artifactory"]
