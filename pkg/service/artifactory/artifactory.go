@@ -270,41 +270,85 @@ func (a *ArtifactService) GetBanch(org string, name string) ([]string, error) {
 		return sliceBranch, err
 	}
 	return nil, nil
+}
 
-func (a *ArtifactService) GetAppNumber(appName string) int {
-	data, _, err := a.List(appName, 1, 0)
-	if err != nil {
+	func (a *ArtifactService) GetAppNumber(appName string) int {
+		data, _, err := a.List(appName, 1, 0)
+		if err != nil {
 		return 0
 	}
-	b, err := json.Marshal(data)
-	c := make([]*arResource.Artifact, 0)
-	err = json.Unmarshal(b, &c)
-	if err != nil {
+		b, err := json.Marshal(data)
+		c := make([]*arResource.Artifact, 0)
+		err = json.Unmarshal(b, &c)
+		if err != nil {
 		fmt.Println(err)
 		return 0
 	}
-	var number = 0
-	for _, v := range c {
+		var number = 0
+		for _, v := range c {
 		sliceName := strings.Split(v.Metadata.Name, "-")
 		i, err := strconv.Atoi(sliceName[len(sliceName)-1])
 		if err != nil {
-			return 0
-		}
+		return 0
+	}
 		if i > number {
-			number = i
-		}
+		number = i
 	}
-	return number
-}
+	}
+		return number
+	}
 
-func IsChinese(str string) bool {
-	var count int
-	for _, v := range str {
+	func IsChinese(str string) bool {
+		var count int
+		for _, v := range str {
 		if unicode.Is(unicode.Han, v) {
-			count++
-			break
-		}
+		count++
+		break
 	}
-	return count > 0
+	}
+		return count > 0
 
+	}
+
+func (a *ArtifactService) GetBanch(org string, name string) ([]string, error) {
+	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
+	req, err := http.NewRequest("GET", url, strings.NewReader(urlpkg.Values{}.Encode()))
+	if err != nil {
+		panic(err.Error())
+	}
+	req.SetBasicAuth(common.GitUser, common.GitPW)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
+	if res != nil {
+		var buffer [512]byte
+		result := bytes.NewBuffer(nil)
+		for {
+			n, err := res.Body.Read(buffer[0:])
+			result.Write(buffer[0:n])
+			if err != nil && err == io.EOF {
+				break
+			} else if err != nil {
+				panic(err)
+			}
+		}
+
+		type GetValue struct {
+			Name string `json:"name"`
+		}
+
+		var uBody []GetValue
+		err := json.Unmarshal(result.Bytes(), &uBody)
+		if err != nil {
+			return nil, err
+		}
+		sliceBranch := make([]string, 0)
+		for _, value := range uBody {
+			sliceBranch = append(sliceBranch, value.Name)
+		}
+		return sliceBranch, err
+	}
+	return nil, nil
 }
