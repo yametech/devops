@@ -182,7 +182,7 @@ func SendEchoer(stepName string, actionName string, a map[string]interface{}) bo
 		"SUCCESS": "done", "FAIL": "done",
 	}
 
-	flowRunStepName := fmt.Sprintf("%s_%s", actionName, "4444")
+	flowRunStepName := fmt.Sprintf("%s_%s", actionName, stepName)
 	flowRun.AddStep(flowRunStepName, flowRunStep, actionName, a)
 
 	flowRunData := flowRun.Generate()
