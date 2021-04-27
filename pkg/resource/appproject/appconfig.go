@@ -8,12 +8,15 @@ type AppConfig struct {
 }
 
 type AppConfigSpec struct {
-	App        string `json:"app" bson:"app"`
-	Config     map[string]interface{} `json:"config" bson:"config"`
+	App    string                 `json:"app" bson:"app"`
+	Config map[string]interface{} `json:"config" bson:"config"`
 }
+
 
 func (ap *AppConfig) Clone() core.IObject {
 	result := &AppConfig{}
 	core.Clone(ap, result)
 	return result
 }
+
+
