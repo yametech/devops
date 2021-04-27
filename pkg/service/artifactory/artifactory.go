@@ -1,10 +1,9 @@
 package artifactory
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
 	"github.com/yametech/devops/pkg/common"
@@ -15,6 +14,9 @@ import (
 	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"io"
+	"net/http"
+	urlpkg "net/url"
 	"strings"
 	"time"
 )
@@ -57,8 +59,6 @@ func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}
 }
 
 func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
-
-	
 
 	gitPath := ""
 	if strings.Contains(reqAr.GitUrl, "http://") {
@@ -160,23 +160,45 @@ func SendCIEcho(uuid string, a *arResource.ArtifactCIInfo) error {
 	return nil
 }
 
-func (a *ArtifactService) GetBanch(gitpath string) ([]string, error) {
-	url := fmt.Sprintf("http://%s:%s@%s", common.GitUser, common.GitPW, gitpath)
-	r, _ := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-		URL:          url,
-		SingleBranch: false,
-		NoCheckout:   true,
-		Depth:        1,
-	})
+func (a *ArtifactService) GetBanch(org string, name string) ([]string, error) {
+	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
+	req, err := http.NewRequest("GET", url, strings.NewReader(urlpkg.Values{}.Encode()))
+	if err != nil {
+		panic(err.Error())
+	}
+	req.SetBasicAuth(common.GitUser, common.GitPW)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
 
-	sliceBranch := make([]string, 0)
-	referenceIter, _ := r.References()
-	err := referenceIter.ForEach(func(c *plumbing.Reference) error {
-		if strings.Contains(string(c.Name()), "refs/remotes/origin/") {
-			sliceTemp := strings.Split(string(c.Name()), "refs/remotes/origin/")
-			sliceBranch = append(sliceBranch, sliceTemp[len(sliceTemp)-1])
+	if res != nil {
+		var buffer [512]byte
+		result := bytes.NewBuffer(nil)
+		for {
+			n, err := res.Body.Read(buffer[0:])
+			result.Write(buffer[0:n])
+			if err != nil && err == io.EOF {
+				break
+			} else if err != nil {
+				panic(err)
+			}
 		}
-		return nil
-	})
-	return sliceBranch, err
 
+		type GetValue struct {
+			Name string `json:"name"`
+		}
+
+		var uBody []GetValue
+		err := json.Unmarshal(result.Bytes(), &uBody)
+		if err != nil {
+			return nil, err
+		}
+		sliceBranch := make([]string, 0)
+		for _, value := range uBody {
+			sliceBranch = append(sliceBranch, value.Name)
+		}
+		return sliceBranch, err
+	}
+	return nil, nil
+}
