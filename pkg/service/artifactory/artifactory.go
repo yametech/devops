@@ -77,9 +77,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 		} else {
 			gitName = strings.ToLower(sliceTemp[len(sliceTemp)-1])
 		}
-
 		gitName = strings.ReplaceAll(gitName, "_", "-")
-
 	}
 
 	//registry = http://harbor.ym --> harbor.ym
