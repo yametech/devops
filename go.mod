@@ -3,9 +3,9 @@ module github.com/yametech/devops
 go 1.16
 
 require (
-	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-git/go-git/v5 v5.3.0
+	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/r3labs/sse/v2 v2.3.2
@@ -13,7 +13,9 @@ require (
 	github.com/x893675/go-harbor v0.0.0-20200901043622-67958cac8700 // indirect
 	github.com/yametech/go-flowrun v0.0.10
 	go.mongodb.org/mongo-driver v1.5.1
-	golang.org/x/oauth2 v0.0.0-20210427180440-81ed05c6b58c // indirect
+	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.5
 )
