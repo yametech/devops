@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
