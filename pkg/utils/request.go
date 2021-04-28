@@ -26,3 +26,24 @@ func Request(method string, url string, data map[string]interface{}, headers map
 	}
 	return ioutil.ReadAll(resp.Body)
 }
+
+func NewRequest(method string, url string, data map[string]interface{}, headers map[string]string) ([]byte, error) {
+	client := &http.Client{}
+	bytesData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(method, url, bytes.NewReader(bytesData))
+	req.SetBasicAuth("sushaolin", "Ssl19960511.")
+	if err != nil {
+		return nil, err
+	}
+	for key, val := range headers {
+		req.Header.Set(key, val)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.ReadAll(resp.Body)
+}

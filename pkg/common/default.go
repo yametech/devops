@@ -21,8 +21,8 @@ const (
 var (
 	EchoerCI = "artifactoryCI"
 	EchoerCD = "artifactoryCD"
-	GitUser  = "git_user"
-	GitPW    = "git_password"
+	GitUser  = "sushaolin"
+	GitPW    = "Ssl19960511."
 )
 
 func init() {

@@ -1,6 +1,8 @@
 package artifactory
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -80,6 +82,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 		sliceTemp := strings.Split(gitPath, "https://")
 		registry = sliceTemp[len(sliceTemp)-1]
 	}
+
 	registry = fmt.Sprintf("%s/%s", registry, gitDirectory)
 
 	if len(reqAr.Tag) == 0 {
@@ -104,13 +107,80 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 			ProjectPath: reqAr.ProjectPath,
 		},
 	}
-
+	if err := IsCatalogExist(ar); err != nil {
+		return err
+	}
 	ar.GenerateVersion()
 	_, err := a.IService.Create(common.DefaultNamespace, common.Artifactory, ar)
 	if err != nil {
 		return err
 	}
 	go a.SendCI(ar)
+	return nil
+}
+
+func IsCatalogExist(verify *arResource.Artifact) error {
+	var HarborAddress string
+	var Catalogue string
+	if strings.Contains(verify.Spec.Registry, "/") {
+		sliceTemp := strings.Split(verify.Spec.Registry, "/")
+		HarborAddress = sliceTemp[0]
+		Catalogue = sliceTemp[1]
+	}
+	url := fmt.Sprintf("https://%s/api/v2.0/projects?page=1&page_size=%d&public=true", HarborAddress, arResource.PageSize)
+	//url:="https://harbor.ym/api/v2.0/projects?page=1&page_size=84&public=true"
+	//https://registry-d.ym/api/v2.0/projects?page=1&page_size=28&public=true
+	body, err := utils.Request("GET", url, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	data := make(map[string]interface{})
+	RespSlice := make([]map[string]interface{}, 84)
+	err = json.Unmarshal(body, &RespSlice)
+	if err != nil {
+		return err
+	}
+	for _, v := range RespSlice {
+		redefine := v
+		data = redefine
+		if data["name"] == Catalogue {
+			return nil
+		}
+	}
+	if err = CreateCatalogue(HarborAddress, Catalogue); err != nil {
+		return err
+	}
+	return nil
+
+}
+
+func CreateCatalogue(HarborAddress, Catalogue string) error {
+	url := fmt.Sprintf("https://%s/api/v2.0/projects?page=1&page_size=%d&public=true", HarborAddress, arResource.PageSize)
+	ReqHarbor := make(map[string]interface{})
+	ReqHarbor["project_name"] = Catalogue
+	ReqHarbor["registry_id"] = 0
+	MataData := make(map[string]interface{})
+	MataData["public"] = "true"
+	ReqHarbor["metadata"] = MataData
+	ReqHarbor["storage_limit"] = 0
+	ReqHarbor["public"] = true
+
+	body, err := utils.Request("POST", url, ReqHarbor, nil)
+	if err != nil {
+		return err
+	}
+	data := make(map[string]map[string]interface{})
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		return err
+	}
+	fmt.Println(data)
+	if data["errors"] != nil {
+		if v, ok := data["errors"]["code"].(string); ok {
+			return errors.New(v)
+		}
+	}
 	return nil
 }
 
