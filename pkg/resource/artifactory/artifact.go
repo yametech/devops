@@ -11,11 +11,11 @@ type ArtifactStatus uint8
 const ArtifactKind core.Kind = "artifact"
 
 const (
-	Created ArtifactStatus = iota
-	InitializeFail
-	Building
-	Built
-	BuiltFAIL
+	Created        ArtifactStatus = iota //未构建
+	InitializeFail                       //初始化错误
+	Building                             //构建中
+	Built                                //构建完成
+	BuiltFAIL                            //构建失败
 )
 
 type ArtifactSpec struct {
