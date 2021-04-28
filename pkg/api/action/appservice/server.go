@@ -10,8 +10,8 @@ type Server struct {
 	*api.Server
 	*appService.AppProjectService
 	*appService.AppConfigService
-	*appService.NamespaceService
-	*appService.NamespaceConfigService
+	*appService.ResourcePoolService
+	*appService.ResourcePoolConfigService
 }
 
 func NewAppServiceServer(serviceName string, server *api.Server) *Server {
@@ -19,8 +19,8 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 		Server:            server,
 		AppProjectService: appService.NewAppProjectService(server.IService),
 		AppConfigService: appService.NewAppConfigService(server.IService),
-		NamespaceService: appService.NewNamespaceService(server.IService),
-		NamespaceConfigService: appService.NewNamespaceConfigService(server.IService),
+		ResourcePoolService: appService.NewResourcePoolService(server.IService),
+		ResourcePoolConfigService: appService.NewResourcePoolConfigService(server.IService),
 	}
 	group := cfaServer.Group(fmt.Sprintf("/%s", serviceName))
 
@@ -40,18 +40,20 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 		group.DELETE("/app-config/resource/:uuid", cfaServer.DeleteResource)
 	}
 
-	// Namespace
+	// ResourcePool
 	{
-		group.GET("/namespace", cfaServer.ListNamespaces)
-		group.POST("/namespace", cfaServer.CreateNamespace)
-		group.GET("/namespace/all", cfaServer.ListByLevel)
+		group.GET("/resource-pool", cfaServer.ListResourcePool)
+		group.POST("/resource-pool", cfaServer.CreateResourcePool)
+		group.GET("/menu", cfaServer.ListByLevel)
 	}
 
-	// NamespaceConfig
+	// ResourcePoolConfig
 	{
-		group.GET("/namespaceconfig/:uuid", cfaServer.GetNamespaceConfig)
-		group.POST("/namespaceconfig", cfaServer.UpdateNamespaceConfig)
+		group.GET("/resource-pool-config/:uuid", cfaServer.GetResourcePoolConfig)
+		group.POST("/resource-pool-config", cfaServer.UpdateResourcePoolConfig)
 	}
 
 	return cfaServer
 }
+
+

@@ -6,9 +6,9 @@ import (
 	apiResource "github.com/yametech/devops/pkg/api/resource/appproject"
 )
 
-func (s *Server) GetNamespaceConfig(g *gin.Context){
+func (s *Server) GetResourcePoolConfig(g *gin.Context){
 	uuid := g.Param("uuid")
-	results, err := s.NamespaceConfigService.GetByFilter(uuid)
+	results, err := s.ResourcePoolConfigService.GetByFilter(uuid)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
@@ -17,14 +17,14 @@ func (s *Server) GetNamespaceConfig(g *gin.Context){
 	api.ResponseSuccess(g, results)
 }
 
-func (s *Server) UpdateNamespaceConfig(g *gin.Context) {
-	data := &apiResource.NameSpaceRequest{}
+func (s *Server) UpdateResourcePoolConfig(g *gin.Context) {
+	data := &apiResource.ResourcePoolRequest{}
 	if err := g.ShouldBindJSON(&data); err != nil {
 		api.ResponseError(g, err)
 		return
 	}
 
-	result, update, err := s.NamespaceConfigService.Update(data)
+	result, update, err := s.ResourcePoolConfigService.Update(data)
 	if err != nil {
 		api.ResponseError(g, err)
 		return

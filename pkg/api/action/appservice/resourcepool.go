@@ -8,8 +8,8 @@ import (
 	"strconv"
 )
 
-func (s *Server) ListNamespaces(g *gin.Context){
-	results, err := s.NamespaceService.List()
+func (s *Server) ListResourcePool(g *gin.Context){
+	results, err := s.ResourcePoolService.List()
 	if err != nil {
 		api.ResponseError(g, err)
 		return
@@ -25,7 +25,9 @@ func (s *Server) ListByLevel(g *gin.Context)  {
 		return
 	}
 
-	results, err := s.NamespaceService.ListByLevel(level)
+	search := g.Query("search")
+
+	results, err := s.ResourcePoolService.ListByLevel(level, search)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
@@ -34,18 +36,18 @@ func (s *Server) ListByLevel(g *gin.Context)  {
 	api.ResponseSuccess(g, results)
 }
 
-func (s *Server) CreateNamespace(g *gin.Context) {
+func (s *Server) CreateResourcePool(g *gin.Context) {
 	req := &apiResource.Request{}
 	if err := g.ShouldBindJSON(&req); err != nil {
 		api.ResponseError(g, err)
 		return
 	}
 
-	namespace, err := s.NamespaceService.Create(req)
+	resourcePool, err := s.ResourcePoolService.Create(req)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
 	}
 
-	api.ResponseSuccess(g, namespace)
+	api.ResponseSuccess(g, resourcePool)
 }

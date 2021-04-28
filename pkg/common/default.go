@@ -10,10 +10,10 @@ const (
 	WorkOrderStatus  = "http://127.0.0.1:8081/workorder/status"
 	Artifactory      = "artifactory"
 	AppConfig        = "appconfig"
-	AppProject       = "appproject"
-	Namespace        = "namespace"
+	AppProject       = "appservice"
+	ResourcePool     = "resourcepool"
 	History          = "history"
-	Resource         = "resource"
+	AppResource      = "appresource"
 	GlobalConfig     = "globalconfig"
 	WorkOrder        = "workorder"
 )

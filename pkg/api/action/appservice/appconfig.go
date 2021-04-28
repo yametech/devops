@@ -5,7 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yametech/devops/pkg/api"
 	apiResource "github.com/yametech/devops/pkg/api/resource/appproject"
-	"github.com/yametech/devops/pkg/resource/appproject"
+	"github.com/yametech/devops/pkg/resource/appservice"
 	"strconv"
 )
 
@@ -13,7 +13,7 @@ func (s *Server) GetAppConfig(g *gin.Context) {
 	uuid := g.Param("uuid")
 	config, err := s.AppConfigService.GetByFilter(uuid)
 	if err != nil {
-		api.ResponseSuccess(g, &appproject.AppConfig{})
+		api.ResponseSuccess(g, &appservice.AppConfig{})
 		return
 	}
 
