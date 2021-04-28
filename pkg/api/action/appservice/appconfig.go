@@ -13,11 +13,11 @@ func (s *Server) GetAppConfig(g *gin.Context) {
 	uuid := g.Param("uuid")
 	config, err := s.AppConfigService.GetByFilter(uuid)
 	if err != nil {
-		api.ResponseSuccess(g, &appproject.AppConfig{})
+		api.ResponseSuccess(g, &appproject.AppConfig{}, "")
 		return
 	}
 
-	api.ResponseSuccess(g, config)
+	api.ResponseSuccess(g, config, "")
 }
 
 func (s *Server) UpdateAppConfig(g *gin.Context) {
@@ -33,7 +33,7 @@ func (s *Server) UpdateAppConfig(g *gin.Context) {
 		return
 	}
 
-	api.ResponseSuccess(g, gin.H{"results": result, "update": update})
+	api.ResponseSuccess(g, gin.H{"results": result, "update": update}, "")
 }
 
 func (s *Server) DeleteResource(g *gin.Context){

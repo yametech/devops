@@ -2,11 +2,11 @@ package artifactory
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
@@ -16,8 +16,10 @@ import (
 	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 type ArtifactService struct {
@@ -57,7 +59,11 @@ func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}
 
 }
 
-func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
+func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResource.Artifact, error) {
+	if IsChinese(reqAr.Branch) || IsChinese(reqAr.Tag) {
+		return nil, errors.New("分支和tag不能为中文")
+	}
+
 	gitPath := ""
 	if strings.Contains(reqAr.GitUrl, "http://") {
 		sliceTemp := strings.Split(reqAr.GitUrl, "http://")
@@ -67,10 +73,12 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 		gitPath = sliceTemp[len(sliceTemp)-1]
 	}
 
+	gitName := ""
 	gitDirectory := ""
 	if strings.Contains(gitPath, "/") {
 		if sliceTemp := strings.Split(gitPath, "/"); len(sliceTemp) > 2 {
 			gitDirectory = sliceTemp[len(sliceTemp)-2]
+			gitName = sliceTemp[len(sliceTemp)-1]
 		}
 	}
 
@@ -82,11 +90,11 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 		sliceTemp := strings.Split(gitPath, "https://")
 		registry = sliceTemp[len(sliceTemp)-1]
 	}
-
 	registry = fmt.Sprintf("%s/%s", registry, gitDirectory)
+	imageUrl := fmt.Sprintf("%s/%s", registry, gitName)
 
 	if len(reqAr.Tag) == 0 {
-		reqAr.Tag = utils.NewSUID().String()
+		reqAr.Tag = strings.ToLower(utils.NewSUID().String())
 	}
 
 	appName := fmt.Sprintf("%s-%d", reqAr.AppName, time.Now().UnixNano())
@@ -105,6 +113,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 			Registry:    registry,
 			ProjectFile: reqAr.ProjectFile,
 			ProjectPath: reqAr.ProjectPath,
+			Images:      imageUrl,
 		},
 	}
 	if err := IsCatalogExist(ar); err != nil {
@@ -113,10 +122,10 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 	ar.GenerateVersion()
 	_, err := a.IService.Create(common.DefaultNamespace, common.Artifactory, ar)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	go a.SendCI(ar)
-	return nil
+	return ar, nil
 }
 
 func IsCatalogExist(verify *arResource.Artifact) error {
@@ -267,7 +276,7 @@ func SendEchoer(stepName string, actionName string, a map[string]interface{}) bo
 		"SUCCESS": "done", "FAIL": "done",
 	}
 
-	flowRunStepName := fmt.Sprintf("%s_%s", actionName, "4444")
+	flowRunStepName := fmt.Sprintf("%s_%s", actionName, stepName)
 	flowRun.AddStep(flowRunStepName, flowRunStep, actionName, a)
 
 	flowRunData := flowRun.Generate()
@@ -304,12 +313,38 @@ func (a *ArtifactService) GetBranch(gitpath string) ([]string, error) {
 }
 
 func (a *ArtifactService) GetAppNumber(appName string) int {
-	filter := map[string]interface{}{
-		"spec.app_name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + appName + ".*", Options: "i"}},
-	}
-	count, err := a.IService.Count(common.DefaultNamespace, common.Artifactory, filter)
+	data, _, err := a.List(appName, 1, 0)
 	if err != nil {
 		return 0
 	}
-	return int(count) + 1
+	b, err := json.Marshal(data)
+	c := make([]*arResource.Artifact, 0)
+	err = json.Unmarshal(b, &c)
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+	var number = 0
+	for _, v := range c {
+		sliceName := strings.Split(v.Metadata.Name, "-")
+		i, err := strconv.Atoi(sliceName[len(sliceName)-1])
+		if err != nil {
+			return 0
+		}
+		if i > number {
+			number = i
+		}
+	}
+	return number
+}
+
+func IsChinese(str string) bool {
+	var count int
+	for _, v := range str {
+		if unicode.Is(unicode.Han, v) {
+			count++
+			break
+		}
+	}
+	return count > 0
 }
