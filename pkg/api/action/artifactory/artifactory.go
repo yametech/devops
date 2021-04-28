@@ -41,12 +41,15 @@ func (b *baseServer) ListArtifact(g *gin.Context) {
 	pageSizeInt, _ := strconv.Atoi(g.DefaultQuery("pagesize", "10"))
 	name := g.DefaultQuery("name", "")
 
-	results, _, err := b.ArtifactService.List(name, int64(pageInt), int64(pageSizeInt))
+	results, count, err := b.ArtifactService.List(name, int64(pageInt), int64(pageSizeInt))
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-	g.JSON(http.StatusOK, map[string]interface{}{"data": results})
+
+	data := map[string]interface{}{"results": results}
+	data["count"] = count
+	api.ResponseSuccess(g, data, "")
 }
 
 func (b *baseServer) CreateArtifact(g *gin.Context) {
@@ -61,12 +64,12 @@ func (b *baseServer) CreateArtifact(g *gin.Context) {
 		return
 	}
 
-	err = b.ArtifactService.Create(request)
+	res, err := b.ArtifactService.Create(request)
 	if err != nil {
-		api.RequestParamsError(g, "create user error", err)
+		api.RequestParamsError(g, "create artifact error", err)
 		return
 	}
-	g.JSON(http.StatusOK, request)
+	api.ResponseSuccess(g, res, "")
 }
 
 func (b *baseServer) GetArtifact(g *gin.Context) {
@@ -76,7 +79,9 @@ func (b *baseServer) GetArtifact(g *gin.Context) {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-	g.JSON(http.StatusOK, data)
+
+	result := map[string]interface{}{"results": data}
+	api.ResponseSuccess(g, result, "")
 }
 
 func (b *baseServer) DeleteArtifact(g *gin.Context) {
@@ -86,7 +91,7 @@ func (b *baseServer) DeleteArtifact(g *gin.Context) {
 		api.RequestParamsError(g, "delete fail", err)
 		return
 	}
-	g.JSON(http.StatusOK, nil)
+	api.ResponseSuccess(g, nil, "删除成功")
 }
 
 func (b *baseServer) UpdateArtifact(g *gin.Context) {
@@ -125,10 +130,14 @@ func (b *baseServer) GetBranchList(g *gin.Context) {
 		return
 	}
 
-	results, err := b.ArtifactService.GetBanch(org, name)
+	results, err := b.ArtifactService.GetBranch(gitPath)
+
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
 	}
-	g.JSON(http.StatusOK, map[string]interface{}{"code": http.StatusOK, "data": results})
+
+	data := map[string]interface{}{"results": results}
+	data["count"] = len(results)
+	api.ResponseSuccess(g, data, "")
 }

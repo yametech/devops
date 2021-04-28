@@ -1,6 +1,7 @@
 package artifactory
 
 import (
+
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -14,11 +15,16 @@ import (
 	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"io"
 	"net/http"
 	urlpkg "net/url"
+
+	"strconv"
+
 	"strings"
 	"time"
+	"unicode"
 )
 
 type ArtifactService struct {
@@ -40,7 +46,7 @@ func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
 	if name != "" {
-		filter["metadata.name"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + name + ".*", Options: "i"}}
+		filter["spec.app_name"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + name + ".*", Options: "i"}}
 	}
 	sort := map[string]interface{}{
 		"metadata.version": -1,
@@ -58,7 +64,11 @@ func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}
 
 }
 
-func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
+
+func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResource.Artifact, error) {
+	if IsChinese(reqAr.Branch) || IsChinese(reqAr.Tag) {
+		return nil, errors.New("分支和tag不能为中文")
+	}
 
 	gitPath := ""
 	if strings.Contains(reqAr.GitUrl, "http://") {
@@ -69,34 +79,94 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 		gitPath = sliceTemp[len(sliceTemp)-1]
 	}
 
-	if len(reqAr.Tag) == 0 {
-		reqAr.Tag = utils.NewSUID().String()
+	gitName := ""
+	gitDirectory := ""
+	if strings.Contains(gitPath, "/") {
+		if sliceTemp := strings.Split(gitPath, "/"); len(sliceTemp) > 2 {
+			gitDirectory = sliceTemp[len(sliceTemp)-2]
+			gitName = sliceTemp[len(sliceTemp)-1]
+		}
 
 	}
+
+	registry := ""
+	if strings.Contains(reqAr.Registry, "http://") {
+		sliceTemp := strings.Split(reqAr.Registry, "http://")
+		registry = sliceTemp[len(sliceTemp)-1]
+	} else if strings.Contains(reqAr.Registry, "https://") {
+		sliceTemp := strings.Split(gitPath, "https://")
+		registry = sliceTemp[len(sliceTemp)-1]
+	}
+	registry = fmt.Sprintf("%s/%s", registry, gitDirectory)
+	imageUrl := fmt.Sprintf("%s/%s", registry, gitName)
+
+	if len(reqAr.Tag) == 0 {
+		reqAr.Tag = strings.ToLower(utils.NewSUID().String())
+	}
+
+	appName := fmt.Sprintf("%s-%d", reqAr.AppName, time.Now().UnixNano())
+
 	ar := &arResource.Artifact{
+		Metadata: core.Metadata{
+			Name: appName,
+		},
 		Spec: arResource.ArtifactSpec{
-			GitUrl:   reqAr.GitUrl,
-			AppName:  reqAr.AppName,
-			Branch:   reqAr.Branch,
-			Tag:      reqAr.Tag,
-			Remarks:  reqAr.Remarks,
-			Language: reqAr.Language,
-			Images:   reqAr.ImagesHub,
+			GitUrl:      reqAr.GitUrl,
+			AppName:     reqAr.AppName,
+			Branch:      reqAr.Branch,
+			Tag:         reqAr.Tag,
+			Remarks:     reqAr.Remarks,
+			Language:    reqAr.Language,
+			Registry:    registry,
+			ProjectFile: reqAr.ProjectFile,
+			ProjectPath: reqAr.ProjectPath,
+			Images:      imageUrl,
 		},
 	}
 
 	ar.GenerateVersion()
 	_, err := a.IService.Create(common.DefaultNamespace, common.Artifactory, ar)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	//TODO:sendCIEcho
-	arCIInfo := &arResource.ArtifactCIInfo{}
-	_ = arCIInfo
-	if err := SendCIEcho(ar.Metadata.UUID, arCIInfo); err != nil {
-		fmt.Println(err)
+	go a.SendCI(ar)
+	return ar, nil
+}
+
+func (a *ArtifactService) SendCI(ar *arResource.Artifact) {
+	arCIInfo := &arResource.ArtifactCIInfo{
+		Branch:      ar.Spec.Branch,
+		CodeType:    ar.Spec.Language,
+		CommitID:    ar.Spec.Tag,
+		GitUrl:      ar.Spec.GitUrl,
+		OutPut:      ar.Spec.Registry,
+		ProjectPath: ar.Spec.ProjectPath,
+		ProjectFile: ar.Spec.ProjectFile,
+		RetryCount:  15,
+		ServiceName: ar.Spec.AppName,
 	}
-	return nil
+	sendCIInfo, err := core.ToMap(arCIInfo)
+	if err != nil {
+		ar.Spec.ArtifactStatus = arResource.InitializeFail
+		_, _, err = a.IService.Apply(common.DefaultNamespace, common.Artifactory, ar.UUID, ar, false)
+		if err != nil {
+			fmt.Printf("sendci initialize save error %s", err)
+		}
+		return
+	}
+	if !SendEchoer(ar.Metadata.UUID, common.EchoerCI, sendCIInfo) {
+		ar.Spec.ArtifactStatus = arResource.InitializeFail
+		_, _, err = a.IService.Apply(common.DefaultNamespace, common.Artifactory, ar.UUID, ar, false)
+		if err != nil {
+			fmt.Printf("sendci sendEchoer fail save error %s", err)
+		}
+		return
+	}
+	ar.Spec.ArtifactStatus = arResource.Building
+	_, _, err = a.IService.Apply(common.DefaultNamespace, common.Artifactory, ar.UUID, ar, false)
+	if err != nil {
+		fmt.Printf("sendci sendEchoer success save error %s", err)
+	}
 }
 
 func (a *ArtifactService) GetByUUID(uuid string) (*arResource.Artifact, error) {
@@ -117,7 +187,7 @@ func (a *ArtifactService) Update(uuid string, reqAr *apiResource.RequestArtifact
 			Tag:      reqAr.Tag,
 			Remarks:  reqAr.Remarks,
 			Language: reqAr.Language,
-			Images:   reqAr.ImagesHub,
+			Registry: reqAr.Registry,
 		},
 	}
 	ar.GenerateVersion()
@@ -132,9 +202,10 @@ func (a *ArtifactService) Delete(uuid string) error {
 	return nil
 }
 
-func SendCIEcho(uuid string, a *arResource.ArtifactCIInfo) error {
-	if uuid == "" {
-		return errors.New("UUID is not none")
+func SendEchoer(stepName string, actionName string, a map[string]interface{}) bool {
+	if stepName == "" {
+		fmt.Println("UUID is not none")
+		return false
 	}
 
 	flowRun := &flowrun.FlowRun{
@@ -144,21 +215,19 @@ func SendCIEcho(uuid string, a *arResource.ArtifactCIInfo) error {
 	flowRunStep := map[string]string{
 		"SUCCESS": "done", "FAIL": "done",
 	}
-	flowRunAction, err := core.ToMap(a)
-	if err != nil {
-		return err
-	}
 
-	flowRunStepName := fmt.Sprintf("PRODCI_%s", uuid)
-	flowRun.AddStep(flowRunStepName, flowRunStep, common.EchoerCI, flowRunAction)
+	flowRunStepName := fmt.Sprintf("%s_%s", actionName, stepName)
+	flowRun.AddStep(flowRunStepName, flowRunStep, actionName, a)
 
 	flowRunData := flowRun.Generate()
 	fmt.Println(flowRunData)
 	if !flowRun.Create(flowRunData) {
-		return errors.New("send fsm error")
+		fmt.Println("send fsm error")
+		return false
 	}
-	return nil
+	return true
 }
+
 
 func (a *ArtifactService) GetBanch(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
@@ -201,4 +270,41 @@ func (a *ArtifactService) GetBanch(org string, name string) ([]string, error) {
 		return sliceBranch, err
 	}
 	return nil, nil
+
+func (a *ArtifactService) GetAppNumber(appName string) int {
+	data, _, err := a.List(appName, 1, 0)
+	if err != nil {
+		return 0
+	}
+	b, err := json.Marshal(data)
+	c := make([]*arResource.Artifact, 0)
+	err = json.Unmarshal(b, &c)
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+	var number = 0
+	for _, v := range c {
+		sliceName := strings.Split(v.Metadata.Name, "-")
+		i, err := strconv.Atoi(sliceName[len(sliceName)-1])
+		if err != nil {
+			return 0
+		}
+		if i > number {
+			number = i
+		}
+	}
+	return number
+}
+
+func IsChinese(str string) bool {
+	var count int
+	for _, v := range str {
+		if unicode.Is(unicode.Han, v) {
+			count++
+			break
+		}
+	}
+	return count > 0
+
 }

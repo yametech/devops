@@ -10,6 +10,7 @@ const (
 	BusinessLine AppType = iota
 	Service
 	App
+	Namespace
 )
 
 type AppSpec struct {

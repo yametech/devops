@@ -1,6 +1,8 @@
 package test
 
 import (
+	"github.com/yametech/devops/pkg/common"
+	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/artifactory"
 	artifactory2 "github.com/yametech/devops/pkg/service/artifactory"
 	"testing"
@@ -18,11 +20,9 @@ func TestCreatCIfsl(t *testing.T) {
 		RetryCount:  15,
 		ServiceName: "devopsui",
 	}
-	//b, _ := core.ToMap(a)
+	b, _ := core.ToMap(a)
 	//c, _ := json.Marshal(b)
 	//fmt.Println(b)
 	//fmt.Println(string(c))
-	if err := artifactory2.SendCIEcho("123", a); err != nil {
-		panic(err)
-	}
+	artifactory2.SendEchoer("", common.EchoerCI, b)
 }

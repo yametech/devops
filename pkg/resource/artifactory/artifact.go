@@ -2,6 +2,8 @@ package artifactory
 
 import (
 	"github.com/yametech/devops/pkg/core"
+	"github.com/yametech/devops/pkg/store"
+	"github.com/yametech/devops/pkg/store/gtm"
 )
 
 type ArtifactStatus uint8
@@ -10,6 +12,7 @@ const ArtifactKind core.Kind = "artifact"
 
 const (
 	Created ArtifactStatus = iota
+	InitializeFail
 	Building
 	Built
 	BuiltFAIL
@@ -39,4 +42,17 @@ func (ar *Artifact) Clone() core.IObject {
 	result := &Artifact{}
 	core.Clone(ar, result)
 	return result
+}
+
+// Artifact impl Coder
+func (*Artifact) Decode(op *gtm.Op) (core.IObject, error) {
+	artifact := &Artifact{}
+	if err := core.ObjectToResource(op.Data, artifact); err != nil {
+		return nil, err
+	}
+	return artifact, nil
+}
+
+func init() {
+	store.AddResourceCoder(string(ArtifactKind), &Artifact{})
 }
