@@ -1,10 +1,10 @@
 package artifactory
 
 import (
-
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
@@ -14,13 +14,10 @@ import (
 	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"io"
 	"net/http"
 	urlpkg "net/url"
-
 	"strconv"
-
 	"strings"
 	"time"
 	"unicode"
@@ -62,7 +59,6 @@ func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}
 	return data, count, nil
 
 }
-
 
 func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResource.Artifact, error) {
 	if IsChinese(reqAr.Branch) || IsChinese(reqAr.Tag) {
@@ -227,87 +223,43 @@ func SendEchoer(stepName string, actionName string, a map[string]interface{}) bo
 	return true
 }
 
-
-func (a *ArtifactService) GetBanch(org string, name string) ([]string, error) {
-	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
-	req, err := http.NewRequest("GET", url, strings.NewReader(urlpkg.Values{}.Encode()))
+func (a *ArtifactService) GetAppNumber(appName string) int {
+	data, _, err := a.List(appName, 1, 0)
 	if err != nil {
-		panic(err.Error())
-	}
-	req.SetBasicAuth(common.GitUser, common.GitPW)
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		panic(err)
-	}
-
-	if res != nil {
-		var buffer [512]byte
-		result := bytes.NewBuffer(nil)
-		for {
-			n, err := res.Body.Read(buffer[0:])
-			result.Write(buffer[0:n])
-			if err != nil && err == io.EOF {
-				break
-			} else if err != nil {
-				panic(err)
-			}
-		}
-
-		type GetValue struct {
-			Name string `json:"name"`
-		}
-
-		var uBody []GetValue
-		err := json.Unmarshal(result.Bytes(), &uBody)
-		if err != nil {
-			return nil, err
-		}
-		sliceBranch := make([]string, 0)
-		for _, value := range uBody {
-			sliceBranch = append(sliceBranch, value.Name)
-		}
-		return sliceBranch, err
-	}
-	return nil, nil
-}
-
-	func (a *ArtifactService) GetAppNumber(appName string) int {
-		data, _, err := a.List(appName, 1, 0)
-		if err != nil {
 		return 0
 	}
-		b, err := json.Marshal(data)
-		c := make([]*arResource.Artifact, 0)
-		err = json.Unmarshal(b, &c)
-		if err != nil {
+	b, err := json.Marshal(data)
+	c := make([]*arResource.Artifact, 0)
+	err = json.Unmarshal(b, &c)
+	if err != nil {
 		fmt.Println(err)
 		return 0
 	}
-		var number = 0
-		for _, v := range c {
+	var number = 0
+	for _, v := range c {
 		sliceName := strings.Split(v.Metadata.Name, "-")
 		i, err := strconv.Atoi(sliceName[len(sliceName)-1])
 		if err != nil {
-		return 0
-	}
+			return 0
+		}
 		if i > number {
-		number = i
+			number = i
+		}
 	}
-	}
-		return number
-	}
+	return number
+}
 
-	func IsChinese(str string) bool {
-		var count int
-		for _, v := range str {
+func IsChinese(str string) bool {
+	var count int
+	for _, v := range str {
 		if unicode.Is(unicode.Han, v) {
-		count++
-		break
+			count++
+			break
+		}
 	}
-	}
-		return count > 0
+	return count > 0
 
-	}
+}
 
 func (a *ArtifactService) GetBanch(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
