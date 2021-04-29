@@ -10,6 +10,10 @@ func RequestParamsError(g *gin.Context, data string, err error) {
 	g.Abort()
 }
 
+func RequestNotFound(g *gin.Context, data string, err error) {
+	g.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "data": data, "msg": err.Error()})
+}
+
 func ResponseError(g *gin.Context, err error) {
 	g.JSON(http.StatusOK, gin.H{"msg": err.Error(), "code": http.StatusBadRequest, "data": nil})
 	g.Abort()
