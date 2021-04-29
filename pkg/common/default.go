@@ -19,10 +19,12 @@ const (
 )
 
 var (
-	EchoerCI = "artifactoryCI"
-	EchoerCD = "artifactoryCD"
-	GitUser  = "sushaolin"
-	GitPW    = "Ssl19960511."
+	EchoerCI     = "artifactoryCI"
+	EchoerCD     = "artifactoryCD"
+	GitUser      = "gituser"
+	GitPW        = "gitpw"
+	RegistryUser = "username"
+	RegistryPW   = "password"
 )
 
 func init() {
@@ -30,5 +32,6 @@ func init() {
 	flag.StringVar(&EchoerCD, "echoercd", EchoerCD, "-echoercd=artifactoryCD")
 	flag.StringVar(&GitUser, "gituser", GitUser, "-gituser=git_user")
 	flag.StringVar(&GitPW, "gitpw", GitPW, "-gitpw=git_password")
-
+	flag.StringVar(&RegistryUser, "registryuser", GitUser, "-registryuser=registry_user")
+	flag.StringVar(&RegistryPW, "registrypw", RegistryPW, "-registrypw=registry_password")
 }

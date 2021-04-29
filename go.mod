@@ -10,7 +10,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/r3labs/sse/v2 v2.3.2
 	github.com/serialx/hashring v0.0.0-20200727003509-22c0c7ab6b1b
-	github.com/x893675/go-harbor v0.0.0-20200901043622-67958cac8700 // indirect
 	github.com/yametech/go-flowrun v0.0.10
 	go.mongodb.org/mongo-driver v1.5.1
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208 // indirect
@@ -19,3 +18,5 @@ require (
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.5
 )
+
+

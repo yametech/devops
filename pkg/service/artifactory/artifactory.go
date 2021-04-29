@@ -1,7 +1,7 @@
 package artifactory
 
 import (
-	"context"
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -9,8 +9,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/pkg/errors"
-	goharbor "github.com/x893675/go-harbor"
-	"github.com/x893675/go-harbor/schema"
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
@@ -20,7 +18,9 @@ import (
 	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"io/ioutil"
 	"net/http"
+	urlPkg "net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -94,6 +94,8 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 	} else if strings.Contains(reqAr.Registry, "https://") {
 		sliceTemp := strings.Split(gitPath, "https://")
 		registry = sliceTemp[len(sliceTemp)-1]
+	} else {
+		registry = reqAr.Registry
 	}
 	registry = fmt.Sprintf("%s/%s", registry, gitDirectory)
 	imageUrl := fmt.Sprintf("%s/%s", registry, gitName)
@@ -121,12 +123,12 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 			Images:      imageUrl,
 		},
 	}
-	if res, err := IsCatalogExist2(ar); err != nil {
-		fmt.Println(res)
-		return ar, err
+	VerificationResults, err := CheckExists(ar)
+	if !VerificationResults {
+		return nil, err
 	}
 	ar.GenerateVersion()
-	_, err := a.IService.Create(common.DefaultNamespace, common.Artifactory, ar)
+	_, err = a.IService.Create(common.DefaultNamespace, common.Artifactory, ar)
 	if err != nil {
 		return nil, err
 	}
@@ -134,122 +136,75 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 	return ar, nil
 }
 
-func IsCatalogExist(verify *arResource.Artifact) error {
+func CheckExists(ar *arResource.Artifact) (bool, error) {
 	var HarborAddress string
-	var Catalogue string
-	if strings.Contains(verify.Spec.Registry, "/") {
-		sliceTemp := strings.Split(verify.Spec.Registry, "/")
-		HarborAddress = sliceTemp[0]
-		Catalogue = sliceTemp[1]
+	var catalogue string
+	if strings.Contains(ar.Spec.Images, "/") {
+		SliceTemp := strings.Split(ar.Spec.Registry, "/")
+		HarborAddress = SliceTemp[0]
+		catalogue = SliceTemp[1]
 	}
-	url := fmt.Sprintf("https://%s/api/v2.0/projects?page=1&page_size=%d&public=true", HarborAddress, arResource.PageSize)
-	//url:="https://harbor.ym/api/v2.0/projects?page=1&page_size=84&public=true"
-	//https://registry-d.ym/api/v2.0/projects?page=1&page_size=28&public=true
-	body, err := utils.Request("GET", url, nil, nil)
-	if err != nil {
-		return err
-	}
-
-	data := make(map[string]interface{})
-	RespSlice := make([]map[string]interface{}, 84)
-	err = json.Unmarshal(body, &RespSlice)
-	if err != nil {
-		return err
-	}
-	for _, v := range RespSlice {
-		redefine := v
-		data = redefine
-		if data["name"] == Catalogue {
-			return nil
-		}
-	}
-	if err = CreateCatalogue(HarborAddress, Catalogue); err != nil {
-		return err
-	}
-	return nil
-
-}
-
-func CreateCatalogue(HarborAddress, Catalogue string) error {
-	url := fmt.Sprintf("https://%s/api/v2.0/projects?page=1&page_size=%d&public=true", HarborAddress, arResource.PageSize)
-	ReqHarbor := make(map[string]interface{})
-	ReqHarbor["project_name"] = Catalogue
-	ReqHarbor["registry_id"] = 0
-	MataData := make(map[string]interface{})
-	MataData["public"] = "true"
-	ReqHarbor["metadata"] = MataData
-	ReqHarbor["storage_limit"] = 0
-	ReqHarbor["public"] = true
-
-	body, err := utils.Request("POST", url, ReqHarbor, nil)
-	if err != nil {
-		return err
-	}
-	data := make(map[string]map[string]interface{})
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		return err
-	}
-	fmt.Println(data)
-	if data["errors"] != nil {
-		if v, ok := data["errors"]["code"].(string); ok {
-			return errors.New(v)
-		}
-	}
-	return nil
-}
-
-func IsCatalogExist2(verify *arResource.Artifact) (bool, error) {
-	var HarborAddress string
-	var Catalogue string
-	if strings.Contains(verify.Spec.Registry, "/") {
-		sliceTemp := strings.Split(verify.Spec.Registry, "/")
-		HarborAddress = sliceTemp[0]
-		Catalogue = sliceTemp[1]
-	}
-	c := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	},
-	}
-	harborClient, err := goharbor.NewClientWithOpts(goharbor.WithHost(HarborAddress))
-	goharbor.WithHTTPClient(c)
-	goharbor.WithBasicAuth("sushaolin", "Ssl19960511.")
+	url := fmt.Sprintf("https://%s/api/v2.0/projects?project_name=%s", HarborAddress, catalogue)
+	data := urlPkg.Values{}
+	req, err := http.NewRequest("HEAD", url, strings.NewReader(data.Encode()))
 	if err != nil {
 		panic(err)
 	}
-	ISexist, err := harborClient.ProjectExist(context.TODO(), Catalogue)
-	if ISexist {
-		return true, nil
-	} else {
-		if err := harborClient.CreateProject(context.TODO(), schema.CreateProjectOptions{
-			Name: Catalogue,
-			Metadata: &schema.ProjectMetadata{
-				Public: "true",
-			},
-			CVEAllowlist: nil,
-			StorageLimit: nil,
-			CountLimit:   nil,
-		}); err != nil {
-			return false, err
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	if resp.StatusCode != 200 {
+		res, err := CreateProject(HarborAddress, catalogue)
+		if err != nil {
+			return res, err
 		}
+
 	}
 	return true, nil
-	//goharbor.WithHTTPClient(c)
-	//goharbor.WithBasicAuth("sushaolin", "Ssl19960511.")
-	//if err != nil {
-	//	panic(err)
-	//}
-	//pr,err:=harborClient.ListProjects
-	//if err!=nil {
-	//	panic(err)
-	//}
-	//for _,item:=range pr{
-	//	redefine:=item
-	//	if redefine.Name==Catalogue{
-	//		return nil
-	//	}
-	//}
+}
 
+func CreateProject(HarborAddress, projectName string) (bool, error) {
+	url := fmt.Sprintf("https://%s/api/v2.0/projects", HarborAddress)
+	body := map[string]interface{}{
+		"project_name": projectName,
+		"metadata": map[string]interface{}{
+			"public": "true",
+		},
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		panic(err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	_, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	if resp.StatusCode == 201 {
+		return true, nil
+	}
+	return false, errors.New("构建镜像仓库目录失败！")
 }
 
 func (a *ArtifactService) SendCI(ar *arResource.Artifact) {
