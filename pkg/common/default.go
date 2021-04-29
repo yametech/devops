@@ -45,8 +45,8 @@ func init() {
 	flag.StringVar(&SmartCityCD, "smartcitycd", SmartCityCD, "-smartcitycd=artifactoryCD")
 	flag.StringVar(&AzureCD, "azurecd", AzureCD, "-azurecd=artifactoryAzureCD")
 	flag.StringVar(&TungChungCD, "tungchungcd", TungChungCD, "-tungchungcd=artifactoryAzureCD")
-	flag.StringVar(&GitUser, "gituser", "devops-git", "-gituser=git_user")
-	flag.StringVar(&GitPW, "gitpw", "devops-git_ABC312", "-gitpw=git_password")
-	flag.StringVar(&RegistryUser, "registryuser", "sushaolin", "-registryuser=registry_user")
-	flag.StringVar(&RegistryPW, "registrypw", "Ssl19960511.", "-registrypw=registry_password")
+	flag.StringVar(&GitUser, "gituser", GitUser, "-gituser=git_user")
+	flag.StringVar(&GitPW, "gitpw", GitPW, "-gitpw=git_password")
+	flag.StringVar(&RegistryUser, "registryuser", RegistryUser, "-registryuser=registry_user")
+	flag.StringVar(&RegistryPW, "registrypw", RegistryPW, "-registrypw=registry_password")
 }
