@@ -117,7 +117,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 		},
 	}
 	if err := IsCatalogExist(ar); err != nil {
-		return err
+		return ar, err
 	}
 	ar.GenerateVersion()
 	_, err := a.IService.Create(common.DefaultNamespace, common.Artifactory, ar)
