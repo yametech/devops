@@ -90,9 +90,11 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 	} else if strings.Contains(reqAr.Registry, "https://") {
 		sliceTemp := strings.Split(reqAr.Registry, "https://")
 		registry = sliceTemp[len(sliceTemp)-1]
+	} else {
+		registry = reqAr.Registry
 	}
-	registry = fmt.Sprintf("%s/%s", registry, gitDirectory)
-	imageUrl := fmt.Sprintf("%s/%s", registry, gitName)
+	projectPath := fmt.Sprintf("%s/%s", registry, gitDirectory)
+	imageUrl := fmt.Sprintf("%s/%s", projectPath, gitName)
 
 	if len(reqAr.Tag) == 0 {
 		reqAr.Tag = strings.ToLower(utils.NewSUID().String())
@@ -125,17 +127,17 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 	if err != nil {
 		return nil, err
 	}
-	go a.SendCI(ar)
+	go a.SendCI(ar, projectPath)
 	return ar, nil
 }
 
-func (a *ArtifactService) SendCI(ar *arResource.Artifact) {
+func (a *ArtifactService) SendCI(ar *arResource.Artifact, output string) {
 	arCIInfo := &arResource.ArtifactCIInfo{
 		Branch:      ar.Spec.Branch,
 		CodeType:    ar.Spec.Language,
 		CommitID:    ar.Spec.Tag,
 		GitUrl:      ar.Spec.GitUrl,
-		OutPut:      ar.Spec.Registry,
+		OutPut:      output,
 		ProjectPath: ar.Spec.ProjectPath,
 		ProjectFile: ar.Spec.ProjectFile,
 		RetryCount:  15,
