@@ -3,12 +3,12 @@ package appservice
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/yametech/devops/pkg/api"
-	apiResource "github.com/yametech/devops/pkg/api/resource/appproject"
+	apiResource "github.com/yametech/devops/pkg/api/resource/apppservice"
 )
 
-func (s *Server) GetResourcePoolConfig(g *gin.Context){
+func (s *Server) GetResourcePoolConfig(g *gin.Context) {
 	uuid := g.Param("uuid")
-	results, err := s.ResourcePoolConfigService.GetByFilter(uuid)
+	results, err := s.ResourcePoolConfigService.GetResourcePoolConfig(uuid)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
@@ -18,7 +18,7 @@ func (s *Server) GetResourcePoolConfig(g *gin.Context){
 }
 
 func (s *Server) UpdateResourcePoolConfig(g *gin.Context) {
-	data := &apiResource.ResourcePoolRequest{}
+	data := &apiResource.NamespaceRequest{}
 	if err := g.ShouldBindJSON(&data); err != nil {
 		api.ResponseError(g, err)
 		return

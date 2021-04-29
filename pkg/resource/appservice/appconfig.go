@@ -20,22 +20,16 @@ func (ap *AppConfig) Clone() core.IObject {
 	return result
 }
 
-type HistoryStatus uint8
-
-const (
-	Success HistoryStatus = iota
-	Failed
-)
-
 type AppConfigHistory struct {
 	core.Metadata `json:"metadata"`
 	Spec          AppConfigHistorySpec `json:"spec"`
 }
 
 type AppConfigHistorySpec struct {
-	App           string                 `json:"app" bson:"app"`
-	History       map[string]interface{} `json:"history" bson:"history"`
-	HistoryStatus `json:"history_status" bson:"history_status"`
+	App     string       `json:"app" bson:"app"`
+	Creator string       `json:"creator" bson:"creator"`
+	Before  *AppResource `json:"before" bson:"before"`
+	Now     *AppResource `json:"now" bson:"now"`
 }
 
 func (a *AppConfigHistory) Clone() core.IObject {

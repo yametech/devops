@@ -10,16 +10,16 @@ type Server struct {
 	*api.Server
 	*appService.AppProjectService
 	*appService.AppConfigService
-	*appService.ResourcePoolService
+	*appService.NamespaceService
 	*appService.ResourcePoolConfigService
 }
 
 func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 	cfaServer := &Server{
-		Server:            server,
-		AppProjectService: appService.NewAppProjectService(server.IService),
-		AppConfigService: appService.NewAppConfigService(server.IService),
-		ResourcePoolService: appService.NewResourcePoolService(server.IService),
+		Server:                    server,
+		AppProjectService:         appService.NewAppProjectService(server.IService),
+		AppConfigService:          appService.NewAppConfigService(server.IService),
+		NamespaceService:          appService.NewResourcePoolService(server.IService),
 		ResourcePoolConfigService: appService.NewResourcePoolConfigService(server.IService),
 	}
 	group := cfaServer.Group(fmt.Sprintf("/%s", serviceName))
@@ -36,15 +36,15 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 	{
 		group.GET("/app-config/:uuid", cfaServer.GetAppConfig)
 		group.POST("/app-config", cfaServer.UpdateAppConfig)
-		group.GET("/history/:uuid", cfaServer.ConfigHistory)
-		group.DELETE("/app-config/resource/:uuid", cfaServer.DeleteResource)
+		group.GET("/app-resource/:uuid", cfaServer.GetAppResource)
+		group.POST("/app-resource", cfaServer.UpdateAppResource)
+		group.DELETE("/app-resource/:uuid", cfaServer.DeleteResource)
 	}
 
-	// ResourcePool
+	// Namespace
 	{
-		group.GET("/resource-pool", cfaServer.ListResourcePool)
-		group.POST("/resource-pool", cfaServer.CreateResourcePool)
-		group.GET("/menu", cfaServer.ListByLevel)
+		group.GET("/namespace", cfaServer.ListNamespace)
+		group.POST("/namespace", cfaServer.CreateNamespace)
 	}
 
 	// ResourcePoolConfig
@@ -53,7 +53,15 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 		group.POST("/resource-pool-config", cfaServer.UpdateResourcePoolConfig)
 	}
 
+	// Menu by level
+	{
+		group.GET("/menu", cfaServer.ListByLevel)
+	}
+
+	// History
+	{
+		group.GET("/history/:uuid", cfaServer.ConfigHistory)
+	}
+
 	return cfaServer
 }
-
-

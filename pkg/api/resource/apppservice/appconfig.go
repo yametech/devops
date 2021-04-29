@@ -1,4 +1,4 @@
-package appproject
+package apppservice
 
 import "github.com/yametech/devops/pkg/resource/appservice"
 
@@ -7,7 +7,7 @@ type AppConfigRequest struct {
 	Config map[string]interface{} `json:"config"`
 }
 
-type ResourcePoolRequest struct {
+type NamespaceRequest struct {
 	Name        string  `json:"name"`
 	UUID        string  `json:"uuid"`
 	App         string  `json:"app"`
@@ -22,6 +22,5 @@ type ResourcePoolRequest struct {
 }
 
 type AppConfigResponse struct {
-	Config    *appservice.AppConfig     `json:"config"`
 	Resources []*appservice.AppResource `json:"resources"`
 }

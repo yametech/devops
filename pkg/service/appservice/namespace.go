@@ -2,7 +2,7 @@ package appservice
 
 import (
 	"github.com/pkg/errors"
-	apiResource "github.com/yametech/devops/pkg/api/resource/appproject"
+	apiResource "github.com/yametech/devops/pkg/api/resource/apppservice"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/appservice"
@@ -12,21 +12,21 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type ResourcePoolService struct {
+type NamespaceService struct {
 	service.IService
 }
 
-func NewResourcePoolService(i service.IService) *ResourcePoolService {
-	return &ResourcePoolService{i}
+func NewResourcePoolService(i service.IService) *NamespaceService {
+	return &NamespaceService{i}
 }
 
-func (n *ResourcePoolService) List() ([]*apiResource.Response, error) {
+func (n *NamespaceService) List() ([]*apiResource.Response, error) {
 	parentsMap := make(map[string][]*apiResource.Response, 0)
 	sort := map[string]interface{}{
 		"metadata.create_time": 1,
 	}
 
-	childrenData, err := n.IService.ListByFilter(common.DefaultNamespace, common.ResourcePool, nil, sort, 0, 0)
+	childrenData, err := n.IService.ListByFilter(common.DefaultNamespace, common.Namespace, nil, sort, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -37,10 +37,10 @@ func (n *ResourcePoolService) List() ([]*apiResource.Response, error) {
 	}
 
 	for _, child := range children {
-		if _, ok := parentsMap[child.Spec.RootApp]; !ok {
-			parentsMap[child.Spec.RootApp] = make([]*apiResource.Response, 0)
+		if _, ok := parentsMap[child.Spec.ParentApp]; !ok {
+			parentsMap[child.Spec.ParentApp] = make([]*apiResource.Response, 0)
 		}
-		parentsMap[child.Spec.RootApp] = append(parentsMap[child.Spec.RootApp], child)
+		parentsMap[child.Spec.ParentApp] = append(parentsMap[child.Spec.ParentApp], child)
 	}
 
 	parentData, err := n.IService.ListByFilter(common.DefaultNamespace, common.AppProject, map[string]interface{}{"spec.parent_app": ""}, sort, 0, 0)
@@ -64,7 +64,7 @@ func (n *ResourcePoolService) List() ([]*apiResource.Response, error) {
 	return parents, nil
 }
 
-func (n *ResourcePoolService) ListByLevel(level int, search string) (interface{}, error) {
+func (n *NamespaceService) ListByLevel(level int, search string) (interface{}, error) {
 
 	levelData := []func(int, string) (interface{}, error){
 		n.ListAppProjectLevel,
@@ -80,7 +80,7 @@ func (n *ResourcePoolService) ListByLevel(level int, search string) (interface{}
 	return levelData[level](level, search)
 }
 
-func (n *ResourcePoolService) ListAppProjectLevel(level int, search string) (interface{}, error) {
+func (n *NamespaceService) ListAppProjectLevel(level int, search string) (interface{}, error) {
 	filter := make(map[string]interface{})
 	filter["$or"] = []map[string]interface{}{
 		{
@@ -100,7 +100,7 @@ func (n *ResourcePoolService) ListAppProjectLevel(level int, search string) (int
 	return n.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, sort, 0, 0)
 }
 
-func (n *ResourcePoolService) ListResourcePoolLevel(level int, search string) (interface{}, error) {
+func (n *NamespaceService) ListResourcePoolLevel(level int, search string) (interface{}, error) {
 	filter := make(map[string]interface{})
 	filter["$or"] = []map[string]interface{}{
 		{
@@ -114,16 +114,16 @@ func (n *ResourcePoolService) ListResourcePoolLevel(level int, search string) (i
 	sort := map[string]interface{}{
 		"metadata.created_time": 1,
 	}
-	return n.IService.ListByFilter(common.DefaultNamespace, common.ResourcePool, filter, sort, 0, 0)
+	return n.IService.ListByFilter(common.DefaultNamespace, common.Namespace, filter, sort, 0, 0)
 }
 
-func (n *ResourcePoolService) Create(request *apiResource.Request) (core.IObject, error) {
+func (n *NamespaceService) Create(request *apiResource.Request) (core.IObject, error) {
 
-	req := &appservice.ResourcePool{
+	req := &appservice.Namespace{
 		Metadata: core.Metadata{
 			Name: request.Name,
 		},
-		Spec: appservice.ResourcePoolSpec{
+		Spec: appservice.NamespaceSpec{
 			ParentApp: request.ParentApp,
 			Desc:      request.Desc,
 		},
@@ -137,18 +137,10 @@ func (n *ResourcePoolService) Create(request *apiResource.Request) (core.IObject
 		"spec.desc": req.Spec.Desc,
 	}
 
-	if err := n.IService.GetByFilter(common.DefaultNamespace, common.ResourcePool, req, filter); err == nil {
+	if err := n.IService.GetByFilter(common.DefaultNamespace, common.Namespace, req, filter); err == nil {
 		return nil, errors.New("The Desc is exist")
 	}
 
 	req.GenerateVersion()
-	parent := &appservice.AppProject{}
-	if req.Spec.ParentApp != "" {
-		if err := n.IService.GetByUUID(common.DefaultNamespace, common.AppProject, req.Spec.ParentApp, parent); err != nil {
-			return nil, err
-		}
-		req.Spec.RootApp = parent.Metadata.UUID
-	}
-
-	return n.IService.Create(common.DefaultNamespace, common.ResourcePool, req)
+	return n.IService.Create(common.DefaultNamespace, common.Namespace, req)
 }
