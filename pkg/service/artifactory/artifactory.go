@@ -45,7 +45,7 @@ func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}
 		filter["spec.app_name"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + name + ".*", Options: "i"}}
 	}
 	sort := map[string]interface{}{
-		"metadata.version": -1,
+		"metadata.created_time": -1,
 	}
 
 	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.Artifactory, filter, sort, offset, pageSize)
@@ -65,31 +65,30 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 		return nil, errors.New("分支和tag不能为中文")
 	}
 
-	gitPath := ""
-	if strings.Contains(reqAr.GitUrl, "http://") {
-		sliceTemp := strings.Split(reqAr.GitUrl, "http://")
-		gitPath = sliceTemp[len(sliceTemp)-1]
-	} else if strings.Contains(reqAr.GitUrl, "https://") {
-		sliceTemp := strings.Split(gitPath, "https://")
-		gitPath = sliceTemp[len(sliceTemp)-1]
-	}
-
+	//gitName = https://github.com/yametech/devops.git --> devops
+	//gitDirectory = https://github.com/yametech/devops.git --> yametech
 	gitName := ""
 	gitDirectory := ""
-	if strings.Contains(gitPath, "/") {
-		if sliceTemp := strings.Split(gitPath, "/"); len(sliceTemp) > 2 {
-			gitDirectory = sliceTemp[len(sliceTemp)-2]
-			gitName = sliceTemp[len(sliceTemp)-1]
+	if strings.Contains(reqAr.GitUrl, "/") {
+		sliceTemp := strings.Split(reqAr.GitUrl, "/")
+		gitDirectory = sliceTemp[len(sliceTemp)-2]
+		if strings.Contains(sliceTemp[len(sliceTemp)-1], ".git") {
+			gitName = strings.ToLower(strings.Split(sliceTemp[len(sliceTemp)-1], ".git")[0])
+		} else {
+			gitName = strings.ToLower(sliceTemp[len(sliceTemp)-1])
 		}
+
+		gitName = strings.ReplaceAll(gitName, "_", "-")
 
 	}
 
+	//registry = http://harbor.ym --> harbor.ym
 	registry := ""
 	if strings.Contains(reqAr.Registry, "http://") {
 		sliceTemp := strings.Split(reqAr.Registry, "http://")
 		registry = sliceTemp[len(sliceTemp)-1]
 	} else if strings.Contains(reqAr.Registry, "https://") {
-		sliceTemp := strings.Split(gitPath, "https://")
+		sliceTemp := strings.Split(reqAr.Registry, "https://")
 		registry = sliceTemp[len(sliceTemp)-1]
 	}
 	registry = fmt.Sprintf("%s/%s", registry, gitDirectory)
@@ -97,6 +96,8 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 
 	if len(reqAr.Tag) == 0 {
 		reqAr.Tag = strings.ToLower(utils.NewSUID().String())
+	} else {
+		reqAr.Tag = strings.ToLower(reqAr.Tag)
 	}
 
 	appName := fmt.Sprintf("%s-%d", reqAr.AppName, time.Now().UnixNano())
@@ -190,7 +191,12 @@ func (a *ArtifactService) Update(uuid string, reqAr *apiResource.RequestArtifact
 }
 
 func (a *ArtifactService) Delete(uuid string) error {
-	err := a.IService.Delete(common.DefaultNamespace, common.Artifactory, uuid)
+	b := new(interface{})
+	err := a.IService.GetByUUID(common.DefaultNamespace, common.Artifactory, uuid, b)
+	if err != nil {
+		return err
+	}
+	err = a.IService.Delete(common.DefaultNamespace, common.Artifactory, uuid)
 	if err != nil {
 		return err
 	}
