@@ -3,6 +3,7 @@ package artifactory
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 	"github.com/yametech/devops/pkg/api"
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
 	"io"
@@ -88,6 +89,10 @@ func (b *baseServer) DeleteArtifact(g *gin.Context) {
 	uuid := g.Param("uuid")
 	err := b.ArtifactService.Delete(uuid)
 	if err != nil {
+		if err.Error() == "notFound" {
+			api.RequestNotFound(g, "", errors.New("uuid不存在"))
+			return
+		}
 		api.RequestParamsError(g, "delete fail", err)
 		return
 	}
