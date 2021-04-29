@@ -15,10 +15,10 @@ import (
 	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"io"
 	"io/ioutil"
 	"net/http"
 	urlPkg "net/url"
-	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -347,7 +347,7 @@ func IsChinese(str string) bool {
 
 func (a *ArtifactService) GetBanch(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
-	req, err := http.NewRequest("GET", url, strings.NewReader(urlpkg.Values{}.Encode()))
+	req, err := http.NewRequest("GET", url, strings.NewReader(urlPkg.Values{}.Encode()))
 	if err != nil {
 		panic(err.Error())
 	}
