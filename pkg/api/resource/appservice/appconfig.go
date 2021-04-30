@@ -1,4 +1,4 @@
-package apppservice
+package appservice
 
 type AppConfigRequest struct {
 	App    string                 `json:"app"`
@@ -18,5 +18,3 @@ type NamespaceRequest struct {
 	Threshold   int     `json:"threshold"`
 	Approval    bool    `json:"approval"`
 }
-
-

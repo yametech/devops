@@ -2,7 +2,7 @@ package appservice
 
 import (
 	"github.com/pkg/errors"
-	apiResource "github.com/yametech/devops/pkg/api/resource/apppservice"
+	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/appservice"
@@ -50,7 +50,6 @@ func (n *ResourcePoolConfigService) Update(data *apiResource.NamespaceRequest) (
 		log.Printf("Update AppResource Not Found Create New One: %v\n", err)
 	}
 
-
 	// create history
 	// Get creator
 	history := &appservice.AppResourceHistory{}
@@ -92,7 +91,7 @@ func (n *ResourcePoolConfigService) GetNamespaceResourceRemain(appid string) (fl
 		"spec.parent_app": appid,
 	}
 
-	data, err := n.IService.ListByFilter(common.DefaultNamespace, common.AppResource, filter, nil, 0, 0);
+	data, err := n.IService.ListByFilter(common.DefaultNamespace, common.AppResource, filter, nil, 0, 0)
 	if err != nil {
 		return cmdbCpus, cmdbMemories, err
 	}
@@ -103,7 +102,7 @@ func (n *ResourcePoolConfigService) GetNamespaceResourceRemain(appid string) (fl
 	}
 
 	var (
-		useCpu float64
+		useCpu      float64
 		useMemories int64
 	)
 	for _, child := range children {
@@ -111,5 +110,5 @@ func (n *ResourcePoolConfigService) GetNamespaceResourceRemain(appid string) (fl
 		useMemories += child.Spec.Memory
 	}
 
-	return cmdbCpus-useCpu, cmdbMemories-useMemories, nil
+	return cmdbCpus - useCpu, cmdbMemories - useMemories, nil
 }

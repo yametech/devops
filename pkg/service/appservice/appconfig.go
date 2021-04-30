@@ -2,7 +2,7 @@ package appservice
 
 import (
 	"github.com/pkg/errors"
-	apiResource "github.com/yametech/devops/pkg/api/resource/apppservice"
+	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/appservice"
@@ -46,13 +46,12 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 
 	namespaceFilter := map[string]interface{}{
 		"metadata.name": data.Name,
-		"spec.app": data.App,
+		"spec.app":      data.App,
 	}
 	exist := &appservice.AppResource{}
 	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, exist, namespaceFilter); err == nil {
 		return nil, false, errors.New("the resource config name is exist")
 	}
-
 
 	appResource := &appservice.AppResource{}
 	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, data.UUID, appResource); err != nil {

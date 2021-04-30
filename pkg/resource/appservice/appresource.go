@@ -43,7 +43,7 @@ type AppResourceHistory struct {
 
 type AppResourceHistorySpec struct {
 	App     string       `json:"app" bson:"app"`
-	Creator string       `json: creator" bson:"creator"`
+	Creator string       `json:"creator" bson:"creator"`
 	Before  *AppResource `json:"before" bson:"before"`
 	Now     *AppResource `json:"now" bson:"now"`
 }

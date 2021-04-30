@@ -2,7 +2,7 @@ package appservice
 
 import (
 	"github.com/pkg/errors"
-	apiResource "github.com/yametech/devops/pkg/api/resource/apppservice"
+	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/appservice"

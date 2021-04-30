@@ -3,7 +3,7 @@ package appservice
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/yametech/devops/pkg/api"
-	apiResource "github.com/yametech/devops/pkg/api/resource/apppservice"
+	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 )
 
 func (s *Server) GetResourcePoolConfig(g *gin.Context) {
@@ -14,7 +14,7 @@ func (s *Server) GetResourcePoolConfig(g *gin.Context) {
 		return
 	}
 
-	api.ResponseSuccess(g, results)
+	api.ResponseSuccess(g, results, "")
 }
 
 func (s *Server) UpdateResourcePoolConfig(g *gin.Context) {
@@ -30,7 +30,7 @@ func (s *Server) UpdateResourcePoolConfig(g *gin.Context) {
 		return
 	}
 
-	api.ResponseSuccess(g, gin.H{"results": result, "update": update})
+	api.ResponseSuccess(g, gin.H{"results": result, "update": update}, "")
 }
 
 func (s *Server) GetNamespaceResourceRemain(g *gin.Context) {
@@ -41,5 +41,5 @@ func (s *Server) GetNamespaceResourceRemain(g *gin.Context) {
 		return
 	}
 
-	api.ResponseSuccess(g, gin.H{"cpu_remain": cpu, "memory_remain": memory})
+	api.ResponseSuccess(g, gin.H{"cpu_remain": cpu, "memory_remain": memory}, "")
 }

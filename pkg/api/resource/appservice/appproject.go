@@ -1,4 +1,4 @@
-package apppservice
+package appservice
 
 import (
 	"github.com/yametech/devops/pkg/resource/appservice"

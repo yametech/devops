@@ -34,7 +34,7 @@ func (w *WorkOrder) ListWorkOrder(g *gin.Context) {
 		return
 	}
 
-	api.ResponseSuccess(g, orders)
+	api.ResponseSuccess(g, orders, "")
 }
 
 func (w *WorkOrder) CreateWorkOrder(g *gin.Context) {
@@ -48,7 +48,7 @@ func (w *WorkOrder) CreateWorkOrder(g *gin.Context) {
 		api.ResponseError(g, err)
 		return
 	}
-	api.ResponseSuccess(g, order)
+	api.ResponseSuccess(g, order, "")
 }
 
 func (w *WorkOrder) GetWorkOrder(g *gin.Context) {
@@ -59,7 +59,7 @@ func (w *WorkOrder) GetWorkOrder(g *gin.Context) {
 		return
 	}
 
-	api.ResponseSuccess(g, result)
+	api.ResponseSuccess(g, result, "")
 }
 
 func (w *WorkOrder) UpdateWorkOrder(g *gin.Context) {
@@ -77,29 +77,16 @@ func (w *WorkOrder) UpdateWorkOrder(g *gin.Context) {
 		return
 	}
 
-	api.ResponseSuccess(g, gin.H{"results": result, "update": update})
+	api.ResponseSuccess(g, gin.H{"results": result, "update": update}, "")
 }
 
 func (w *WorkOrder) DeteleWorkOrder(g *gin.Context) {
 	uuid := g.Param("uuid")
 
-	delete, err := w.Service.Delete(uuid);
-	if err != nil{
+	result, err := w.Service.Delete(uuid)
+	if err != nil {
 		api.ResponseError(g, err)
 		return
 	}
-	api.ResponseSuccess(g, gin.H{"delete": delete})
-}
-
-func (w *WorkOrder) GetWorkOrderStatus(g *gin.Context) {
-	relation := g.Query("relation")
-	orderType, err := strconv.Atoi(g.Query("order_type"))
-	if err != nil {
-		api.ResponseError(g, errors.New("order_type need int type"))
-		return
-	}
-
-	status, _ := w.Service.GetWorkOrderStatus(relation, orderType)
-
-	api.ResponseSuccess(g, status)
+	api.ResponseSuccess(g, gin.H{"delete": result}, "")
 }

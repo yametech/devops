@@ -1,10 +1,10 @@
 package artifactory
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/artifactory"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
@@ -14,8 +14,13 @@ import (
 	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"io"
+	"net/http"
+	urlpkg "net/url"
+	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 type ArtifactService struct {
@@ -40,7 +45,7 @@ func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}
 		filter["spec.app_name"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + name + ".*", Options: "i"}}
 	}
 	sort := map[string]interface{}{
-		"metadata.version": -1,
+		"metadata.created_time": -1,
 	}
 
 	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.Artifactory, filter, sort, offset, pageSize)
@@ -55,35 +60,46 @@ func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}
 
 }
 
-func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
-	gitPath := ""
-	if strings.Contains(reqAr.GitUrl, "http://") {
-		sliceTemp := strings.Split(reqAr.GitUrl, "http://")
-		gitPath = sliceTemp[len(sliceTemp)-1]
-	} else if strings.Contains(reqAr.GitUrl, "https://") {
-		sliceTemp := strings.Split(gitPath, "https://")
-		gitPath = sliceTemp[len(sliceTemp)-1]
+func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResource.Artifact, error) {
+	if IsChinese(reqAr.Branch) || IsChinese(reqAr.Tag) {
+		return nil, errors.New("分支和tag不能为中文")
 	}
 
+	//gitName = https://github.com/yametech/devops.git --> devops
+	//gitDirectory = https://github.com/yametech/devops.git --> yametech
+	gitName := ""
 	gitDirectory := ""
-	if strings.Contains(gitPath, "/") {
-		if sliceTemp := strings.Split(gitPath, "/"); len(sliceTemp) > 2 {
-			gitDirectory = sliceTemp[len(sliceTemp)-2]
+	if strings.Contains(reqAr.GitUrl, "/") {
+		sliceTemp := strings.Split(reqAr.GitUrl, "/")
+		gitDirectory = sliceTemp[len(sliceTemp)-2]
+		if strings.Contains(sliceTemp[len(sliceTemp)-1], ".git") {
+			gitName = strings.ToLower(strings.Split(sliceTemp[len(sliceTemp)-1], ".git")[0])
+		} else {
+			gitName = strings.ToLower(sliceTemp[len(sliceTemp)-1])
 		}
+
+		gitName = strings.ReplaceAll(gitName, "_", "-")
+
 	}
 
+	//registry = http://harbor.ym --> harbor.ym
 	registry := ""
 	if strings.Contains(reqAr.Registry, "http://") {
 		sliceTemp := strings.Split(reqAr.Registry, "http://")
 		registry = sliceTemp[len(sliceTemp)-1]
 	} else if strings.Contains(reqAr.Registry, "https://") {
-		sliceTemp := strings.Split(gitPath, "https://")
+		sliceTemp := strings.Split(reqAr.Registry, "https://")
 		registry = sliceTemp[len(sliceTemp)-1]
+	} else {
+		registry = reqAr.Registry
 	}
-	registry = fmt.Sprintf("%s/%s", registry, gitDirectory)
+	projectPath := fmt.Sprintf("%s/%s", registry, gitDirectory)
+	imageUrl := fmt.Sprintf("%s/%s", projectPath, gitName)
 
 	if len(reqAr.Tag) == 0 {
-		reqAr.Tag = utils.NewSUID().String()
+		reqAr.Tag = strings.ToLower(utils.NewSUID().String())
+	} else {
+		reqAr.Tag = strings.ToLower(reqAr.Tag)
 	}
 
 	appName := fmt.Sprintf("%s-%d", reqAr.AppName, time.Now().UnixNano())
@@ -102,25 +118,26 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) error {
 			Registry:    registry,
 			ProjectFile: reqAr.ProjectFile,
 			ProjectPath: reqAr.ProjectPath,
+			Images:      imageUrl,
 		},
 	}
 
 	ar.GenerateVersion()
 	_, err := a.IService.Create(common.DefaultNamespace, common.Artifactory, ar)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	go a.SendCI(ar)
-	return nil
+	go a.SendCI(ar, projectPath)
+	return ar, nil
 }
 
-func (a *ArtifactService) SendCI(ar *arResource.Artifact) {
+func (a *ArtifactService) SendCI(ar *arResource.Artifact, output string) {
 	arCIInfo := &arResource.ArtifactCIInfo{
 		Branch:      ar.Spec.Branch,
 		CodeType:    ar.Spec.Language,
 		CommitID:    ar.Spec.Tag,
 		GitUrl:      ar.Spec.GitUrl,
-		OutPut:      ar.Spec.Registry,
+		OutPut:      output,
 		ProjectPath: ar.Spec.ProjectPath,
 		ProjectFile: ar.Spec.ProjectFile,
 		RetryCount:  15,
@@ -176,7 +193,12 @@ func (a *ArtifactService) Update(uuid string, reqAr *apiResource.RequestArtifact
 }
 
 func (a *ArtifactService) Delete(uuid string) error {
-	err := a.IService.Delete(common.DefaultNamespace, common.Artifactory, uuid)
+	b := new(interface{})
+	err := a.IService.GetByUUID(common.DefaultNamespace, common.Artifactory, uuid, b)
+	if err != nil {
+		return err
+	}
+	err = a.IService.Delete(common.DefaultNamespace, common.Artifactory, uuid)
 	if err != nil {
 		return err
 	}
@@ -197,7 +219,7 @@ func SendEchoer(stepName string, actionName string, a map[string]interface{}) bo
 		"SUCCESS": "done", "FAIL": "done",
 	}
 
-	flowRunStepName := fmt.Sprintf("%s_%s", actionName, "4444")
+	flowRunStepName := fmt.Sprintf("%s_%s", actionName, stepName)
 	flowRun.AddStep(flowRunStepName, flowRunStep, actionName, a)
 
 	flowRunData := flowRun.Generate()
@@ -209,37 +231,83 @@ func SendEchoer(stepName string, actionName string, a map[string]interface{}) bo
 	return true
 }
 
-func (a *ArtifactService) GetBranch(gitpath string) ([]string, error) {
-	url := fmt.Sprintf("http://%s:%s@%s", common.GitUser, common.GitPW, gitpath)
-	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-		URL:          url,
-		SingleBranch: false,
-		NoCheckout:   true,
-		Depth:        1,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	sliceBranch := make([]string, 0)
-	referenceIter, _ := r.References()
-	err = referenceIter.ForEach(func(c *plumbing.Reference) error {
-		if strings.Contains(string(c.Name()), "refs/remotes/origin/") {
-			sliceTemp := strings.Split(string(c.Name()), "refs/remotes/origin/")
-			sliceBranch = append(sliceBranch, sliceTemp[len(sliceTemp)-1])
-		}
-		return nil
-	})
-	return sliceBranch, err
-}
-
 func (a *ArtifactService) GetAppNumber(appName string) int {
-	filter := map[string]interface{}{
-		"spec.app_name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + appName + ".*", Options: "i"}},
-	}
-	count, err := a.IService.Count(common.DefaultNamespace, common.Artifactory, filter)
+	data, _, err := a.List(appName, 1, 0)
 	if err != nil {
 		return 0
 	}
-	return int(count) + 1
+	b, err := json.Marshal(data)
+	c := make([]*arResource.Artifact, 0)
+	err = json.Unmarshal(b, &c)
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+	var number = 0
+	for _, v := range c {
+		sliceName := strings.Split(v.Metadata.Name, "-")
+		i, err := strconv.Atoi(sliceName[len(sliceName)-1])
+		if err != nil {
+			return 0
+		}
+		if i > number {
+			number = i
+		}
+	}
+	return number
+}
+
+func IsChinese(str string) bool {
+	var count int
+	for _, v := range str {
+		if unicode.Is(unicode.Han, v) {
+			count++
+			break
+		}
+	}
+	return count > 0
+
+}
+
+func (a *ArtifactService) GetBanch(org string, name string) ([]string, error) {
+	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
+	req, err := http.NewRequest("GET", url, strings.NewReader(urlpkg.Values{}.Encode()))
+	if err != nil {
+		panic(err.Error())
+	}
+	req.SetBasicAuth(common.GitUser, common.GitPW)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
+	if res != nil {
+		var buffer [512]byte
+		result := bytes.NewBuffer(nil)
+		for {
+			n, err := res.Body.Read(buffer[0:])
+			result.Write(buffer[0:n])
+			if err != nil && err == io.EOF {
+				break
+			} else if err != nil {
+				panic(err)
+			}
+		}
+
+		type GetValue struct {
+			Name string `json:"name"`
+		}
+
+		var uBody []GetValue
+		err := json.Unmarshal(result.Bytes(), &uBody)
+		if err != nil {
+			return nil, err
+		}
+		sliceBranch := make([]string, 0)
+		for _, value := range uBody {
+			sliceBranch = append(sliceBranch, value.Name)
+		}
+		return sliceBranch, err
+	}
+	return nil, nil
 }

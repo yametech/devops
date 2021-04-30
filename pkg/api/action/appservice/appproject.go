@@ -3,7 +3,7 @@ package appservice
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/yametech/devops/pkg/api"
-	apiResource "github.com/yametech/devops/pkg/api/resource/apppservice"
+	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 )
 
 func (s *Server) ListAppProject(g *gin.Context) {
@@ -14,7 +14,7 @@ func (s *Server) ListAppProject(g *gin.Context) {
 		api.ResponseError(g, err)
 		return
 	}
-	api.ResponseSuccess(g, data)
+	api.ResponseSuccess(g, data, "")
 }
 
 func (s *Server) CreateAppProject(g *gin.Context) {
@@ -31,7 +31,7 @@ func (s *Server) CreateAppProject(g *gin.Context) {
 		return
 	}
 
-	api.ResponseSuccess(g, gin.H{"results": req})
+	api.ResponseSuccess(g, gin.H{"results": req}, "")
 }
 
 func (s *Server) UpdateAppProject(g *gin.Context) {
@@ -48,7 +48,7 @@ func (s *Server) UpdateAppProject(g *gin.Context) {
 		return
 	}
 
-	api.ResponseSuccess(g, gin.H{"results": data, "update": update})
+	api.ResponseSuccess(g, gin.H{"results": data, "update": update}, "")
 }
 
 func (s *Server) DeleteAppProject(g *gin.Context) {
@@ -58,5 +58,5 @@ func (s *Server) DeleteAppProject(g *gin.Context) {
 		api.ResponseError(g, err)
 		return
 	}
-	api.ResponseSuccess(g, gin.H{"delete": result})
+	api.ResponseSuccess(g, gin.H{"delete": result}, "")
 }
