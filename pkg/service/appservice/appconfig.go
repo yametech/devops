@@ -44,14 +44,20 @@ func (a *AppConfigService) GetAppResources(appid string) ([]interface{}, error) 
 
 func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceRequest) (core.IObject, bool, error) {
 
-	namespaceFilter := map[string]interface{}{
-		"metadata.name": data.Name,
-		"spec.app":      data.App,
-	}
-	exist := &appservice.AppResource{}
-	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, exist, namespaceFilter); err == nil {
-		return nil, false, errors.New("the resource config name is exist")
-	}
+	//namespaceFilter := map[string]interface{}{
+	//	"metadata.name": data.Name,
+	//	"spec.app":      data.App,
+	//}
+	//
+	//
+	//exist := &appservice.AppResource{}
+	//if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, exist, namespaceFilter); err != nil {
+	//	log.Printf("UpdateConfigResource have no the ConfigResource Create one: %v", err)
+	//}
+	//
+	//if exist.UUID != data.UUID {
+	//	return nil, false, errors.New("this config resource is exist")
+	//}
 
 	appResource := &appservice.AppResource{}
 	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, data.UUID, appResource); err != nil {
@@ -73,7 +79,7 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 	}
 	resources, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppResource, filter, nil, 0, 0)
 	if err != nil {
-		return nil, false, err
+		log.Printf("UpdateConfigResource have no the same resourcePool use: %v", err)
 	}
 	appResources := make([]*appservice.AppResource, 0)
 	if err = utils.UnstructuredObjectToInstanceObj(resources, &appResources); err != nil {
@@ -91,8 +97,8 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 	}
 
 	appParentResource := &appservice.AppResource{}
-	if err = a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, data.ParentApp, appParentResource); err != nil {
-		return nil, false, err
+	if err = a.IService.GetByUUID(common.DefaultNamespace, common.Namespace, data.ParentApp, appParentResource); err != nil {
+		return nil, false, errors.New("have no this namespace")
 	}
 
 	// check Cpus and Memory
@@ -146,7 +152,7 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 	}
 
 	history.Spec.Now = newAppResource
-	history.Spec.App = newAppResource.UUID
+	history.Spec.App = newAppResource.Spec.App
 	if _, err = a.IService.Create(common.DefaultNamespace, common.History, history); err != nil {
 		return nil, false, err
 	}
@@ -243,7 +249,7 @@ func (a *AppConfigService) OrderToResourceSuccess(uuid string) error {
 
 	newHistory := &appservice.AppConfigHistory{}
 	newHistory.Spec.Creator = ""
-	newHistory.Spec.App = appResource.UUID
+	newHistory.Spec.App = appResource.Spec.App
 	newHistory.Spec.Now = appResource
 	if len(oldHistory) > 0 {
 		newHistory.Spec.Before = oldHistory[0].Spec.Now
