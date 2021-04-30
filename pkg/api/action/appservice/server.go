@@ -45,6 +45,7 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 	{
 		group.GET("/namespace", cfaServer.ListNamespace)
 		group.POST("/namespace", cfaServer.CreateNamespace)
+		group.GET("/namespace/:uuid", cfaServer.GetNamespaceResourceRemain)
 	}
 
 	// ResourcePoolConfig

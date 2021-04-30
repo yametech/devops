@@ -32,3 +32,14 @@ func (s *Server) UpdateResourcePoolConfig(g *gin.Context) {
 
 	api.ResponseSuccess(g, gin.H{"results": result, "update": update})
 }
+
+func (s *Server) GetNamespaceResourceRemain(g *gin.Context) {
+	uuid := g.Param("uuid")
+	cpu, memory, err := s.ResourcePoolConfigService.GetNamespaceResourceRemain(uuid)
+	if err != nil {
+		api.ResponseError(g, err)
+		return
+	}
+
+	api.ResponseSuccess(g, gin.H{"cpu_remain": cpu, "memory_remain": memory})
+}

@@ -82,3 +82,34 @@ func (n *ResourcePoolConfigService) Update(data *apiResource.NamespaceRequest) (
 	}
 	return result, update, nil
 }
+
+func (n *ResourcePoolConfigService) GetNamespaceResourceRemain(appid string) (float64, int64, error) {
+	// get namespace all resource from cmdb
+	cmdbCpus := 10000.0
+	cmdbMemories := int64(10000000)
+
+	filter := map[string]interface{}{
+		"spec.parent_app": appid,
+	}
+
+	data, err := n.IService.ListByFilter(common.DefaultNamespace, common.AppResource, filter, nil, 0, 0);
+	if err != nil {
+		return cmdbCpus, cmdbMemories, err
+	}
+
+	children := make([]*appservice.AppResource, 0)
+	if err = utils.UnstructuredObjectToInstanceObj(data, &children); err != nil {
+		return cmdbCpus, cmdbMemories, err
+	}
+
+	var (
+		useCpu float64
+		useMemories int64
+	)
+	for _, child := range children {
+		useCpu += child.Spec.Cpu
+		useMemories += child.Spec.Memory
+	}
+
+	return cmdbCpus-useCpu, cmdbMemories-useMemories, nil
+}

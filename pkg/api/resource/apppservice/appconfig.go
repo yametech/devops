@@ -1,7 +1,5 @@
 package apppservice
 
-import "github.com/yametech/devops/pkg/resource/appservice"
-
 type AppConfigRequest struct {
 	App    string                 `json:"app"`
 	Config map[string]interface{} `json:"config"`
@@ -21,6 +19,4 @@ type NamespaceRequest struct {
 	Approval    bool    `json:"approval"`
 }
 
-type AppConfigResponse struct {
-	Resources []*appservice.AppResource `json:"resources"`
-}
+
