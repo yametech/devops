@@ -75,9 +75,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 		} else {
 			gitName = strings.ToLower(sliceTemp[len(sliceTemp)-1])
 		}
-
 		gitName = strings.ReplaceAll(gitName, "_", "-")
-
 	}
 
 	//registry = http://harbor.ym --> harbor.ym
@@ -272,6 +270,7 @@ func (a *ArtifactService) Delete(uuid string) error {
 	}
 	return nil
 }
+
 
 func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
