@@ -2,7 +2,11 @@ package artifactory
 
 import (
 	"github.com/yametech/devops/pkg/core"
+	"github.com/yametech/devops/pkg/store"
+	"github.com/yametech/devops/pkg/store/gtm"
 )
+
+const DeployKind core.Kind = "deploy"
 
 type DeployStatus uint8
 
@@ -30,6 +34,7 @@ type VolumeMount struct {
 }
 
 type Container struct {
+	Name            string                   `json:"name" bson:"name"`
 	Images          string                   `json:"images" bson:"images"`
 	ImagePullPolicy string                   `json:"image_pull_policy"`
 	LimitCPU        string                   `json:"limit_cpu" bson:"limit_cpu"`
@@ -39,28 +44,31 @@ type Container struct {
 	Environment     []map[string]interface{} `json:"environment" bson:"environment"`
 	Command         []string                 `json:"command" bson:"command"`
 	Argument        []string                 `json:"argument" bson:"argument"`
-	VolumeMounts    []VolumeMount            `json:"volume_mounts" bson:"volume_mounts"`
+	VolumeMount     []VolumeMount            `json:"volume_mounts" bson:"volume_mounts"`
 }
 
 type ServicePort struct {
 	Name       string `json:"name" bson:"name"`
 	Protocol   string `json:"protocol" bson:"protocol"`
 	Port       string `json:"port" bson:"port"`
-	TargetPort string `json:"target_port" bson:"target_port"`
+	TargetPort string `json:"targetPort" bson:"targetPort"`
+}
+
+type StorageClaim struct {
+	Name        string `json:"name" bson:"name"`
+	StorageSize string `json:"storage_size" bson:"storage_size"`
 }
 
 type DeploySpec struct {
-	DeployNamespace string `json:"deploy_namespace" bson:"deploy_namespace"`
-	DeployType      string `json:"deploy_type" bson:"deploy_type"`
-	StorageCapacity string `json:"storage_capacity" bson:"storage_capacity"`
-	Replicas        string `json:"replicas" bson:"replicas"`
-	Policy          string `json:"policy" bson:"policy"`
-	CreateUserId    string `json:"create_user_id" bson:"create_user_id"`
-	AppName         string `json:"app_name" bson:"app_name"` // 只存英文名，appCode不需要，用name搜索
+	DeployNamespace string       `json:"deploy_namespace" bson:"deploy_namespace"`
+	Replicas        int          `json:"replicas" bson:"replicas"`
+	CreateUserId    string       `json:"create_user_id" bson:"create_user_id"`
+	AppName         string       `json:"app_name" bson:"app_name"` // 只存英文名，appCode不需要，用name搜索
+	DeployStatus    DeployStatus `json:"artifact_status" bson:"artifact_status"`
 
-	ServicePorts []ServicePort `json:"service_ports"`
-	DeployStatus DeployStatus  `json:"artifact_status" bson:"artifact_status"`
-	Container    Container     `json:"container"`
+	ServicePorts  []ServicePort  `json:"service_ports"`
+	Containers    []Container    `json:"container"`      //one pod may have multiple container
+	StorageClaims []StorageClaim `json:"storage_claims"` //pod may mount multiple storage
 }
 
 type Deploy struct {
@@ -72,4 +80,17 @@ func (d *Deploy) Clone() core.IObject {
 	result := &Deploy{}
 	core.Clone(d, result)
 	return result
+}
+
+// Deploy impl Coder
+func (*Deploy) Decode(op *gtm.Op) (core.IObject, error) {
+	deploy := &Deploy{}
+	if err := core.ObjectToResource(op.Data, deploy); err != nil {
+		return nil, err
+	}
+	return deploy, nil
+}
+
+func init() {
+	store.AddResourceCoder(string(DeployKind), &Deploy{})
 }

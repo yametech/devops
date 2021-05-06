@@ -15,6 +15,7 @@ const (
 	AppResource      = "appresource"
 	GlobalConfig     = "globalconfig"
 	WorkOrder        = "workorder"
+	Deploy           = "deploy"
 )
 
 var (
