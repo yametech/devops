@@ -135,7 +135,7 @@ func (b *baseServer) GetBranchList(g *gin.Context) {
 		return
 	}
 
-	results, err := b.ArtifactService.GetBanch(org, name)
+	results, err := b.ArtifactService.GetBranch(org, name)
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return

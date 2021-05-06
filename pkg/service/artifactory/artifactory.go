@@ -16,10 +16,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
-	"io/ioutil"
 	"net/http"
 	urlPkg "net/url"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -123,8 +121,8 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 			Images:      imageUrl,
 		},
 	}
-	VerificationResults, err := CheckExists(ar)
-	if !VerificationResults {
+	err := a.CheckRegistryProject(ar)
+	if err != nil {
 		return nil, err
 	}
 	ar.GenerateVersion()
@@ -136,7 +134,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 	return ar, nil
 }
 
-func CheckExists(ar *arResource.Artifact) (bool, error) {
+func (a *ArtifactService) CheckRegistryProject(ar *arResource.Artifact) error {
 	var HarborAddress string
 	var catalogue string
 	if strings.Contains(ar.Spec.Images, "/") {
@@ -148,7 +146,7 @@ func CheckExists(ar *arResource.Artifact) (bool, error) {
 	data := urlPkg.Values{}
 	req, err := http.NewRequest("HEAD", url, strings.NewReader(data.Encode()))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
@@ -158,19 +156,19 @@ func CheckExists(ar *arResource.Artifact) (bool, error) {
 	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if resp.StatusCode != 200 {
-		res, err := CreateProject(HarborAddress, catalogue)
+		err = a.CreateRegistryProject(HarborAddress, catalogue)
 		if err != nil {
-			return res, err
+			return err
 		}
 
 	}
-	return true, nil
+	return nil
 }
 
-func CreateProject(HarborAddress, projectName string) (bool, error) {
+func (a *ArtifactService) CreateRegistryProject(HarborAddress, projectName string) error {
 	url := fmt.Sprintf("https://%s/api/v2.0/projects", HarborAddress)
 	body := map[string]interface{}{
 		"project_name": projectName,
@@ -180,12 +178,12 @@ func CreateProject(HarborAddress, projectName string) (bool, error) {
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
@@ -195,16 +193,12 @@ func CreateProject(HarborAddress, projectName string) (bool, error) {
 	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
-	}
-	_, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
+		return err
 	}
 	if resp.StatusCode == 201 {
-		return true, nil
+		return nil
 	}
-	return false, errors.New("构建镜像仓库目录失败！")
+	return errors.New("构建镜像仓库目录失败！")
 }
 
 func (a *ArtifactService) SendCI(ar *arResource.Artifact, output string) {
@@ -283,7 +277,7 @@ func (a *ArtifactService) Delete(uuid string) error {
 
 func SendEchoer(stepName string, actionName string, a map[string]interface{}) bool {
 	if stepName == "" {
-		fmt.Println("UUID is not none")
+		fmt.Println("UUID should not be none")
 		return false
 	}
 
@@ -307,32 +301,6 @@ func SendEchoer(stepName string, actionName string, a map[string]interface{}) bo
 	return true
 }
 
-func (a *ArtifactService) GetAppNumber(appName string) int {
-	data, _, err := a.List(appName, 1, 0)
-	if err != nil {
-		return 0
-	}
-	b, err := json.Marshal(data)
-	c := make([]*arResource.Artifact, 0)
-	err = json.Unmarshal(b, &c)
-	if err != nil {
-		fmt.Println(err)
-		return 0
-	}
-	var number = 0
-	for _, v := range c {
-		sliceName := strings.Split(v.Metadata.Name, "-")
-		i, err := strconv.Atoi(sliceName[len(sliceName)-1])
-		if err != nil {
-			return 0
-		}
-		if i > number {
-			number = i
-		}
-	}
-	return number
-}
-
 func IsChinese(str string) bool {
 	var count int
 	for _, v := range str {
@@ -345,7 +313,7 @@ func IsChinese(str string) bool {
 
 }
 
-func (a *ArtifactService) GetBanch(org string, name string) ([]string, error) {
+func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
 	req, err := http.NewRequest("GET", url, strings.NewReader(urlPkg.Values{}.Encode()))
 	if err != nil {
