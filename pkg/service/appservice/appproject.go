@@ -2,10 +2,10 @@ package appservice
 
 import (
 	"github.com/pkg/errors"
-	apiResource "github.com/yametech/devops/pkg/api/resource/appproject"
+	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
-	"github.com/yametech/devops/pkg/resource/appproject"
+	"github.com/yametech/devops/pkg/resource/appservice"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -40,11 +40,11 @@ func (a *AppProjectService) List(search string) ([]*apiResource.Response, error)
 
 func (a *AppProjectService) Create(request *apiResource.Request) (core.IObject, error) {
 
-	req := &appproject.AppProject{
+	req := &appservice.AppProject{
 		Metadata: core.Metadata{
 			Name: request.Name,
 		},
-		Spec: appproject.AppSpec{
+		Spec: appservice.AppSpec{
 			AppType:   request.AppType,
 			ParentApp: request.ParentApp,
 			Desc:      request.Desc,
@@ -65,7 +65,7 @@ func (a *AppProjectService) Create(request *apiResource.Request) (core.IObject, 
 	}
 
 	req.GenerateVersion()
-	parent := &appproject.AppProject{}
+	parent := &appservice.AppProject{}
 	if req.Spec.ParentApp != "" {
 		if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, req.Spec.ParentApp, parent); err != nil {
 			return nil, err
@@ -81,14 +81,14 @@ func (a *AppProjectService) Create(request *apiResource.Request) (core.IObject, 
 }
 
 func (a *AppProjectService) Update(uuid string, request *apiResource.Request) (core.IObject, bool, error) {
-	req := &appproject.AppProject{
-		Spec: appproject.AppSpec{
+	req := &appservice.AppProject{
+		Spec: appservice.AppSpec{
 			Owner: request.Owner,
 			Desc:  request.Desc,
 		},
 	}
 
-	dbObj := &appproject.AppProject{}
+	dbObj := &appservice.AppProject{}
 	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, uuid, dbObj); err != nil {
 		return nil, false, err
 	}
@@ -104,7 +104,7 @@ func (a *AppProjectService) Update(uuid string, request *apiResource.Request) (c
 }
 
 func (a *AppProjectService) Delete(uuid string) (bool, error) {
-	dbObj := &appproject.AppProject{}
+	dbObj := &appservice.AppProject{}
 	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, uuid, dbObj); err != nil {
 		return false, err
 	}
@@ -138,7 +138,7 @@ func (a *AppProjectService) Children(req *apiResource.Response, sort map[string]
 		return err
 	}
 
-	if req.Spec.AppType == appproject.Service {
+	if req.Spec.AppType == appservice.Service {
 		req.Children = children
 		return nil
 	}
@@ -158,9 +158,6 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.R
 	parentsMap := make(map[string]*apiResource.Response, 0)
 	parents := make([]*apiResource.Response, 0)
 	filter := make(map[string]interface{}, 0)
-	if search != "" {
-		filter["metadata.name"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}}
-	}
 
 	sort := map[string]interface{}{
 		"metadata.created_time": 1,
@@ -168,6 +165,16 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.R
 
 	for ; level >= 0; level-- {
 
+		filter["$or"] = []map[string]interface{}{
+			{
+				"spec.app_type": level,
+				"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+			},
+			{
+				"spec.app_type": level,
+				"spec.desc":     bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+			},
+		}
 		filter["spec.app_type"] = level
 		apps, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, sort, 0, 0)
 		if err != nil {
@@ -188,7 +195,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.R
 			}
 
 			if _, ok := parentsMap[app.Spec.RootApp]; app.Spec.RootApp != "" && !ok {
-				root := &appproject.AppProject{}
+				root := &appservice.AppProject{}
 				if err = a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, app.Spec.RootApp, root); err != nil {
 					continue
 				}

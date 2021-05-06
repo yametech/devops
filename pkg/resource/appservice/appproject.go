@@ -1,4 +1,4 @@
-package appproject
+package appservice
 
 import (
 	"github.com/yametech/devops/pkg/core"
@@ -10,7 +10,6 @@ const (
 	BusinessLine AppType = iota
 	Service
 	App
-	Namespace
 )
 
 type AppSpec struct {

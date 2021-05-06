@@ -11,16 +11,16 @@ type Server struct {
 	*appService.AppProjectService
 	*appService.AppConfigService
 	*appService.NamespaceService
-	*appService.NamespaceConfigService
+	*appService.ResourcePoolConfigService
 }
 
 func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 	cfaServer := &Server{
-		Server:            server,
-		AppProjectService: appService.NewAppProjectService(server.IService),
-		AppConfigService: appService.NewAppConfigService(server.IService),
-		NamespaceService: appService.NewNamespaceService(server.IService),
-		NamespaceConfigService: appService.NewNamespaceConfigService(server.IService),
+		Server:                    server,
+		AppProjectService:         appService.NewAppProjectService(server.IService),
+		AppConfigService:          appService.NewAppConfigService(server.IService),
+		NamespaceService:          appService.NewResourcePoolService(server.IService),
+		ResourcePoolConfigService: appService.NewResourcePoolConfigService(server.IService),
 	}
 	group := cfaServer.Group(fmt.Sprintf("/%s", serviceName))
 
@@ -36,21 +36,32 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 	{
 		group.GET("/app-config/:uuid", cfaServer.GetAppConfig)
 		group.POST("/app-config", cfaServer.UpdateAppConfig)
-		group.GET("/history/:uuid", cfaServer.ConfigHistory)
-		group.DELETE("/app-config/resource/:uuid", cfaServer.DeleteResource)
+		group.GET("/app-resource/:uuid", cfaServer.GetAppResource)
+		group.POST("/app-resource", cfaServer.UpdateAppResource)
+		group.DELETE("/app-resource/:uuid", cfaServer.DeleteResource)
 	}
 
 	// Namespace
 	{
-		group.GET("/namespace", cfaServer.ListNamespaces)
+		group.GET("/namespace", cfaServer.ListNamespace)
 		group.POST("/namespace", cfaServer.CreateNamespace)
-		group.GET("/namespace/all", cfaServer.ListByLevel)
+		group.GET("/namespace/:uuid", cfaServer.GetNamespaceResourceRemain)
 	}
 
-	// NamespaceConfig
+	// ResourcePoolConfig
 	{
-		group.GET("/namespaceconfig/:uuid", cfaServer.GetNamespaceConfig)
-		group.POST("/namespaceconfig", cfaServer.UpdateNamespaceConfig)
+		group.GET("/resource-pool-config/:uuid", cfaServer.GetResourcePoolConfig)
+		group.POST("/resource-pool-config", cfaServer.UpdateResourcePoolConfig)
+	}
+
+	// Menu by level
+	{
+		group.GET("/menu", cfaServer.ListByLevel)
+	}
+
+	// History
+	{
+		group.GET("/history/:uuid", cfaServer.ConfigHistory)
 	}
 
 	return cfaServer

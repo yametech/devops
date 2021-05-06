@@ -3,7 +3,7 @@ package appservice
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/yametech/devops/pkg/api"
-	apiResource "github.com/yametech/devops/pkg/api/resource/appproject"
+	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 )
 
 func (s *Server) ListAppProject(g *gin.Context) {

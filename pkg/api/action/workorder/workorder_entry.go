@@ -83,23 +83,10 @@ func (w *WorkOrder) UpdateWorkOrder(g *gin.Context) {
 func (w *WorkOrder) DeteleWorkOrder(g *gin.Context) {
 	uuid := g.Param("uuid")
 
-	delete, err := w.Service.Delete(uuid)
+	result, err := w.Service.Delete(uuid)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
 	}
-	api.ResponseSuccess(g, gin.H{"delete": delete}, "")
-}
-
-func (w *WorkOrder) GetWorkOrderStatus(g *gin.Context) {
-	relation := g.Query("relation")
-	orderType, err := strconv.Atoi(g.Query("order_type"))
-	if err != nil {
-		api.ResponseError(g, errors.New("order_type need int type"))
-		return
-	}
-
-	status, _ := w.Service.GetWorkOrderStatus(relation, orderType)
-
-	api.ResponseSuccess(g, status)
+	api.ResponseSuccess(g, gin.H{"delete": result}, "")
 }

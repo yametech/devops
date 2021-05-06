@@ -1,16 +1,14 @@
 package appservice
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/pkg/errors"
-	apiResource "github.com/yametech/devops/pkg/api/resource/appproject"
+	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 	"github.com/yametech/devops/pkg/common"
-	"github.com/yametech/devops/pkg/resource/appproject"
-	"github.com/yametech/devops/pkg/resource/workorder"
+	"github.com/yametech/devops/pkg/core"
+	"github.com/yametech/devops/pkg/resource/appservice"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/utils"
-	apiWorkorder "github.com/yametech/devops/pkg/api/resource/workorder"
+	"log"
 )
 
 type AppConfigService struct {
@@ -21,202 +19,173 @@ func NewAppConfigService(i service.IService) *AppConfigService {
 	return &AppConfigService{IService: i}
 }
 
-func (a *AppConfigService) GetByFilter(appid string) (*apiResource.AppConfigResponse, error) {
-	req := &appproject.AppConfig{
-		Spec: appproject.AppConfigSpec{
-			App: appid,
-		},
-	}
+func (a *AppConfigService) GetAppConfig(appid string) (core.IObject, error) {
+	req := &appservice.AppConfig{}
 
 	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppConfig, req, map[string]interface{}{
-		"spec.app": req.Spec.App,
+		"spec.app": appid,
 	}); err != nil {
 		return nil, err
 	}
+	return req, nil
+}
 
-	resource := make([]*appproject.Resource, 0)
+func (a *AppConfigService) GetAppResources(appid string) ([]interface{}, error) {
 	filter := map[string]interface{}{
 		"spec.app": appid,
 	}
+
 	sort := map[string]interface{}{
-		"metadata.create_time": 1,
+		"metadata.created_time": 1,
 	}
 
-	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.Resource, filter, sort, 0, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = utils.UnstructuredObjectToInstanceObj(data, &resource); err != nil {
-		return nil, err
-	}
-
-	response := apiResource.AppConfigResponse{
-		Config:    req,
-		Resources: resource,
-	}
-
-	return &response, nil
+	return a.IService.ListByFilter(common.DefaultNamespace, common.AppResource, filter, sort, 0, 0)
 }
 
-func (a *AppConfigService) Update(data *apiResource.AppConfigRequest) (*apiResource.AppConfigResponse, bool, error) {
+func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceRequest) (core.IObject, bool, error) {
 
-	// check the workorder status
-	url := fmt.Sprintf("%s?relation=%s&order_type=%d", common.WorkOrderStatus, data.App, workorder.Resources)
-	resp, err := utils.Request("GET", url, nil, nil)
-	if err != nil {
-		return nil, false, errors.New("Can not Get the worker order status")
+	//namespaceFilter := map[string]interface{}{
+	//	"metadata.name": data.Name,
+	//	"spec.app":      data.App,
+	//}
+	//
+	//
+	//exist := &appservice.AppResource{}
+	//if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, exist, namespaceFilter); err != nil {
+	//	log.Printf("UpdateConfigResource have no the ConfigResource Create one: %v", err)
+	//}
+	//
+	//if exist.UUID != data.UUID {
+	//	return nil, false, errors.New("this config resource is exist")
+	//}
+
+	appResource := &appservice.AppResource{}
+	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, data.UUID, appResource); err != nil {
+		log.Printf("UpdateConfigResource not found Create New one: %v\n", err)
 	}
 
-	status := &apiWorkorder.WorkOrderStatusResponse{}
-	if err = json.Unmarshal(resp, &status); err != nil {
+	// check the order status
+	if appResource.Spec.ResourceStatus == appservice.Checking {
+		return nil, false, errors.New("the workorder is checking")
+	}
+
+	// Get Cpus and Memories from cmdb
+	cmdbCpus := 1000.0
+	cmdbMemories := int64(10240000)
+
+	// List all data from the same resourcePool
+	filter := map[string]interface{}{
+		"spec.parent_app": data.ParentApp,
+	}
+	resources, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppResource, filter, nil, 0, 0)
+	if err != nil {
+		log.Printf("UpdateConfigResource have no the same resourcePool use: %v", err)
+	}
+	appResources := make([]*appservice.AppResource, 0)
+	if err = utils.UnstructuredObjectToInstanceObj(resources, &appResources); err != nil {
 		return nil, false, err
 	}
 
-	if status.Data == workorder.Checking {
-		return nil, false, errors.New("the worker order is checking, can not submit the data")
+	var (
+		newCpus     float64
+		newMemories int64
+	)
+
+	for _, resource := range appResources {
+		newCpus += resource.Spec.Cpu
+		newMemories += resource.Spec.Memory
 	}
 
-	// check Cpus and Memories
-	checkMap := make(map[string]*appproject.Resource)
-	for parentId, total := range data.Totals {
-		parent := &appproject.Resource{}
-		if err := a.IService.GetByUUID(common.DefaultNamespace, common.Resource, parentId, parent); err != nil {
-			return nil, false, errors.New("The resource is not exist")
-		}
-		checkMap[parentId] = parent
-		limitCpu := int(((parent.Spec.Cpus - (parent.Spec.CpuRemain - total.Cpu)) / parent.Spec.Cpus) * 100)
-		if limitCpu > parent.Spec.Threshold {
-			err := fmt.Sprintf("CPU total resources exceed %d", parent.Spec.Threshold)
-			return nil, false, errors.New(err)
-		}
-		limitMemory := int(((parent.Spec.Memories - (parent.Spec.MemoryRemain - total.Memory)) / parent.Spec.Memory) * 100)
-		if limitMemory > parent.Spec.Threshold {
-			err := fmt.Sprintf("Memory total resources exceed %d", parent.Spec.Threshold)
-			return nil, false, errors.New(err)
-		}
+	appParentResource := &appservice.AppResource{}
+	if err = a.IService.GetByUUID(common.DefaultNamespace, common.Namespace, data.ParentApp, appParentResource); err != nil {
+		return nil, false, errors.New("have no this namespace")
+	}
+
+	// check Cpus and Memory
+	newCpus += data.Cpu
+	newMemories += data.Memory
+
+	if appParentResource.Spec.Threshold < int((newCpus/cmdbCpus)*100) {
+		return nil, false, errors.New("The total CPU resource exceeds the limit")
+	}
+	if appParentResource.Spec.Threshold < int((newMemories/cmdbMemories)*100) {
+		return nil, false, errors.New("The total Memory resource exceeds the limit")
 	}
 
 	// check the other resources
-	for _, resource := range data.Resources {
-		parent := checkMap[resource.ParentApp]
-		if !parent.Spec.Approval {
-			continue
+	if appParentResource.Spec.Approval {
+		if data.Cpu > appParentResource.Spec.Cpu {
+			return nil, false, errors.New("the Cpu resource exceeds the limit")
 		}
-		if resource.Cpu > parent.Spec.Cpu {
-			return nil, false, errors.New("The CPU resource exceeds limit")
+		if data.Memory > appParentResource.Spec.Memory {
+			return nil, false, errors.New("the Memory resource exceeds the limit")
 		}
-		if resource.Memory > parent.Spec.Memory {
-			return nil, false, errors.New("The Memory resource exceeds limit")
-		}
-		if resource.Pod > parent.Spec.Pod {
-			return nil, false, errors.New("The Pod resource exceeds limit")
+		if data.Pod > appParentResource.Spec.Pod {
+			return nil, false, errors.New("the Pod resource exceeds the limit")
 		}
 	}
+
+	// create history
+	history := &appservice.AppConfigHistory{}
+	history.Spec.Creator = ""
+	history.Spec.Before = appParentResource
 
 	// update the Resources Config
-	updateResource := make([]*appproject.Resource, 0)
-	for _, resource := range data.Resources {
-		parent := checkMap[resource.ParentApp]
-		res := &appproject.Resource{}
-		a.IService.GetByUUID(common.DefaultNamespace, common.Resource, resource.UUID, res)
+	appResource.Metadata.Name = data.Name
+	appResource.Spec.Cpu = data.Cpu
+	appResource.Spec.Memory = data.Memory
+	appResource.Spec.Pod = data.Pod
+	appResource.Spec.CpuLimit = data.CpuLimit
+	appResource.Spec.MemoryLimit = data.MemoryLimit
+	appResource.Spec.ParentApp = appParentResource.UUID
+	appResource.Spec.App = data.App
+	appResource.Spec.ResourceStatus = appservice.Success
 
-		originParent := &appproject.Resource{}
-		if err := a.IService.GetByUUID(common.DefaultNamespace, common.Resource, res.Spec.ParentApp, originParent); err == nil {
-			originParent.Spec.CpuRemain += res.Spec.Cpu
-			originParent.Spec.MemoryRemain += res.Spec.Memory
-
-			originParent.GenerateVersion()
-			if _, _, err := a.IService.Apply(common.DefaultNamespace, common.Resource, originParent.UUID, originParent, false); err != nil {
-				return nil, false, err
-			}
-		}
-
-		parent.Spec.CpuRemain -= resource.Cpu
-		parent.Spec.MemoryRemain -= resource.Memory
-
-		parent.GenerateVersion()
-		if _, _, err := a.IService.Apply(common.DefaultNamespace, common.Resource, parent.UUID, parent, false); err != nil {
-			return nil, false, err
-		}
-
-		res.Spec.Cpu = resource.Cpu
-		res.Spec.Memory = resource.Memory
-		res.Spec.Pod = resource.Pod
-		res.Spec.ParentApp = parent.UUID
-		res.Spec.App = resource.App
-		res.Metadata.Name = resource.Name
-
-		res.GenerateVersion()
-		if _, _, err := a.IService.Apply(common.DefaultNamespace, common.Resource, res.UUID, res, false); err != nil {
-			return nil, false, err
-		}
-
-		updateResource = append(updateResource, res)
-
-		// create history
-		app := &appproject.AppProject{}
-		if err := a.IService.GetByUUID(common.DefaultNamespace, common.Namespace, parent.Spec.App, app); err != nil {
-			return nil, false, errors.New("the Namespace is not found")
-		}
-
-		// Get Creator
-
-		history := &appproject.ConfigHistory{
-			Spec: appproject.HistorySpec{
-				App: res.Spec.App,
-				History: map[string]interface{}{
-					"creator":        "",
-					"name":           res.Name,
-					"namespace":      app.Spec.Desc,
-					"pod":            res.Spec.Pod,
-					"cpu_limit":      parent.Spec.Cpu,
-					"memory_limit":   parent.Spec.Memory,
-					"cpu_require":    res.Spec.Cpu,
-					"memory_require": res.Spec.Memory,
-				},
-			},
-		}
-
-		if _, err := a.IService.Create(common.DefaultNamespace, common.History, history); err != nil {
-			return nil, false, errors.New("the history create failed")
-		}
+	newObj, update, err := a.IService.Apply(common.DefaultNamespace, common.AppResource, appResource.UUID, appResource, false)
+	if err != nil {
+		return nil, false, err
 	}
 
-	// update config
-	app := &appproject.AppProject{}
+	newAppResource := &appservice.AppResource{}
+	if err = utils.UnstructuredObjectToInstanceObj(newObj, &newAppResource); err != nil {
+		return nil, false, err
+	}
+
+	history.Spec.Now = newAppResource
+	history.Spec.App = newAppResource.Spec.App
+	if _, err = a.IService.Create(common.DefaultNamespace, common.History, history); err != nil {
+		return nil, false, err
+	}
+	return newObj, update, nil
+}
+
+func (a *AppConfigService) UpdateAppConfig(data *apiResource.AppConfigRequest) (core.IObject, bool, error) {
+	app := &appservice.AppProject{}
 	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppProject, data.App, app); err != nil {
 		return nil, false, errors.New("The app is not exist")
 	}
 
-	if app.Spec.AppType != appproject.App {
+	if app.Spec.AppType != appservice.App {
 		return nil, false, errors.New("This is not an App type")
 	}
 
-	dbObj := &appproject.AppConfig{}
-	a.IService.GetByFilter(common.DefaultNamespace, common.AppConfig, dbObj, map[string]interface{}{
+	dbObj := &appservice.AppConfig{}
+	err := a.IService.GetByFilter(common.DefaultNamespace, common.AppConfig, dbObj, map[string]interface{}{
 		"spec.app": app.Metadata.UUID,
 	})
+	if err != nil {
+		log.Printf("Update AppConfig Not Found Create New One: %v", err)
+	}
 
 	dbObj.Spec.Config = data.Config
-	dbObj.Spec.App = app.Metadata.UUID
-
+	dbObj.Spec.App = data.App
 	dbObj.GenerateVersion()
-	_, _, err = a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj, false)
-	if err != nil {
-		return nil, false, err
-	}
+	return a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj, false)
 
-	result := &apiResource.AppConfigResponse{
-		Config:    dbObj,
-		Resources: updateResource,
-	}
-
-	return result, true, nil
 }
 
 func (a *AppConfigService) DeleteResource(uuid string) error {
-	return a.IService.Delete(common.DefaultNamespace, common.Resource, uuid)
+	return a.IService.Delete(common.DefaultNamespace, common.AppResource, uuid)
 }
 
 func (a *AppConfigService) History(appid string, page, pageSize int64) ([]interface{}, error) {
@@ -229,4 +198,79 @@ func (a *AppConfigService) History(appid string, page, pageSize int64) ([]interf
 		"metadata.created_time": -1,
 	}
 	return a.IService.ListByFilter(common.DefaultNamespace, common.History, filter, sort, offset, pageSize)
+}
+
+func (a *AppConfigService) OrderToResourceCheck(uuid string, newResource *apiResource.NamespaceRequest) error {
+
+	appResource := &appservice.AppResource{}
+	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, uuid, appResource); err != nil {
+		return err
+	}
+	appResource.Spec.ParentApp = newResource.ParentApp
+	appResource.Spec.Pod = newResource.Pod
+	appResource.Spec.Cpu = newResource.Cpu
+	appResource.Spec.CpuLimit = newResource.CpuLimit
+	appResource.Spec.Memory = newResource.Memory
+	appResource.Spec.MemoryLimit = newResource.MemoryLimit
+	appResource.Spec.ResourceStatus = appservice.Checking
+
+	if _, _, err := a.IService.Apply(common.DefaultNamespace, common.AppResource, appResource.UUID, appResource, false); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *AppConfigService) OrderToResourceSuccess(uuid string) error {
+	appResource := &appservice.AppResource{}
+	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, uuid, appResource); err != nil {
+		return err
+	}
+
+	appResource.Spec.ResourceStatus = appservice.Success
+	if _, _, err := a.IService.Apply(common.DefaultNamespace, common.AppResource, appResource.UUID, appResource, false); err != nil {
+		return err
+	}
+
+	oldHistory := make([]*appservice.AppConfigHistory, 0)
+	filter := map[string]interface{}{
+		"spec.app": appResource.UUID,
+	}
+	sort := map[string]interface{}{
+		"metadata.created_time": 1,
+	}
+	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.History, filter, sort, 0, 1)
+	if err != nil {
+		return err
+	}
+
+	if err = utils.UnstructuredObjectToInstanceObj(data, &oldHistory); err != nil {
+		return err
+	}
+
+	newHistory := &appservice.AppConfigHistory{}
+	newHistory.Spec.Creator = ""
+	newHistory.Spec.App = appResource.Spec.App
+	newHistory.Spec.Now = appResource
+	if len(oldHistory) > 0 {
+		newHistory.Spec.Before = oldHistory[0].Spec.Now
+	}
+
+	if _, err = a.IService.Create(common.DefaultNamespace, common.History, newHistory); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *AppConfigService) OrderToResourceFailed(uuid string) error {
+	appResource := &appservice.AppResource{}
+	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, uuid, appResource); err != nil {
+		return err
+	}
+
+	appResource.Spec.ResourceStatus = appservice.Failed
+	if _, _, err := a.IService.Apply(common.DefaultNamespace, common.AppResource, appResource.UUID, appResource, false); err != nil {
+		return err
+	}
+	return nil
 }
