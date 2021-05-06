@@ -271,6 +271,7 @@ func (a *ArtifactService) Delete(uuid string) error {
 	return nil
 }
 
+
 func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
 	req, err := http.NewRequest("GET", url, strings.NewReader(urlPkg.Values{}.Encode()))
