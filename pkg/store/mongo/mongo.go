@@ -239,7 +239,9 @@ func (m *Mongo) Apply(namespace, resource, uuid string, object core.IObject, for
 		return old, false, nil
 	}
 
-	objectMap["metadata"] = oldMap["metadata"]
+	if forceApply != true{
+		objectMap["metadata"] = oldMap["metadata"]
+	}
 	if err := core.EncodeFromMap(object, objectMap); err != nil {
 		return old, false, err
 	}
