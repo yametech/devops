@@ -6,8 +6,10 @@ import (
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/appservice"
+	"github.com/yametech/devops/pkg/resource/workorder"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/utils"
+	"go.mongodb.org/mongo-driver/bson"
 	"log"
 )
 
@@ -44,20 +46,16 @@ func (a *AppConfigService) GetAppResources(appid string) ([]interface{}, error) 
 
 func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceRequest) (core.IObject, bool, error) {
 
-	//namespaceFilter := map[string]interface{}{
-	//	"metadata.name": data.Name,
-	//	"spec.app":      data.App,
-	//}
-	//
-	//
-	//exist := &appservice.AppResource{}
-	//if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, exist, namespaceFilter); err != nil {
-	//	log.Printf("UpdateConfigResource have no the ConfigResource Create one: %v", err)
-	//}
-	//
-	//if exist.UUID != data.UUID {
-	//	return nil, false, errors.New("this config resource is exist")
-	//}
+	namespaceFilter := map[string]interface{}{
+		"metadata.name": data.Name,
+		"spec.app":      data.App,
+		"metadata.uuid": bson.M{"$ne": data.UUID},
+	}
+
+	exist := &appservice.AppResource{}
+	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, exist, namespaceFilter); err == nil {
+		return nil, false, errors.New("this config resource is exist")
+	}
 
 	appResource := &appservice.AppResource{}
 	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, data.UUID, appResource); err != nil {
@@ -74,9 +72,18 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 	cmdbMemories := int64(10240000)
 
 	// List all data from the same resourcePool
-	filter := map[string]interface{}{
-		"spec.parent_app": data.ParentApp,
+	appParentResource := &appservice.AppResource{}
+	parentFilter := map[string]interface{}{
+		"spec.app": data.ParentApp,
 	}
+	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, appParentResource, parentFilter); err != nil {
+		return nil, false, errors.New("have no this namespace")
+	}
+
+	filter := map[string]interface{}{
+		"spec.parent_app": appParentResource.UUID,
+	}
+
 	resources, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppResource, filter, nil, 0, 0)
 	if err != nil {
 		log.Printf("UpdateConfigResource have no the same resourcePool use: %v", err)
@@ -94,11 +101,6 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 	for _, resource := range appResources {
 		newCpus += resource.Spec.Cpu
 		newMemories += resource.Spec.Memory
-	}
-
-	appParentResource := &appservice.AppResource{}
-	if err = a.IService.GetByUUID(common.DefaultNamespace, common.Namespace, data.ParentApp, appParentResource); err != nil {
-		return nil, false, errors.New("have no this namespace")
 	}
 
 	// check Cpus and Memory
@@ -137,11 +139,11 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 	appResource.Spec.Pod = data.Pod
 	appResource.Spec.CpuLimit = data.CpuLimit
 	appResource.Spec.MemoryLimit = data.MemoryLimit
-	appResource.Spec.ParentApp = appParentResource.UUID
+	appResource.Spec.ParentApp = data.ParentApp
 	appResource.Spec.App = data.App
 	appResource.Spec.ResourceStatus = appservice.Success
 
-	newObj, update, err := a.IService.Apply(common.DefaultNamespace, common.AppResource, appResource.UUID, appResource, false)
+	newObj, update, err := a.IService.Apply(common.DefaultNamespace, common.AppResource, appResource.UUID, appResource, true)
 	if err != nil {
 		return nil, false, err
 	}
@@ -188,7 +190,7 @@ func (a *AppConfigService) DeleteResource(uuid string) error {
 	return a.IService.Delete(common.DefaultNamespace, common.AppResource, uuid)
 }
 
-func (a *AppConfigService) History(appid string, page, pageSize int64) ([]interface{}, error) {
+func (a *AppConfigService) History(appid string, page, pageSize int64) ([]interface{}, int64, error) {
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{
 		"spec.app": appid,
@@ -197,15 +199,32 @@ func (a *AppConfigService) History(appid string, page, pageSize int64) ([]interf
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
-	return a.IService.ListByFilter(common.DefaultNamespace, common.History, filter, sort, offset, pageSize)
+
+	count, err := a.IService.Count(common.DefaultNamespace, common.History, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.History, filter, sort, offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return data, count, nil
 }
 
-func (a *AppConfigService) OrderToResourceCheck(uuid string, newResource *apiResource.NamespaceRequest) error {
+func (a *AppConfigService) OrderToResourceCheck(obj *workorder.WorkOrder) error {
 
 	appResource := &appservice.AppResource{}
-	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, uuid, appResource); err != nil {
+	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, obj.Spec.Relation, appResource); err != nil {
 		return err
 	}
+
+	newResource := &apiResource.NamespaceRequest{}
+	if err := utils.UnstructuredObjectToInstanceObj(obj.Spec.Extends, &newResource); err != nil {
+		return err
+	}
+
 	appResource.Spec.ParentApp = newResource.ParentApp
 	appResource.Spec.Pod = newResource.Pod
 	appResource.Spec.Cpu = newResource.Cpu
@@ -220,9 +239,9 @@ func (a *AppConfigService) OrderToResourceCheck(uuid string, newResource *apiRes
 	return nil
 }
 
-func (a *AppConfigService) OrderToResourceSuccess(uuid string) error {
+func (a *AppConfigService) OrderToResourceSuccess(obj *workorder.WorkOrder) error {
 	appResource := &appservice.AppResource{}
-	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, uuid, appResource); err != nil {
+	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, obj.Spec.Relation, appResource); err != nil {
 		return err
 	}
 
@@ -262,9 +281,9 @@ func (a *AppConfigService) OrderToResourceSuccess(uuid string) error {
 	return nil
 }
 
-func (a *AppConfigService) OrderToResourceFailed(uuid string) error {
+func (a *AppConfigService) OrderToResourceFailed(obj *workorder.WorkOrder) error {
 	appResource := &appservice.AppResource{}
-	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, uuid, appResource); err != nil {
+	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, obj.Spec.Relation, appResource); err != nil {
 		return err
 	}
 

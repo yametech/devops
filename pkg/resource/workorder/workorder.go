@@ -52,6 +52,7 @@ type Spec struct {
 	Apply       map[string]interface{} `json:"apply" bson:"apply"`
 	Check       map[string]interface{} `json:"check" bson:"check"`
 	Result      map[string]interface{} `json:"result" bson:"result"`
+	Extends     map[string]interface{} `json:"extends" bson:"extends"`
 }
 
 func (w *WorkOrder) GenerateNumber() error {

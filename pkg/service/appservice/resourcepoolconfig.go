@@ -112,3 +112,14 @@ func (n *ResourcePoolConfigService) GetNamespaceResourceRemain(appid string) (fl
 
 	return cmdbCpus - useCpu, cmdbMemories - useMemories, nil
 }
+
+func (n *ResourcePoolConfigService) GetNamespaceResource(appid string) (float64, int64, float64, float64, error) {
+
+	// get namespace all resource from cmdb
+	cmdbCpus := 10000.0
+	cmdbMemories := int64(10000000)
+	moneyMonth := 12000.23
+	moneyYear := 123123.22
+
+	return cmdbCpus, cmdbMemories, moneyMonth, moneyYear, nil
+}

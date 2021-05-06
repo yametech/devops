@@ -6,6 +6,7 @@ import (
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/appservice"
+	"github.com/yametech/devops/pkg/resource/workorder"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,7 +17,7 @@ type NamespaceService struct {
 	service.IService
 }
 
-func NewResourcePoolService(i service.IService) *NamespaceService {
+func NewNamespaceService(i service.IService) *NamespaceService {
 	return &NamespaceService{i}
 }
 
@@ -143,4 +144,33 @@ func (n *NamespaceService) Create(request *apiResource.Request) (core.IObject, e
 
 	req.GenerateVersion()
 	return n.IService.Create(common.DefaultNamespace, common.Namespace, req)
+}
+
+func (n *NamespaceService) OrderToNamespaceSuccess(obj *workorder.WorkOrder) error {
+
+	filter := map[string]interface{}{
+		"spec.parent_app": obj.UUID,
+	}
+
+	count, err := n.IService.Count(common.DefaultNamespace, common.Namespace, filter)
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		return errors.New("the OrderToNamespaceCheck namespace is exist")
+	}
+
+	configs := make([]*apiResource.Request, 0)
+	if err = utils.UnstructuredObjectToInstanceObj(obj.Spec.Extends, &configs); err != nil {
+		return err
+	}
+
+	for _, config := range configs {
+		if _, err = n.Create(config); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -38,7 +38,7 @@ func (s *Server) ListByLevel(g *gin.Context) {
 
 func (s *Server) CreateNamespace(g *gin.Context) {
 	req := &apiResource.Request{}
-	if err := g.ShouldBindJSON(&req); err != nil {
+	if err := g.ShouldBindJSON(req); err != nil {
 		api.ResponseError(g, err)
 		return
 	}
