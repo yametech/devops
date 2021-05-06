@@ -287,16 +287,12 @@ func SendEchoer(stepName string, actionName string, a map[string]interface{}) bo
 		"SUCCESS": "done", "FAIL": "done",
 	}
 
-	flowRunStepName := fmt.Sprintf("%s_%s", actionName, stepName)
+	flowRunStepName := fmt.Sprintf("%s_%s", actionName, stepName) //artifactoryCI_uuid
 	flowRun.AddStep(flowRunStepName, flowRunStep, actionName, a)
 
 	flowRunData := flowRun.Generate()
 	fmt.Println(flowRunData)
-	if !flowRun.Create(flowRunData) {
-		fmt.Println("send fsm error")
-		return false
-	}
-	return true
+	return flowRun.Create(flowRunData)
 }
 
 func IsChinese(str string) bool {
