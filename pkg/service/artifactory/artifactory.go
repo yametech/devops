@@ -12,7 +12,6 @@ import (
 	arResource "github.com/yametech/devops/pkg/resource/artifactory"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/utils"
-	"github.com/yametech/go-flowrun"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
@@ -20,7 +19,6 @@ import (
 	urlPkg "net/url"
 	"strings"
 	"time"
-	"unicode"
 )
 
 type ArtifactService struct {
@@ -136,7 +134,7 @@ func (a *ArtifactService) CheckRegistryProject(ar *arResource.Artifact) error {
 	var HarborAddress string
 	var catalogue string
 	if strings.Contains(ar.Spec.Images, "/") {
-		SliceTemp := strings.Split(ar.Spec.Registry, "/")
+		SliceTemp := strings.Split(ar.Spec.Images, "/")
 		HarborAddress = SliceTemp[0]
 		catalogue = SliceTemp[1]
 	}
@@ -273,40 +271,6 @@ func (a *ArtifactService) Delete(uuid string) error {
 	return nil
 }
 
-func SendEchoer(stepName string, actionName string, a map[string]interface{}) bool {
-	if stepName == "" {
-		fmt.Println("UUID should not be none")
-		return false
-	}
-
-	flowRun := &flowrun.FlowRun{
-		EchoerUrl: common.EchoerUrl,
-		Name:      fmt.Sprintf("%s_%d", common.DefaultNamespace, time.Now().UnixNano()),
-	}
-	flowRunStep := map[string]string{
-		"SUCCESS": "done", "FAIL": "done",
-	}
-
-	flowRunStepName := fmt.Sprintf("%s_%s", actionName, stepName) //artifactoryCI_uuid
-	flowRun.AddStep(flowRunStepName, flowRunStep, actionName, a)
-
-	flowRunData := flowRun.Generate()
-	fmt.Println(flowRunData)
-	return flowRun.Create(flowRunData)
-}
-
-func IsChinese(str string) bool {
-	var count int
-	for _, v := range str {
-		if unicode.Is(unicode.Han, v) {
-			count++
-			break
-		}
-	}
-	return count > 0
-
-}
-
 func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
 	req, err := http.NewRequest("GET", url, strings.NewReader(urlPkg.Values{}.Encode()))
@@ -314,7 +278,11 @@ func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 		panic(err.Error())
 	}
 	req.SetBasicAuth(common.GitUser, common.GitPW)
-	res, err := http.DefaultClient.Do(req)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
+	res, err := client.Do(req)
 	if err != nil {
 		panic(err)
 	}

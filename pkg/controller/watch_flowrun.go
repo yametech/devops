@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/r3labs/sse/v2"
 	"github.com/yametech/devops/pkg/common"
+	"github.com/yametech/devops/pkg/proc"
 	"github.com/yametech/devops/pkg/resource/artifactory"
 	"github.com/yametech/devops/pkg/store"
 	"io/ioutil"
@@ -18,23 +19,24 @@ var _ Controller = &WatchFlowRun{}
 
 type WatchFlowRun struct {
 	store.IKVStore
+	proc *proc.Proc
 }
 
 func NewWatchFlowRun(ikvStore store.IKVStore) *WatchFlowRun {
 	server := &WatchFlowRun{
-		ikvStore,
+		IKVStore: ikvStore,
+		proc:     proc.NewProc(),
 	}
 	return server
 }
 
 func (w *WatchFlowRun) Run() error {
 	fmt.Println(fmt.Sprintf("[Controller]%v start --> %v", reflect.TypeOf(w), time.Now()))
-	errC := make(chan error)
-	go w.ArtifactConnect(errC)
-	return <-errC
+	w.proc.Add(w.artifactConnect)
+	return <-w.proc.Start()
 }
 
-func (w *WatchFlowRun) ArtifactConnect(errC chan<- error) {
+func (w *WatchFlowRun) artifactConnect(errC chan<- error) {
 	//GetOldFlownRun
 	fmt.Printf("[Controller]%v begin handle old flowrun.\n", reflect.TypeOf(w))
 
@@ -45,7 +47,6 @@ func (w *WatchFlowRun) ArtifactConnect(errC chan<- error) {
 	}
 	if resp == nil {
 		fmt.Printf("[Controller]%v handle old flowrun res was empty.\n", reflect.TypeOf(w))
-		return
 	}
 	defer resp.Body.Close()
 	body, err1 := ioutil.ReadAll(resp.Body)
@@ -62,22 +63,22 @@ func (w *WatchFlowRun) ArtifactConnect(errC chan<- error) {
 		w.HandleFlowRun(oneFlowRun)
 	}
 
-	//ArtifactConnect
+	//artifactConnect
 	fmt.Printf("[Controller]%v begin watch echoer.\n", reflect.TypeOf(w))
 	Version := time.Now().Unix() - 100
 	url := fmt.Sprintf("%s/watch?resource=flowrun?version=%d", common.EchoerUrl, Version)
-	fmt.Printf("[Controller]%v begin func ArtifactConnect and url: %s.\n", reflect.TypeOf(w), url)
+	fmt.Printf("[Controller]%v begin func artifactConnect and url: %s.\n", reflect.TypeOf(w), url)
 
 	client := sse.NewClient(url)
 	err = client.SubscribeRaw(func(msg *sse.Event) {
 		a := &FlowRun{}
 		err := json.Unmarshal(msg.Data, &a)
 		if err != nil {
-			fmt.Println("Error When ArtifactConnect Unmarshal:", err)
+			fmt.Println("Error When artifactConnect Unmarshal:", err)
 			errC <- err
 		}
 		fmt.Printf("[Controller]%v watching echoer: %v\n", reflect.TypeOf(w), a.Metadata)
-		w.HandleFlowRun(a)
+		go w.HandleFlowRun(a)
 		//b, _ := strconv.Atoi(a["metadata"]["version"])
 		//fmt.Println(b)
 	})
