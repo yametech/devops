@@ -2,6 +2,7 @@ package artifactory
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
@@ -15,8 +16,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
+	"io/ioutil"
 	"net/http"
-	urlpkg "net/url"
+	urlPkg "net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -121,14 +123,88 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 			Images:      imageUrl,
 		},
 	}
-
+	VerificationResults, err := CheckExists(ar)
+	if !VerificationResults {
+		return nil, err
+	}
 	ar.GenerateVersion()
-	_, err := a.IService.Create(common.DefaultNamespace, common.Artifactory, ar)
+	_, err = a.IService.Create(common.DefaultNamespace, common.Artifactory, ar)
 	if err != nil {
 		return nil, err
 	}
 	go a.SendCI(ar, projectPath)
 	return ar, nil
+}
+
+func CheckExists(ar *arResource.Artifact) (bool, error) {
+	var HarborAddress string
+	var catalogue string
+	if strings.Contains(ar.Spec.Images, "/") {
+		SliceTemp := strings.Split(ar.Spec.Registry, "/")
+		HarborAddress = SliceTemp[0]
+		catalogue = SliceTemp[1]
+	}
+	url := fmt.Sprintf("https://%s/api/v2.0/projects?project_name=%s", HarborAddress, catalogue)
+	data := urlPkg.Values{}
+	req, err := http.NewRequest("HEAD", url, strings.NewReader(data.Encode()))
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	if resp.StatusCode != 200 {
+		res, err := CreateProject(HarborAddress, catalogue)
+		if err != nil {
+			return res, err
+		}
+
+	}
+	return true, nil
+}
+
+func CreateProject(HarborAddress, projectName string) (bool, error) {
+	url := fmt.Sprintf("https://%s/api/v2.0/projects", HarborAddress)
+	body := map[string]interface{}{
+		"project_name": projectName,
+		"metadata": map[string]interface{}{
+			"public": "true",
+		},
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		panic(err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	_, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	if resp.StatusCode == 201 {
+		return true, nil
+	}
+	return false, errors.New("构建镜像仓库目录失败！")
 }
 
 func (a *ArtifactService) SendCI(ar *arResource.Artifact, output string) {
@@ -271,7 +347,7 @@ func IsChinese(str string) bool {
 
 func (a *ArtifactService) GetBanch(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
-	req, err := http.NewRequest("GET", url, strings.NewReader(urlpkg.Values{}.Encode()))
+	req, err := http.NewRequest("GET", url, strings.NewReader(urlPkg.Values{}.Encode()))
 	if err != nil {
 		panic(err.Error())
 	}
