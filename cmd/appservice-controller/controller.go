@@ -3,7 +3,6 @@ package appservice_controller
 import (
 	"flag"
 	"github.com/yametech/devops/pkg/controller"
-	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/store/mongo"
 )
 
@@ -18,10 +17,8 @@ func main() {
 		panic(err)
 	}
 
-	baseService := service.NewBaseService(store)
-
 	go func() {
-		if err := controller.NewPipelineController(baseService).Run(); err != nil {
+		if err := controller.NewPipelineController(store).Run(); err != nil {
 			errC <- err
 		}
 	}()
