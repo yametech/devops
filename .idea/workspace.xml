@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="14862d0a-e6c3-4e4b-97c4-cf672b084cca" name="Default Changelist" comment="" />
+    <list default="true" id="14862d0a-e6c3-4e4b-97c4-cf672b084cca" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -46,7 +49,7 @@
     <property name="last_opened_file_path" value="$USER_HOME$" />
     <property name="settings.editor.selected.configurable" value="go.sdk" />
   </component>
-  <component name="RunManager" selected="Go Test.TestEqual in github.com/yametech/devops/pkg/test">
+  <component name="RunManager" selected="Go Build.go build github.com/yametech/devops/cmd/appservice">
     <configuration name="go build controller.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="devops" />
       <working_directory value="$PROJECT_DIR$" />
@@ -98,9 +101,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Build.go build github.com/yametech/devops/cmd/appservice" />
         <item itemvalue="Go Test.TestEqual in github.com/yametech/devops/pkg/test" />
         <item itemvalue="Go Test.TestRequest in github.com/yametech/devops/pkg/test" />
-        <item itemvalue="Go Build.go build github.com/yametech/devops/cmd/appservice" />
         <item itemvalue="Go Build.go build controller.go" />
         <item itemvalue="Go Build.go build github.com/yametech/devops/cmd/workorder" />
       </list>
