@@ -27,11 +27,7 @@ func SendEchoer(stepName string, actionName string, a map[string]interface{}) bo
 
 	flowRunData := flowRun.Generate()
 	fmt.Println(flowRunData)
-	if !flowRun.Create(flowRunData) {
-		fmt.Println("send fsm error")
-		return false
-	}
-	return true
+	return flowRun.Create(flowRunData)
 }
 
 func IsChinese(str string) bool {

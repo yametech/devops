@@ -134,7 +134,7 @@ func (a *ArtifactService) CheckRegistryProject(ar *arResource.Artifact) error {
 	var HarborAddress string
 	var catalogue string
 	if strings.Contains(ar.Spec.Images, "/") {
-		SliceTemp := strings.Split(ar.Spec.Registry, "/")
+		SliceTemp := strings.Split(ar.Spec.Images, "/")
 		HarborAddress = SliceTemp[0]
 		catalogue = SliceTemp[1]
 	}
@@ -279,7 +279,11 @@ func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 		panic(err.Error())
 	}
 	req.SetBasicAuth(common.GitUser, common.GitPW)
-	res, err := http.DefaultClient.Do(req)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
+	res, err := client.Do(req)
 	if err != nil {
 		panic(err)
 	}
