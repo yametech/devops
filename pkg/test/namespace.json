@@ -1,0 +1,644 @@
+[
+  {
+    "id": 1,
+    "business_name": "工程及效率业务线",
+    "leader": "潘小远",
+    "children": [
+      {
+        "id": 1,
+        "namespace": "devops",
+        "env": "默认",
+        "config": {
+          "services": [
+            0,
+            {
+              "cpu": 0.4,
+              "mem": 1024,
+              "pod": 2
+            }
+          ],
+          "threshold": 80
+        }
+      },
+      {
+        "id": 2,
+        "namespace": "devops-prod",
+        "env": "生产环境",
+        "config": {
+          "services": [
+            0,
+            {
+              "cpu": 100,
+              "mem": 51200,
+              "pod": 200
+            }
+          ],
+          "threshold": 80
+        }
+      },
+      {
+        "id": 12,
+        "namespace": "devops-dev",
+        "env": "开发环境",
+        "config": {
+          "services": [
+            0,
+            {
+              "cpu": null,
+              "mem": null,
+              "pod": null
+            }
+          ],
+          "threshold": 80
+        }
+      },
+      {
+        "id": 13,
+        "namespace": "devops-test",
+        "env": "测试环境",
+        "config": {
+          "services": [
+            1,
+            {
+              "cpu": "",
+              "mem": "",
+              "pod": ""
+            }
+          ],
+          "threshold": 80
+        }
+      },
+      {
+        "id": 30,
+        "namespace": "devops-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "business_name": "车务业务线",
+    "leader": "欧阳小虎",
+    "children": [
+      {
+        "id": 4,
+        "namespace": "chewu-dev",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 16,
+        "namespace": "chewu-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "business_name": "自营商城业务线",
+    "leader": "曾汉森",
+    "children": [
+      {
+        "id": 5,
+        "namespace": "shangcheng-dev",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 17,
+        "namespace": "shangcheng-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "business_name": "O2O业务线",
+    "leader": "陈文炜",
+    "children": [
+      {
+        "id": 6,
+        "namespace": "o2o-dev",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 18,
+        "namespace": "o2o-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "business_name": "经销体系业务线",
+    "leader": "廖学文",
+    "children": [
+      {
+        "id": 7,
+        "namespace": "jingxiao-dev",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 19,
+        "namespace": "jingxiao-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "business_name": "公共服务业务线（用户中心+基础服务中心）",
+    "leader": "徐俊东",
+    "children": [
+      {
+        "id": 8,
+        "namespace": "publicservice-dev",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 20,
+        "namespace": "publicservice-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "business_name": "中台-财务中心",
+    "leader": "卢操",
+    "children": [
+      {
+        "id": 9,
+        "namespace": "finance-dev",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 21,
+        "namespace": "finance-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "business_name": "中台-物联网中心IOT",
+    "leader": "肖瑶",
+    "children": [
+      {
+        "id": 10,
+        "namespace": "iot-dev",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 22,
+        "namespace": "iot-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "business_name": "支撑业务线（ts、ops）",
+    "leader": "卢操",
+    "children": [
+      {
+        "id": 11,
+        "namespace": "businesssupport-dev",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 23,
+        "namespace": "businesssupport-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "business_name": "基础架构业务线",
+    "leader": "张帆",
+    "children": [
+      {
+        "id": 14,
+        "namespace": "architecture-dev",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 29,
+        "namespace": "architecture-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 35,
+        "namespace": "architecture-prod",
+        "env": "生产环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "business_name": "政企业务线",
+    "leader": "刘锋",
+    "children": [
+      {
+        "id": 15,
+        "namespace": "g-ob-dev",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 24,
+        "namespace": "g-ob-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "business_name": "大数据业务线",
+    "leader": "胡鹏",
+    "children": [
+      {
+        "id": 25,
+        "namespace": "bigdata-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 26,
+        "namespace": "bigdata-dev-svc",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "business_name": "保险业务线",
+    "leader": "胡鹏",
+    "children": [
+      {
+        "id": 27,
+        "namespace": "insurance-test-svc",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": 28,
+        "namespace": "insurance-dev-svc",
+        "env": "开发环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "business_name": "测试业务线",
+    "leader": "毛达源",
+    "children": [
+      {
+        "id": 31,
+        "namespace": "test-dev-svc-er",
+        "env": "开发环境",
+        "config": {
+          "services": [
+            1,
+            {
+              "cpu": "",
+              "mem": "",
+              "pod": ""
+            }
+          ],
+          "threshold": 80
+        }
+      },
+      {
+        "id": 32,
+        "namespace": "test-dev-svc-qw",
+        "env": "开发环境",
+        "config": {
+          "services": [
+            1,
+            {
+              "cpu": "",
+              "mem": "",
+              "pod": ""
+            }
+          ],
+          "threshold": 80
+        }
+      },
+      {
+        "id": 33,
+        "namespace": "test-dev-svc-hj",
+        "env": "开发环境",
+        "config": {
+          "services": [
+            1,
+            {
+              "cpu": "",
+              "mem": "",
+              "pod": ""
+            }
+          ],
+          "threshold": 80
+        }
+      },
+      {
+        "id": 34,
+        "namespace": "test-dev-db-hg",
+        "env": "开发环境",
+        "config": {
+          "services": [
+            1,
+            {
+              "cpu": "",
+              "mem": "",
+              "pod": ""
+            }
+          ],
+          "threshold": 80
+        }
+      }
+    ]
+  }
+]

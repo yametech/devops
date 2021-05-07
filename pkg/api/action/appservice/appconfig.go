@@ -54,9 +54,9 @@ func (s *Server) UpdateAppResource(g *gin.Context) {
 		return
 	}
 
-	result, update, err := s.AppConfigService.UpdateConfigResource(data)
+	result, update, code, err := s.AppConfigService.UpdateConfigResource(data)
 	if err != nil {
-		api.ResponseError(g, err)
+		api.ResponseCodeError(g, err, code)
 		return
 	}
 

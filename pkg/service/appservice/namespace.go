@@ -11,6 +11,7 @@ import (
 	"github.com/yametech/devops/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
 )
 
 type NamespaceService struct {
@@ -65,9 +66,9 @@ func (n *NamespaceService) List() ([]*apiResource.Response, error) {
 	return parents, nil
 }
 
-func (n *NamespaceService) ListByLevel(level int, search string) (interface{}, error) {
+func (n *NamespaceService) ListByLevel(level int, search string, filter string) (interface{}, error) {
 
-	levelData := []func(int, string) (interface{}, error){
+	levelData := []func(int, string, string) (interface{}, error){
 		n.ListAppProjectLevel,
 		n.ListAppProjectLevel,
 		n.ListAppProjectLevel,
@@ -78,10 +79,10 @@ func (n *NamespaceService) ListByLevel(level int, search string) (interface{}, e
 		return nil, errors.New("have no this level")
 	}
 
-	return levelData[level](level, search)
+	return levelData[level](level, search, filter)
 }
 
-func (n *NamespaceService) ListAppProjectLevel(level int, search string) (interface{}, error) {
+func (n *NamespaceService) ListAppProjectLevel(level int, search string, parentApp string) (interface{}, error) {
 	filter := make(map[string]interface{})
 	filter["$or"] = []map[string]interface{}{
 		{
@@ -101,15 +102,28 @@ func (n *NamespaceService) ListAppProjectLevel(level int, search string) (interf
 	return n.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, sort, 0, 0)
 }
 
-func (n *NamespaceService) ListResourcePoolLevel(level int, search string) (interface{}, error) {
+func (n *NamespaceService) ListResourcePoolLevel(level int, search string, parentApp string) (interface{}, error) {
 	filter := make(map[string]interface{})
-	filter["$or"] = []map[string]interface{}{
-		{
-			"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
-		},
-		{
-			"spec.desc": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
-		},
+	if parentApp != ""{
+		filter["$or"] = []map[string]interface{}{
+			{
+				"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+				"spec.parent_app": parentApp,
+			},
+			{
+				"spec.desc": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+				"spec.parent_app": parentApp,
+			},
+		}
+	}else{
+		filter["$or"] = []map[string]interface{}{
+			{
+				"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+			},
+			{
+				"spec.desc": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+			},
+		}
 	}
 
 	sort := map[string]interface{}{
@@ -118,32 +132,60 @@ func (n *NamespaceService) ListResourcePoolLevel(level int, search string) (inte
 	return n.IService.ListByFilter(common.DefaultNamespace, common.Namespace, filter, sort, 0, 0)
 }
 
-func (n *NamespaceService) Create(request *apiResource.Request) (core.IObject, error) {
+func (n *NamespaceService) Update(request *apiResource.Request) (core.IObject, error) {
 
-	req := &appservice.Namespace{
-		Metadata: core.Metadata{
-			Name: request.Name,
-		},
-		Spec: appservice.NamespaceSpec{
-			ParentApp: request.ParentApp,
-			Desc:      request.Desc,
-		},
+	obj := &appservice.Namespace{}
+	if err := n.IService.GetByUUID(common.DefaultNamespace, common.Namespace, request.UUID, obj); err != nil {
+		log.Printf("namespace update error: %v\n", err)
 	}
 
-	if req.Spec.Desc == "" {
+	if request.Desc == "" {
 		return nil, errors.New("The Desc is requried")
 	}
 
 	filter := map[string]interface{}{
-		"spec.desc": req.Spec.Desc,
+		"spec.desc": request.Desc,
+		"metadata.uuid": bson.M{"$ne": request.UUID},
 	}
 
+	req := &appservice.Namespace{}
 	if err := n.IService.GetByFilter(common.DefaultNamespace, common.Namespace, req, filter); err == nil {
 		return nil, errors.New("The Desc is exist")
 	}
 
+	history := &appservice.NamespaceHistory{}
+	history.Spec.Creator = ""
+
+	// get from cmdb
+	cpus := 1000.0
+	memory := 10024000
+
+	history.Spec.Before = map[string]interface{}{
+		"cpu": cpus,
+		"memory": memory,
+	}
+
+	obj.Name = request.Name
+	obj.Spec.ParentApp = request.ParentApp
+	obj.Spec.Desc = request.Desc
+
 	req.GenerateVersion()
-	return n.IService.Create(common.DefaultNamespace, common.Namespace, req)
+	result, _, err := n.IService.Apply(common.DefaultNamespace, common.Namespace, obj.UUID, obj, true)
+	if err != nil {
+		return nil, err
+	}
+
+	history.Spec.App = obj.UUID
+	history.Spec.Now = map[string]interface{}{
+		"cpu": request.Cpu,
+		"memory": request.Memory,
+	}
+
+	if _, err = n.IService.Create(common.DefaultNamespace, common.History, history); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func (n *NamespaceService) OrderToNamespaceSuccess(obj *workorder.WorkOrder) error {
@@ -167,7 +209,7 @@ func (n *NamespaceService) OrderToNamespaceSuccess(obj *workorder.WorkOrder) err
 	}
 
 	for _, config := range configs {
-		if _, err = n.Create(config); err != nil {
+		if _, err = n.Update(config); err != nil {
 			return err
 		}
 	}

@@ -69,13 +69,14 @@ func (s *Service) List(orderType int, orderStatus int, search string, page, page
 func (s *Service) Create(request *apiResource.Request) (core.IObject, error) {
 	req := &workorder.WorkOrder{
 		Spec: workorder.Spec{
-			OrderType: request.OrderType,
-			Title:     request.Title,
-			Relation:  request.Relation,
-			Attribute: request.Attribute,
-			Apply:     request.Apply,
-			Check:     request.Check,
-			Result:    request.Result,
+			OrderType:   request.OrderType,
+			Title:       request.Title,
+			Relation:    request.Relation,
+			Attribute:   request.Attribute,
+			Apply:       request.Apply,
+			Check:       request.Check,
+			Result:      request.Result,
+			Extends:     request.Extends,
 			OrderStatus: workorder.Checking,
 		},
 	}
@@ -106,9 +107,10 @@ func (s *Service) Update(uuid string, request *apiResource.Request) (core.IObjec
 	dbObj.Spec.Apply = request.Apply
 	dbObj.Spec.Check = request.Check
 	dbObj.Spec.Result = request.Result
+	dbObj.Spec.Extends = request.Extends
 
 	dbObj.GenerateVersion()
-	return s.IService.Apply(common.DefaultNamespace, common.WorkOrder, dbObj.UUID, dbObj, false)
+	return s.IService.Apply(common.DefaultNamespace, common.WorkOrder, dbObj.UUID, dbObj, true)
 }
 
 func (s *Service) Delete(uuid string) (bool, error) {

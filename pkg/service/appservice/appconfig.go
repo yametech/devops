@@ -11,6 +11,7 @@ import (
 	"github.com/yametech/devops/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"log"
+	"net/http"
 )
 
 type AppConfigService struct {
@@ -44,7 +45,7 @@ func (a *AppConfigService) GetAppResources(appid string) ([]interface{}, error) 
 	return a.IService.ListByFilter(common.DefaultNamespace, common.AppResource, filter, sort, 0, 0)
 }
 
-func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceRequest) (core.IObject, bool, error) {
+func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceRequest) (core.IObject, bool, int, error) {
 
 	namespaceFilter := map[string]interface{}{
 		"metadata.name": data.Name,
@@ -54,7 +55,7 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 
 	exist := &appservice.AppResource{}
 	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, exist, namespaceFilter); err == nil {
-		return nil, false, errors.New("this config resource is exist")
+		return nil, false, http.StatusBadRequest ,errors.New("this config resource is exist")
 	}
 
 	appResource := &appservice.AppResource{}
@@ -64,7 +65,7 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 
 	// check the order status
 	if appResource.Spec.ResourceStatus == appservice.Checking {
-		return nil, false, errors.New("the workorder is checking")
+		return nil, false, http.StatusUnauthorized, errors.New("the workorder is checking")
 	}
 
 	// Get Cpus and Memories from cmdb
@@ -77,7 +78,7 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 		"spec.app": data.ParentApp,
 	}
 	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, appParentResource, parentFilter); err != nil {
-		return nil, false, errors.New("have no this namespace")
+		return nil, false, http.StatusBadRequest, errors.New("have no this namespace")
 	}
 
 	filter := map[string]interface{}{
@@ -90,7 +91,7 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 	}
 	appResources := make([]*appservice.AppResource, 0)
 	if err = utils.UnstructuredObjectToInstanceObj(resources, &appResources); err != nil {
-		return nil, false, err
+		return nil, false, http.StatusBadRequest, err
 	}
 
 	var (
@@ -108,22 +109,22 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 	newMemories += data.Memory
 
 	if appParentResource.Spec.Threshold < int((newCpus/cmdbCpus)*100) {
-		return nil, false, errors.New("The total CPU resource exceeds the limit")
+		return nil, false, http.StatusPaymentRequired,errors.New("The total CPU resource exceeds the limit")
 	}
 	if appParentResource.Spec.Threshold < int((newMemories/cmdbMemories)*100) {
-		return nil, false, errors.New("The total Memory resource exceeds the limit")
+		return nil, false, http.StatusPaymentRequired, errors.New("The total Memory resource exceeds the limit")
 	}
 
 	// check the other resources
 	if appParentResource.Spec.Approval {
 		if data.Cpu > appParentResource.Spec.Cpu {
-			return nil, false, errors.New("the Cpu resource exceeds the limit")
+			return nil, false, http.StatusPaymentRequired, errors.New("the Cpu resource exceeds the limit")
 		}
 		if data.Memory > appParentResource.Spec.Memory {
-			return nil, false, errors.New("the Memory resource exceeds the limit")
+			return nil, false, http.StatusPaymentRequired, errors.New("the Memory resource exceeds the limit")
 		}
 		if data.Pod > appParentResource.Spec.Pod {
-			return nil, false, errors.New("the Pod resource exceeds the limit")
+			return nil, false, http.StatusPaymentRequired, errors.New("the Pod resource exceeds the limit")
 		}
 	}
 
@@ -145,20 +146,20 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 
 	newObj, update, err := a.IService.Apply(common.DefaultNamespace, common.AppResource, appResource.UUID, appResource, true)
 	if err != nil {
-		return nil, false, err
+		return nil, false, http.StatusBadRequest, err
 	}
 
 	newAppResource := &appservice.AppResource{}
 	if err = utils.UnstructuredObjectToInstanceObj(newObj, &newAppResource); err != nil {
-		return nil, false, err
+		return nil, false, http.StatusBadRequest, err
 	}
 
 	history.Spec.Now = newAppResource
 	history.Spec.App = newAppResource.Spec.App
 	if _, err = a.IService.Create(common.DefaultNamespace, common.History, history); err != nil {
-		return nil, false, err
+		return nil, false, http.StatusBadRequest, err
 	}
-	return newObj, update, nil
+	return newObj, update, http.StatusOK, nil
 }
 
 func (a *AppConfigService) UpdateAppConfig(data *apiResource.AppConfigRequest) (core.IObject, bool, error) {
@@ -182,7 +183,7 @@ func (a *AppConfigService) UpdateAppConfig(data *apiResource.AppConfigRequest) (
 	dbObj.Spec.Config = data.Config
 	dbObj.Spec.App = data.App
 	dbObj.GenerateVersion()
-	return a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj, false)
+	return a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj, true)
 
 }
 
@@ -233,9 +234,10 @@ func (a *AppConfigService) OrderToResourceCheck(obj *workorder.WorkOrder) error 
 	appResource.Spec.MemoryLimit = newResource.MemoryLimit
 	appResource.Spec.ResourceStatus = appservice.Checking
 
-	if _, _, err := a.IService.Apply(common.DefaultNamespace, common.AppResource, appResource.UUID, appResource, false); err != nil {
+	if _, _, err := a.IService.Apply(common.DefaultNamespace, common.AppResource, appResource.UUID, appResource, true); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -291,5 +293,6 @@ func (a *AppConfigService) OrderToResourceFailed(obj *workorder.WorkOrder) error
 	if _, _, err := a.IService.Apply(common.DefaultNamespace, common.AppResource, appResource.UUID, appResource, false); err != nil {
 		return err
 	}
+
 	return nil
 }
