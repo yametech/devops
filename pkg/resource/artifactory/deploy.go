@@ -50,8 +50,8 @@ type Container struct {
 type ServicePort struct {
 	Name       string `json:"name" bson:"name"`
 	Protocol   string `json:"protocol" bson:"protocol"`
-	Port       string `json:"port" bson:"port"`
-	TargetPort string `json:"targetPort" bson:"targetPort"`
+	Port       int    `json:"port" bson:"port"`
+	TargetPort int    `json:"targetPort" bson:"targetPort"`
 }
 
 type StorageClaim struct {
