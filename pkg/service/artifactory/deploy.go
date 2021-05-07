@@ -57,6 +57,7 @@ func (a *DeployService) Create(request *apiResource.RequestDeploy) error {
 			DeployNamespace: request.DeployNamespace,
 			Replicas:        request.Replicas,
 			AppName:         request.AppName,
+			DeploySpace:     request.DeploySpace,
 			ServicePorts:    request.ServicePorts,
 			Containers:      request.Containers,
 			StorageClaims:   request.StorageClaims,
