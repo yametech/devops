@@ -134,7 +134,19 @@ func (a *DeployService) sendCD(deploy *arResource.Deploy) {
 		}
 		return
 	}
-	if !SendEchoer(deploy.UUID, common.EchoerCD, sendCDInfo) {
+
+	var actionName string
+	switch deploy.Spec.DeploySpace {
+	case arResource.SmartCity:
+		actionName = common.SmartCityCD
+	case arResource.Azure:
+		actionName = common.AzureCD
+	case arResource.TungChung:
+		actionName = common.TungChungCD
+	}
+
+	stepName := fmt.Sprintf("%s_%s", common.CD, deploy.UUID)
+	if !SendEchoer(stepName, actionName, sendCDInfo) {
 		deploy.Spec.DeployStatus = arResource.DeployFail
 		_, _, err = a.IService.Apply(common.DefaultNamespace, common.Deploy, deploy.UUID, deploy, false)
 		if err != nil {

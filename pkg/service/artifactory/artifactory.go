@@ -218,7 +218,9 @@ func (a *ArtifactService) SendCI(ar *arResource.Artifact, output string) {
 		}
 		return
 	}
-	if !SendEchoer(ar.Metadata.UUID, common.EchoerCI, sendCIInfo) {
+
+	stepName := fmt.Sprintf("%s_%s", common.CI, ar.UUID)
+	if !SendEchoer(stepName, common.EchoerCI, sendCIInfo) {
 		ar.Spec.ArtifactStatus = arResource.InitializeFail
 		_, _, err = a.IService.Apply(common.DefaultNamespace, common.Artifactory, ar.UUID, ar, false)
 		if err != nil {
@@ -270,7 +272,6 @@ func (a *ArtifactService) Delete(uuid string) error {
 	}
 	return nil
 }
-
 
 func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)

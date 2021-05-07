@@ -9,11 +9,6 @@ import (
 )
 
 func SendEchoer(stepName string, actionName string, a map[string]interface{}) bool {
-	if stepName == "" {
-		fmt.Println("UUID should not be none")
-		return false
-	}
-
 	flowRun := &flowrun.FlowRun{
 		EchoerUrl: common.EchoerUrl,
 		Name:      fmt.Sprintf("%s_%d", common.DefaultNamespace, time.Now().UnixNano()),
@@ -22,8 +17,7 @@ func SendEchoer(stepName string, actionName string, a map[string]interface{}) bo
 		"SUCCESS": "done", "FAIL": "done",
 	}
 
-	flowRunStepName := fmt.Sprintf("%s_%s", actionName, stepName)
-	flowRun.AddStep(flowRunStepName, flowRunStep, actionName, a)
+	flowRun.AddStep(stepName, flowRunStep, actionName, a)
 
 	flowRunData := flowRun.Generate()
 	fmt.Println(flowRunData)
