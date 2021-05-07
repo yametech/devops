@@ -23,6 +23,7 @@ func NewArBaseServer(serviceName string, server *api.Server) *baseServer {
 	// watch
 	{
 		group.GET("/artifactwatch", base.WatchAr)
+		group.GET("/deploywatch", base.WatchDeploy)
 	}
 
 	//UserProjectService
