@@ -51,6 +51,7 @@ func (b *baseServer) ListArtifact(g *gin.Context) {
 	data := map[string]interface{}{"results": results}
 	data["count"] = count
 	api.ResponseSuccess(g, data, "")
+	//g.JSON(http.StatusOK, map[string]interface{}{"data": results})
 }
 
 func (b *baseServer) CreateArtifact(g *gin.Context) {
