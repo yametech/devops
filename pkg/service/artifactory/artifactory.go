@@ -154,12 +154,13 @@ func (a *ArtifactService) CheckRegistryProject(ar *arResource.Artifact) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode == 404 {
 		err = a.CreateRegistryProject(HarborAddress, catalogue)
 		if err != nil {
 			return err
 		}
-
+	} else if resp.StatusCode == 401 {
+		return errors.New("Registry 认证失败")
 	}
 	return nil
 }
