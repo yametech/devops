@@ -36,7 +36,7 @@ type VolumeMount struct {
 type Container struct {
 	Name            string                   `json:"name" bson:"name"`
 	Images          string                   `json:"images" bson:"images"`
-	ImagePullPolicy string                   `json:"image_pull_policy"`
+	ImagePullPolicy string                   `json:"image_pull_policy" bson:"image_pull_policy"`
 	LimitCPU        string                   `json:"limit_cpu" bson:"limit_cpu"`
 	RequiredCPU     string                   `json:"required_cpu" bson:"required_cpu"`
 	LimitMemory     string                   `json:"limit_memory" bson:"limit_memory"`
@@ -66,9 +66,9 @@ type DeploySpec struct {
 	AppName         string       `json:"app_name" bson:"app_name"` // 只存英文名，appCode不需要，用name搜索
 	DeployStatus    DeployStatus `json:"artifact_status" bson:"artifact_status"`
 
-	ServicePorts  []ServicePort  `json:"service_ports"`
-	Containers    []Container    `json:"container"`      //one pod may have multiple container
-	StorageClaims []StorageClaim `json:"storage_claims"` //pod may mount multiple storage
+	ServicePorts  []ServicePort  `json:"service_ports" bson:"service_ports"`
+	Containers    []Container    `json:"containers" bson:"containers"`         //one pod may have multiple container
+	StorageClaims []StorageClaim `json:"storage_claims" bson:"storage_claims"` //pod may mount multiple storage
 }
 
 type Deploy struct {

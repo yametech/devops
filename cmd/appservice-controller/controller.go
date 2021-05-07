@@ -1,4 +1,5 @@
-package appservice_controller
+package main
+
 
 import (
 	"flag"
