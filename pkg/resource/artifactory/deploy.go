@@ -17,6 +17,14 @@ const (
 	DeployFail
 )
 
+type DeploySpace uint8
+
+const (
+	SmartCity DeploySpace = iota //智慧城
+	Azure                        //微软云(测试环境)
+	TungChung                    //东涌(生产环境)
+)
+
 type VolumeMountType uint8
 
 const (
@@ -65,6 +73,7 @@ type DeploySpec struct {
 	CreateUserId    string       `json:"create_user_id" bson:"create_user_id"`
 	AppName         string       `json:"app_name" bson:"app_name"` // 只存英文名，appCode不需要，用name搜索
 	DeployStatus    DeployStatus `json:"artifact_status" bson:"artifact_status"`
+	DeploySpace     DeploySpace  `json:"deploy_space" bson:"deploy_space"` //部署环境
 
 	ServicePorts  []ServicePort  `json:"service_ports" bson:"service_ports"`
 	Containers    []Container    `json:"containers" bson:"containers"`         //one pod may have multiple container
