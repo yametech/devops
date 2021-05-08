@@ -1,4 +1,4 @@
-all: build-appservice build-artifactory build-globalconfig build-watch-controller
+all: build-appservice build-artifactory build-globalconfig build-watch-controller build-workorder build-appservice-controller
 
 
 build-appservice:
@@ -16,3 +16,12 @@ build-globalconfig:
 build-watch-controller:
 	docker build -t harbor.ym/devops/devops-watch-controller:v0.0.1 -f docker/Dockerfile.watch-controller .
 	docker push harbor.ym/devops/devops-watch-controller:v0.0.1
+
+build-workorder:
+	docker build -t harbor.ym/devops/devops-workorder:v0.0.1 -f docker/Dockerfile.workorder .
+	docker push harbor.ym/devops/devops-workorder:v0.0.1
+
+
+build-appservice-controller:
+	docker build -t harbor.ym/devops/devops-appservice-controller:v0.0.1 -f docker/Dockerfile.appservice-controller .
+	docker push harbor.ym/devops/devops-appservice-controller:v0.0.1

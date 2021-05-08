@@ -167,14 +167,13 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.R
 
 		filter["$or"] = []map[string]interface{}{
 			{
-				"spec.app_type": level,
 				"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 			},
 			{
-				"spec.app_type": level,
 				"spec.desc":     bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 			},
 		}
+
 		filter["spec.app_type"] = level
 		apps, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, sort, 0, 0)
 		if err != nil {
