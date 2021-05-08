@@ -21,18 +21,7 @@ type FlowRun struct {
 				FlowID      string `json:"flow_id"`
 				FlowRunUUID string `json:"flow_run_uuid"`
 				ActionRun   struct {
-					ActionName   string `json:"action_name"`
-					ActionParams struct {
-						Branch      string `json:"branch"`
-						CodeType    string `json:"codeType"`
-						CommitID    string `json:"commitId"`
-						GitURL      string `json:"gitUrl"`
-						Output      string `json:"output"`
-						ProjectFile string `json:"projectFile"`
-						ProjectPath string `json:"projectPath"`
-						RetryCount  int    `json:"retryCount"`
-						ServiceName string `json:"serviceName"`
-					} `json:"action_params"`
+					ActionName     string `json:"action_name"`
 					ReturnStateMap struct {
 						FAIL    string `json:"FAIL"`
 						SUCCESS string `json:"SUCCESS"`

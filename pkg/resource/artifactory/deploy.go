@@ -33,7 +33,7 @@ const (
 )
 
 type VolumeMount struct {
-	// 如果是ConfigMap 则4个都要，如果是VolumeClaim 只需要name和path
+	// 如果是ConfigMap 则4个都要，如果是VolumeClaim 只需要path和value
 	VolumeMountType `json:"volume_mount_type" bson:"volume_mount_type"`
 	Name            string `json:"name" bson:"name"`
 	Path            string `json:"path" bson:"path"`
