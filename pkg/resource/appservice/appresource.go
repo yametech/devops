@@ -35,21 +35,3 @@ func (r *AppResource) Clone() core.IObject {
 	core.Clone(r, result)
 	return result
 }
-
-type AppResourceHistory struct {
-	core.Metadata `json:"metadata"`
-	Spec          AppResourceHistorySpec `json:"spec"`
-}
-
-type AppResourceHistorySpec struct {
-	App     string       `json:"app" bson:"app"`
-	Creator string       `json:"creator" bson:"creator"`
-	Before  *AppResource `json:"before" bson:"before"`
-	Now     *AppResource `json:"now" bson:"now"`
-}
-
-func (a *AppResourceHistory) Clone() core.IObject {
-	result := &AppResourceHistory{}
-	core.Clone(a, result)
-	return result
-}

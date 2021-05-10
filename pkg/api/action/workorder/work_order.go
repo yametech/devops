@@ -24,8 +24,7 @@ func NewWorkOrder(serviceName string, server *api.Server) *WorkOrder {
 		group.POST("/order", workOrder.CreateWorkOrder)
 		group.GET("/order/:uuid", workOrder.GetWorkOrder)
 		group.PUT("/order/:uuid", workOrder.UpdateWorkOrder)
-		group.DELETE("/order/:uuid", workOrder.DeteleWorkOrder)
-		group.GET("/status", workOrder.GetWorkOrderStatus)
+		group.DELETE("/order/:uuid", workOrder.DeleteWorkOrder)
 	}
 
 	return workOrder

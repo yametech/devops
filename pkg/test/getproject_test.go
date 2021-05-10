@@ -10,6 +10,7 @@ import (
 	"github.com/yametech/devops/pkg/store/mongo"
 	"github.com/yametech/devops/pkg/utils"
 	"io/ioutil"
+	"reflect"
 	"testing"
 )
 
@@ -32,8 +33,23 @@ type App struct {
 	Owner []string `json:"owner"`
 }
 
+type NamespaceBusinessLine struct {
+	Id           string           `json:"id"`
+	BusinessName string           `json:"business_name"`
+	Leaders      string           `json:"leader"`
+	Children     []*NamespaceLine `json:"children"`
+}
+
+type NamespaceLine struct {
+	Id        string                 `json:"id"`
+	Namespace string                 `json:"namespace"`
+	Env       string                 `json:"env"`
+	Config    map[string]interface{} `json:"config"`
+	Threshold int                    `json:"threshold"`
+}
+
 func TestGetAppProject(t *testing.T) {
-	b, err := ioutil.ReadFile("data.json") // just pass the file name
+	b, err := ioutil.ReadFile("appproejct.json") // just pass the file name
 	if err != nil {
 		fmt.Print(err)
 	}
@@ -41,7 +57,7 @@ func TestGetAppProject(t *testing.T) {
 	datas := make([]*BusinessLine, 0)
 	json.Unmarshal(b, &datas)
 
-	store, _, _ := mongo.NewMongo("mongodb://127.0.0.1:27017/admin")
+	store, _, _ := mongo.NewMongo("mongodb://10.200.10.46:27017/devops")
 	for _, data := range datas {
 		buinessLine := &appservice.AppProject{
 			Metadata: core.Metadata{
@@ -91,6 +107,43 @@ func TestGetAppProject(t *testing.T) {
 	fmt.Println("success")
 }
 
+func TestGetNamespace(t *testing.T) {
+	b, err := ioutil.ReadFile("namespace.json") // just pass the file name
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	datas := make([]*NamespaceBusinessLine, 0)
+	json.Unmarshal(b, &datas)
+
+	store, _, _ := mongo.NewMongo("mongodb://10.200.10.46:27017/devops")
+
+	for _, data := range datas {
+		buinessLine := &appservice.AppProject{}
+		filter := map[string]interface{}{
+			"metadata.name": data.BusinessName,
+		}
+		store.GetByFilter(common.DefaultNamespace, common.AppProject, buinessLine, filter)
+		buinessLine.Spec.Owner = append(buinessLine.Spec.Owner, data.Leaders)
+		store.Apply(common.DefaultNamespace, common.AppProject, buinessLine.UUID, buinessLine, true)
+
+		for _, child := range data.Children{
+			namespace := &appservice.Namespace{
+				Metadata: core.Metadata{
+					Name: child.Env,
+				},
+				Spec: appservice.NamespaceSpec{
+					Desc: child.Namespace,
+					ParentApp: buinessLine.UUID,
+				},
+			}
+			store.Create(common.DefaultNamespace, common.Namespace, namespace)
+		}
+	}
+
+	fmt.Println("success")
+}
+
 func TestGenerateNumber(t *testing.T) {
 	w := &workorder.WorkOrder{
 		Spec: workorder.Spec{
@@ -111,4 +164,12 @@ func TestRequest(t *testing.T) {
 	json.Unmarshal(body, &data)
 	fmt.Println(data)
 	fmt.Println(data["data"])
+}
+
+func TestEqual(t *testing.T) {
+	m1 := map[string]interface{}{"1": []int{1, 2, 3}, "2": 3, "3": "a", "4": map[int]interface{}{1: 1, 2: 2}}
+	m2 := map[string]interface{}{"1": []int{1, 2, 3}, "2": 3, "3": "a", "4": map[int]interface{}{1: 1, 2: 2}}
+	if reflect.DeepEqual(m1, m2) {
+		fmt.Println("相等")
+	}
 }

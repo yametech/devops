@@ -80,7 +80,7 @@ func (w *WorkOrder) UpdateWorkOrder(g *gin.Context) {
 	api.ResponseSuccess(g, gin.H{"results": result, "update": update}, "")
 }
 
-func (w *WorkOrder) DeteleWorkOrder(g *gin.Context) {
+func (w *WorkOrder) DeleteWorkOrder(g *gin.Context) {
 	uuid := g.Param("uuid")
 
 	result, err := w.Service.Delete(uuid)

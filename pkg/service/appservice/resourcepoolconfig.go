@@ -50,13 +50,6 @@ func (n *ResourcePoolConfigService) Update(data *apiResource.NamespaceRequest) (
 		log.Printf("Update AppResource Not Found Create New One: %v\n", err)
 	}
 
-	// create history
-	// Get creator
-	history := &appservice.AppResourceHistory{}
-	history.Spec.Creator = ""
-	history.Spec.Before = dbObj
-	history.Spec.App = namespace.Metadata.UUID
-
 	dbObj.Spec.App = namespace.Metadata.UUID
 	dbObj.Spec.Threshold = data.Threshold
 	dbObj.Spec.Approval = data.Approval
@@ -65,21 +58,7 @@ func (n *ResourcePoolConfigService) Update(data *apiResource.NamespaceRequest) (
 	dbObj.Spec.Pod = data.Pod
 
 	dbObj.GenerateVersion()
-	newObj, update, err := n.IService.Apply(common.DefaultNamespace, common.AppResource, dbObj.UUID, dbObj, false)
-	if err != nil {
-		return nil, false, err
-	}
-
-	result := &appservice.AppResource{}
-	if err = utils.UnstructuredObjectToInstanceObj(newObj, &result); err != nil {
-		return nil, false, err
-	}
-
-	history.Spec.Now = result
-	if _, err = n.IService.Create(common.DefaultNamespace, common.History, history); err != nil {
-		return nil, false, errors.New("the history create failed")
-	}
-	return result, update, nil
+	return n.IService.Apply(common.DefaultNamespace, common.AppResource, dbObj.UUID, dbObj, false)
 }
 
 func (n *ResourcePoolConfigService) GetNamespaceResourceRemain(appid string) (float64, int64, error) {
@@ -111,4 +90,15 @@ func (n *ResourcePoolConfigService) GetNamespaceResourceRemain(appid string) (fl
 	}
 
 	return cmdbCpus - useCpu, cmdbMemories - useMemories, nil
+}
+
+func (n *ResourcePoolConfigService) GetNamespaceResource(appid string) (float64, int64, float64, float64, error) {
+
+	// get namespace all resource from cmdb
+	cmdbCpus := 10000.0
+	cmdbMemories := int64(10000000)
+	moneyMonth := 12000.23
+	moneyYear := 123123.22
+
+	return cmdbCpus, cmdbMemories, moneyMonth, moneyYear, nil
 }

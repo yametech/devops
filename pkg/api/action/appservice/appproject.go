@@ -20,7 +20,7 @@ func (s *Server) ListAppProject(g *gin.Context) {
 func (s *Server) CreateAppProject(g *gin.Context) {
 
 	request := &apiResource.Request{}
-	if err := g.ShouldBindJSON(&request); err != nil {
+	if err := g.ShouldBindJSON(request); err != nil {
 		api.ResponseError(g, err)
 		return
 	}
@@ -37,7 +37,7 @@ func (s *Server) CreateAppProject(g *gin.Context) {
 func (s *Server) UpdateAppProject(g *gin.Context) {
 	uuid := g.Param("uuid")
 	req := &apiResource.Request{}
-	if err := g.ShouldBindJSON(&req); err != nil {
+	if err := g.ShouldBindJSON(req); err != nil {
 		api.ResponseError(g, err)
 		return
 	}

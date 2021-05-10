@@ -1,6 +1,5 @@
 package main
 
-
 import (
 	"flag"
 	"github.com/yametech/devops/pkg/controller"

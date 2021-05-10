@@ -7,7 +7,6 @@ import (
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/workorder"
 	"github.com/yametech/devops/pkg/service"
-	"github.com/yametech/devops/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -70,14 +69,15 @@ func (s *Service) List(orderType int, orderStatus int, search string, page, page
 func (s *Service) Create(request *apiResource.Request) (core.IObject, error) {
 	req := &workorder.WorkOrder{
 		Spec: workorder.Spec{
-			OrderType: request.OrderType,
-			Title:     request.Title,
-			Relation:  request.Relation,
-			Attribute: request.Attribute,
-			Apply:     request.Apply,
-			Check:     request.Check,
-			Result:    request.Result,
-			OrderStatus: 1,
+			OrderType:   request.OrderType,
+			Title:       request.Title,
+			Relation:    request.Relation,
+			Attribute:   request.Attribute,
+			Apply:       request.Apply,
+			Check:       request.Check,
+			Result:      request.Result,
+			Extends:     request.Extends,
+			OrderStatus: workorder.Checking,
 		},
 	}
 
@@ -107,9 +107,10 @@ func (s *Service) Update(uuid string, request *apiResource.Request) (core.IObjec
 	dbObj.Spec.Apply = request.Apply
 	dbObj.Spec.Check = request.Check
 	dbObj.Spec.Result = request.Result
+	dbObj.Spec.Extends = request.Extends
 
 	dbObj.GenerateVersion()
-	return s.IService.Apply(common.DefaultNamespace, common.WorkOrder, dbObj.UUID, dbObj, false)
+	return s.IService.Apply(common.DefaultNamespace, common.WorkOrder, dbObj.UUID, dbObj, true)
 }
 
 func (s *Service) Delete(uuid string) (bool, error) {
@@ -117,27 +118,4 @@ func (s *Service) Delete(uuid string) (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-func (s *Service) GetWorkOrderStatus(relation string, orderType int) (workorder.OrderStatus, error) {
-
-	filter := map[string]interface{}{
-		"spec.relation": relation,
-		"spec.order_type": orderType,
-	}
-	sort := map[string]interface{}{
-		"metadata.created_time": -1,
-	}
-
-	data, _ := s.IService.ListByFilter(common.DefaultNamespace, common.WorkOrder, filter, sort, 0 , 1)
-	if len(data) == 0{
-		return workorder.None, errors.New("The workorder is not exist")
-	}
-
-	order := make([]*workorder.WorkOrder, 0)
-	if err := utils.UnstructuredObjectToInstanceObj(data, &order); err != nil {
-		return workorder.None, err
-	}
-
-	return order[0].Spec.OrderStatus, nil
 }

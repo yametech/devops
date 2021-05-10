@@ -26,24 +26,26 @@ func (s *Server) ListByLevel(g *gin.Context) {
 	}
 
 	search := g.Query("search")
+	filter := g.Query("filter")
 
-	results, err := s.NamespaceService.ListByLevel(level, search)
+	results, err := s.NamespaceService.ListByLevel(level, search, filter)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
+
 	}
 
 	api.ResponseSuccess(g, results, "")
 }
 
-func (s *Server) CreateNamespace(g *gin.Context) {
+func (s *Server) UpdateNamespace(g *gin.Context) {
 	req := &apiResource.Request{}
-	if err := g.ShouldBindJSON(&req); err != nil {
+	if err := g.ShouldBindJSON(req); err != nil {
 		api.ResponseError(g, err)
 		return
 	}
 
-	namespace, err := s.NamespaceService.Create(req)
+	namespace, err := s.NamespaceService.Update(req)
 	if err != nil {
 		api.ResponseError(g, err)
 		return

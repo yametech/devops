@@ -19,7 +19,7 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 		Server:                    server,
 		AppProjectService:         appService.NewAppProjectService(server.IService),
 		AppConfigService:          appService.NewAppConfigService(server.IService),
-		NamespaceService:          appService.NewResourcePoolService(server.IService),
+		NamespaceService:          appService.NewNamespaceService(server.IService),
 		ResourcePoolConfigService: appService.NewResourcePoolConfigService(server.IService),
 	}
 	group := cfaServer.Group(fmt.Sprintf("/%s", serviceName))
@@ -44,8 +44,9 @@ func NewAppServiceServer(serviceName string, server *api.Server) *Server {
 	// Namespace
 	{
 		group.GET("/namespace", cfaServer.ListNamespace)
-		group.POST("/namespace", cfaServer.CreateNamespace)
+		group.POST("/namespace", cfaServer.UpdateNamespace)
 		group.GET("/namespace/:uuid", cfaServer.GetNamespaceResourceRemain)
+		group.GET("/namespace/:uuid/all", cfaServer.GetNamespaceResource)
 	}
 
 	// ResourcePoolConfig

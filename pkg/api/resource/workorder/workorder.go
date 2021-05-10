@@ -11,4 +11,5 @@ type Request struct {
 	Apply                 map[string]interface{} `json:"apply"`
 	Check                 map[string]interface{} `json:"check"`
 	Result                map[string]interface{} `json:"result"`
+	Extends               map[string]interface{} `json:"extends"`
 }

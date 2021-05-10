@@ -33,7 +33,7 @@ func (s *Server) GetAppResource(g *gin.Context) {
 
 func (s *Server) UpdateAppConfig(g *gin.Context) {
 	data := &apiResource.AppConfigRequest{}
-	if err := g.ShouldBindJSON(&data); err != nil {
+	if err := g.ShouldBindJSON(data); err != nil {
 		api.ResponseError(g, err)
 		return
 	}
@@ -49,14 +49,14 @@ func (s *Server) UpdateAppConfig(g *gin.Context) {
 
 func (s *Server) UpdateAppResource(g *gin.Context) {
 	data := &apiResource.NamespaceRequest{}
-	if err := g.ShouldBindJSON(&data); err != nil {
+	if err := g.ShouldBindJSON(data); err != nil {
 		api.ResponseError(g, err)
 		return
 	}
 
-	result, update, err := s.AppConfigService.UpdateConfigResource(data)
+	result, update, code, err := s.AppConfigService.UpdateConfigResource(data)
 	if err != nil {
-		api.ResponseError(g, err)
+		api.ResponseCodeError(g, err, code)
 		return
 	}
 
@@ -85,11 +85,11 @@ func (s *Server) ConfigHistory(g *gin.Context) {
 		return
 	}
 
-	results, err := s.AppConfigService.History(uuid, page, pageSize)
+	results, count, err := s.AppConfigService.History(uuid, page, pageSize)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
 	}
 
-	api.ResponseSuccess(g, results, "")
+	api.ResponseSuccess(g, gin.H{"results": results, "count": count}, "")
 }

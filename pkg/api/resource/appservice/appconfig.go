@@ -9,6 +9,7 @@ type NamespaceRequest struct {
 	Name        string  `json:"name"`
 	UUID        string  `json:"uuid"`
 	App         string  `json:"app"`
+	Desc        string  `json:"desc"`
 	ParentApp   string  `json:"parent_app"`
 	Cpu         float64 `json:"cpu"`
 	Memory      int64   `json:"memory"`
