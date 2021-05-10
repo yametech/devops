@@ -3,6 +3,7 @@ package test
 import (
 	"encoding/json"
 	"fmt"
+	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/appservice"
@@ -10,8 +11,11 @@ import (
 	"github.com/yametech/devops/pkg/store/mongo"
 	"github.com/yametech/devops/pkg/utils"
 	"io/ioutil"
+	"log"
+	"net/http"
 	"reflect"
 	"testing"
+	"time"
 )
 
 type BusinessLine struct {
@@ -154,16 +158,32 @@ func TestGenerateNumber(t *testing.T) {
 }
 
 func TestRequest(t *testing.T) {
-	url := fmt.Sprintf("http://127.0.0.1:8081/workorder/status?relation=%s&order_type=%d",
-		"57a093fb-d7fe-4875-b764-8da053994531", 1)
-	body, _ := utils.Request("GET",
-		url, nil, nil)
+	r := utils.NewRequest(http.Client{Timeout: 30 * time.Second}, "http", "cmdb-service-test.compass.ym", map[string]string{
+		"Content-Type": "application/json",
+	})
 
-	fmt.Println(body)
+	resp, err := r.Post("/cmdb/web/resource-list", map[string]interface{}{
+		"modelUid": "business_service",
+		"current": 1,
+		"pageSize": 20,
+	})
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	data := make(map[string]interface{})
-	json.Unmarshal(body, &data)
+	json.Unmarshal(resp, &data)
 	fmt.Println(data)
-	fmt.Println(data["data"])
+	fmt.Println(resp)
+	if d, ok := data["data"]; ok {
+		if l, e := d.(map[string]interface{})["list"]; e {
+			app := make([]apiResource.Base, 0)
+			utils.UnstructuredObjectToInstanceObj(l, &app)
+			fmt.Println(app)
+		}
+	}
+
 }
 
 func TestEqual(t *testing.T) {

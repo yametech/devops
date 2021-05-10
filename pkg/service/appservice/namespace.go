@@ -1,6 +1,8 @@
 package appservice
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 	"github.com/yametech/devops/pkg/common"
@@ -12,6 +14,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
+	"net/http"
+	"time"
 )
 
 type NamespaceService struct {
@@ -104,18 +108,18 @@ func (n *NamespaceService) ListAppProjectLevel(level int, search string, parentA
 
 func (n *NamespaceService) ListResourcePoolLevel(level int, search string, parentApp string) (interface{}, error) {
 	filter := make(map[string]interface{})
-	if parentApp != ""{
+	if parentApp != "" {
 		filter["$or"] = []map[string]interface{}{
 			{
-				"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+				"metadata.name":   bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 				"spec.parent_app": parentApp,
 			},
 			{
-				"spec.desc": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+				"spec.desc":       bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 				"spec.parent_app": parentApp,
 			},
 		}
-	}else{
+	} else {
 		filter["$or"] = []map[string]interface{}{
 			{
 				"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
@@ -144,7 +148,7 @@ func (n *NamespaceService) Update(request *apiResource.Request) (core.IObject, e
 	}
 
 	filter := map[string]interface{}{
-		"spec.desc": request.Desc,
+		"spec.desc":     request.Desc,
 		"metadata.uuid": bson.M{"$ne": request.UUID},
 	}
 
@@ -161,7 +165,7 @@ func (n *NamespaceService) Update(request *apiResource.Request) (core.IObject, e
 	memory := 10024000
 
 	history.Spec.Before = map[string]interface{}{
-		"cpu": cpus,
+		"cpu":    cpus,
 		"memory": memory,
 	}
 
@@ -177,7 +181,7 @@ func (n *NamespaceService) Update(request *apiResource.Request) (core.IObject, e
 
 	history.Spec.App = obj.UUID
 	history.Spec.Now = map[string]interface{}{
-		"cpu": request.Cpu,
+		"cpu":    request.Cpu,
 		"memory": request.Memory,
 	}
 
@@ -215,4 +219,58 @@ func (n *NamespaceService) OrderToNamespaceSuccess(obj *workorder.WorkOrder) err
 	}
 
 	return nil
+}
+
+func (n *NamespaceService) UpdateFromCMDB() error {
+
+	menuLevel := 3
+	for i := 0; i < menuLevel; i++ {
+		dbData, err := n.ListByLevel(i, "", "")
+		if err != nil {
+			return err
+		}
+		dbList := make([]*appservice.AppProject, 0)
+		if err = utils.UnstructuredObjectToInstanceObj(dbData, &dbList); err != nil {
+			return err
+		}
+
+
+	}
+}
+
+func (n *NamespaceService) UpdateAppProjectFromCMDB(level int) error{
+	dbData, err := n.ListByLevel(level, "", "")
+	if err != nil {
+		return err
+	}
+
+	dbList := make([]*appservice.AppProject, 0)
+	if err = utils.UnstructuredObjectToInstanceObj(dbData, &dbList); err != nil {
+		return err
+	}
+
+	req := utils.NewRequest(http.Client{Timeout: 30 * time.Second}, "http", "cmdb-service-test.compass.ym", map[string]string{
+		"Content-Type": "application/json",
+	})
+	resp, err := req.Post("/cmdb/web/resource-list", map[string]interface{}{
+		"modelUid": apiResource.Handle[level],
+		"current": 1,
+		"pageSize": 1000,
+	})
+	if err != nil {
+		return err
+	}
+	respData := make(map[string]interface{})
+	if err = json.Unmarshal(resp, &respData); err != nil {
+		return err
+	}
+
+	cmdbList := make([]apiResource.Base, 0)
+	if data, ok := respData["data"]; ok {
+		if list, exists := data.(map[string]interface{})["list"]; exists {
+			if err = utils.UnstructuredObjectToInstanceObj(list, &cmdbList); err != nil {
+				return err
+			}
+		}
+	}
 }

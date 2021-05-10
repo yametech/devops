@@ -50,6 +50,7 @@ func NewPipelineController(store store.IKVStore) *AppServiceController {
 
 func (a *AppServiceController) Run() error {
 	a.proc.Add(a.recvWorkOrder)
+
 	return <-a.proc.Start()
 }
 
@@ -94,4 +95,10 @@ func (a *AppServiceController) handleWorkOrder(obj *workorder.WorkOrder) {
 			}
 		}
 	}
+}
+
+func (a *AppServiceController) GetCMDBAppService(errC chan<- error)  {
+	go func() {
+
+	}()
 }
