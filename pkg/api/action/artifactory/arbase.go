@@ -18,6 +18,7 @@ func NewArBaseServer(serviceName string, server *api.Server) *baseServer {
 		ArtifactService: arbaseService.NewArtifact(server.IService),
 		DeployService:   arbaseService.NewDeployService(server.IService),
 	}
+
 	group := base.Group(fmt.Sprintf("/%s", serviceName))
 
 	// watch

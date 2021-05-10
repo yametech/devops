@@ -55,7 +55,6 @@ func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}
 		return nil, 0, err
 	}
 	return data, count, nil
-
 }
 
 func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResource.Artifact, error) {
@@ -146,9 +145,11 @@ func (a *ArtifactService) CheckRegistryProject(ar *arResource.Artifact) error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
+
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
+
 	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -182,6 +183,7 @@ func (a *ArtifactService) CreateRegistryProject(HarborAddress, projectName strin
 	if err != nil {
 		return err
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
 	tr := &http.Transport{

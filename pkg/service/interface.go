@@ -40,6 +40,7 @@ func (bs *BaseService) Watch(namespace, resource, kind, version string, objectCh
 		for {
 			select {
 			case <-closed:
+				wc.CloseStop()<-struct{}{}
 				return
 			case err := <-wc.ErrorStop():
 				fmt.Printf("user watch version: (%d) get error: (%s)\n", version, err)
