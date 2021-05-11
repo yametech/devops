@@ -149,7 +149,7 @@ func CheckExists(ar *arResource.Artifact) (bool, error) {
 	req, err := http.NewRequest("HEAD", url, strings.NewReader(data.Encode()))
 	if err != nil {
 		panic(err)
-	}
+	} //TODO:是否删除bool，返回err错误.weihengxing.
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
 	tr := &http.Transport{
