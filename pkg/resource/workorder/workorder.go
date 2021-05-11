@@ -5,14 +5,17 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/yametech/devops/pkg/core"
+	"github.com/yametech/devops/pkg/store"
+	"github.com/yametech/devops/pkg/store/gtm"
 	"time"
 )
+
+const WorkerOrderKind core.Kind = "workorder"
 
 type OrderStatus uint8
 
 const (
-	None       OrderStatus = iota // 不存在
-	WaitCommit                    // 待提交
+	WaitCommit OrderStatus = iota // 待提交
 	Checking                      // 审核中
 	Rejected                      // 驳回
 	Finish                        // 完成
@@ -49,6 +52,7 @@ type Spec struct {
 	Apply       map[string]interface{} `json:"apply" bson:"apply"`
 	Check       map[string]interface{} `json:"check" bson:"check"`
 	Result      map[string]interface{} `json:"result" bson:"result"`
+	Extends     map[string]interface{} `json:"extends" bson:"extends"`
 }
 
 func (w *WorkOrder) GenerateNumber() error {
@@ -64,4 +68,17 @@ func (w *WorkOrder) Clone() core.IObject {
 	result := &WorkOrder{}
 	core.Clone(w, result)
 	return result
+}
+
+// WorkOrder impl Coder
+func (*WorkOrder) Decode(op *gtm.Op) (core.IObject, error) {
+	workOrder := &WorkOrder{}
+	if err := core.ObjectToResource(op.Data, workOrder); err != nil {
+		return nil, err
+	}
+	return workOrder, nil
+}
+
+func init() {
+	store.AddResourceCoder(string(WorkerOrderKind), &WorkOrder{})
 }

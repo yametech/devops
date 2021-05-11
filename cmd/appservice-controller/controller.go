@@ -2,16 +2,13 @@ package main
 
 import (
 	"flag"
-	"github.com/yametech/devops/pkg/api"
-	"github.com/yametech/devops/pkg/api/action/appservice"
-	"github.com/yametech/devops/pkg/service"
+	"github.com/yametech/devops/pkg/controller"
 	"github.com/yametech/devops/pkg/store/mongo"
 )
 
 var storageUri string
 
 func main() {
-
 	flag.StringVar(&storageUri, "storage_uri", "mongodb://10.200.10.46:27017/devops", "127.0.0.1:3306")
 	flag.Parse()
 
@@ -20,13 +17,8 @@ func main() {
 		panic(err)
 	}
 
-	baseService := service.NewBaseService(store)
-	server := api.NewServer(baseService)
-
-	appservice.NewAppServiceServer("appservice", server)
-
 	go func() {
-		if err := server.Run(":8080"); err != nil {
+		if err := controller.NewPipelineController(store).Run(); err != nil {
 			errC <- err
 		}
 	}()
@@ -34,5 +26,4 @@ func main() {
 	if e := <-errC; e != nil {
 		panic(e)
 	}
-
 }

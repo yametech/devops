@@ -9,18 +9,21 @@ import (
 type baseServer struct {
 	*api.Server
 	*arbaseService.ArtifactService
+	*arbaseService.DeployService
 }
 
 func NewArBaseServer(serviceName string, server *api.Server) *baseServer {
 	base := &baseServer{
 		Server:          server,
 		ArtifactService: arbaseService.NewArtifact(server.IService),
+		DeployService:   arbaseService.NewDeployService(server.IService),
 	}
 	group := base.Group(fmt.Sprintf("/%s", serviceName))
 
 	// watch
 	{
 		group.GET("/artifactwatch", base.WatchAr)
+		group.GET("/deploywatch", base.WatchDeploy)
 	}
 
 	//UserProjectService
@@ -35,6 +38,13 @@ func NewArBaseServer(serviceName string, server *api.Server) *baseServer {
 	//GetBranch
 	{
 		group.GET("/getbranch", base.GetBranchList)
+	}
+
+	//Deploy
+	{
+		group.GET("/deploy", base.ListDeploy)
+		group.POST("/deploy", base.CreateDeploy)
+
 	}
 	return base
 }

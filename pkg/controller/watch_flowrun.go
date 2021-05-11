@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/r3labs/sse/v2"
 	"github.com/yametech/devops/pkg/common"
+	"github.com/yametech/devops/pkg/proc"
 	"github.com/yametech/devops/pkg/resource/artifactory"
 	"github.com/yametech/devops/pkg/store"
 	"io/ioutil"
@@ -18,23 +19,24 @@ var _ Controller = &WatchFlowRun{}
 
 type WatchFlowRun struct {
 	store.IKVStore
+	proc *proc.Proc
 }
 
 func NewWatchFlowRun(ikvStore store.IKVStore) *WatchFlowRun {
 	server := &WatchFlowRun{
-		ikvStore,
+		IKVStore: ikvStore,
+		proc:     proc.NewProc(),
 	}
 	return server
 }
 
 func (w *WatchFlowRun) Run() error {
 	fmt.Println(fmt.Sprintf("[Controller]%v start --> %v", reflect.TypeOf(w), time.Now()))
-	errC := make(chan error)
-	go w.ArtifactConnect(errC)
-	return <-errC
+	w.proc.Add(w.artifactConnect)
+	return <-w.proc.Start()
 }
 
-func (w *WatchFlowRun) ArtifactConnect(errC chan<- error) {
+func (w *WatchFlowRun) artifactConnect(errC chan<- error) {
 	//GetOldFlownRun
 	fmt.Printf("[Controller]%v begin handle old flowrun.\n", reflect.TypeOf(w))
 
@@ -45,7 +47,6 @@ func (w *WatchFlowRun) ArtifactConnect(errC chan<- error) {
 	}
 	if resp == nil {
 		fmt.Printf("[Controller]%v handle old flowrun res was empty.\n", reflect.TypeOf(w))
-		return
 	}
 	defer resp.Body.Close()
 	body, err1 := ioutil.ReadAll(resp.Body)
@@ -62,22 +63,22 @@ func (w *WatchFlowRun) ArtifactConnect(errC chan<- error) {
 		w.HandleFlowRun(oneFlowRun)
 	}
 
-	//ArtifactConnect
+	//artifactConnect
 	fmt.Printf("[Controller]%v begin watch echoer.\n", reflect.TypeOf(w))
 	Version := time.Now().Unix() - 100
 	url := fmt.Sprintf("%s/watch?resource=flowrun?version=%d", common.EchoerUrl, Version)
-	fmt.Printf("[Controller]%v begin func ArtifactConnect and url: %s.\n", reflect.TypeOf(w), url)
+	fmt.Printf("[Controller]%v begin func artifactConnect and url: %s.\n", reflect.TypeOf(w), url)
 
 	client := sse.NewClient(url)
 	err = client.SubscribeRaw(func(msg *sse.Event) {
 		a := &FlowRun{}
 		err := json.Unmarshal(msg.Data, &a)
 		if err != nil {
-			fmt.Println("Error When ArtifactConnect Unmarshal:", err)
+			fmt.Println("Error When artifactConnect Unmarshal:", err)
 			errC <- err
 		}
 		fmt.Printf("[Controller]%v watching echoer: %v\n", reflect.TypeOf(w), a.Metadata)
-		w.HandleFlowRun(a)
+		go w.HandleFlowRun(a)
 		//b, _ := strconv.Atoi(a["metadata"]["version"])
 		//fmt.Println(b)
 	})
@@ -88,9 +89,9 @@ func (w *WatchFlowRun) ArtifactConnect(errC chan<- error) {
 
 func (w *WatchFlowRun) HandleFlowRun(run *FlowRun) {
 	flowRunName := run.Metadata.Name
-	fmt.Printf("[Controller]%v HandleFlowrun get flowRun %s \n", reflect.TypeOf(w), run.Metadata.Name)
 	//Determine the type of split
 	if strings.Contains(flowRunName, "_") {
+		fmt.Printf("[Controller]%v HandleFlowrun get flowRun %s \n", reflect.TypeOf(w), run.Metadata.Name)
 		keyValue := strings.Split(flowRunName, "_")
 		if len(keyValue) != 2 || keyValue[0] != common.DefaultNamespace {
 			fmt.Printf("[Controller]%v HandleFlowrun result of split isn't two or not belongs to devops %s \n", reflect.TypeOf(w), run.Metadata.Name)
@@ -101,15 +102,17 @@ func (w *WatchFlowRun) HandleFlowRun(run *FlowRun) {
 			if flowStep.Spec.ActionRun.Done != true {
 				continue
 			}
-			stepUUID := strings.Split(flowStep.Metadata.Name, "_")[1]
+			temp := strings.Split(flowStep.Metadata.Name, "_")
+			stepUUID := temp[1]
+			actionType := temp[0]
 			//switch actionType from actionName
-			switch flowStep.Spec.ActionRun.ActionName {
+			switch actionType {
 			//actionName EchoerCI
-			case common.EchoerCI:
+			case common.CI:
 				step := &artifactory.Artifact{}
 				err := w.GetByUUID(common.DefaultNamespace, common.Artifactory, stepUUID, step)
 				if err != nil {
-					fmt.Printf("[Controller]%v error: step: %s, uuid: %s ,err: %s \n", reflect.TypeOf(w), common.EchoerCI, stepUUID, err.Error())
+					fmt.Printf("[Controller]%v error: action: %s, uuid: %s ,err: %s \n", reflect.TypeOf(w), flowStep.Spec.ActionRun.ActionName, stepUUID, err.Error())
 					continue
 				}
 				if flowStep.Spec.Response.State == "SUCCESS" {
@@ -119,12 +122,28 @@ func (w *WatchFlowRun) HandleFlowRun(run *FlowRun) {
 				}
 				_, _, err = w.Apply(common.DefaultNamespace, common.Artifactory, step.Metadata.UUID, step, false)
 				if err != nil {
-					fmt.Printf("[Controller]%v error: step: %s, uuid: %s ,err: %s \n", reflect.TypeOf(w), common.EchoerCI, stepUUID, err.Error())
+					fmt.Printf("[Controller]%v error: action: %s, uuid: %s ,err: %s \n", reflect.TypeOf(w), flowStep.Spec.ActionRun.ActionName, stepUUID, err.Error())
 				}
-				fmt.Printf("[Controller]%v msg: step: %s, uuid: %s status updata done! \n", reflect.TypeOf(w), common.EchoerCI, stepUUID)
-			//TODO:actionName EchoerCD
-			case common.EchoerCD:
-				fmt.Println("TODO CD")
+				fmt.Printf("[Controller]%v msg: action: %s, uuid: %s status updata done! \n", reflect.TypeOf(w), flowStep.Spec.ActionRun.ActionName, stepUUID)
+			case common.CD:
+				step := &artifactory.Deploy{}
+				err := w.GetByUUID(common.DefaultNamespace, common.Deploy, stepUUID, step)
+				if err != nil {
+					fmt.Printf("[Controller]%v error: action: %s, uuid: %s ,err: %s \n", reflect.TypeOf(w), flowStep.Spec.ActionRun.ActionName, stepUUID, err.Error())
+					continue
+				}
+				if flowStep.Spec.Response.State == "SUCCESS" {
+					step.Spec.DeployStatus = artifactory.Deployed
+				} else if flowStep.Spec.Response.State == "FAIL" {
+					step.Spec.DeployStatus = artifactory.DeployFail
+				}
+				_, _, err = w.Apply(common.DefaultNamespace, common.Deploy, step.Metadata.UUID, step, false)
+				if err != nil {
+					fmt.Printf("[Controller]%v error: action: %s, uuid: %s ,err: %s \n", reflect.TypeOf(w), flowStep.Spec.ActionRun.ActionName, stepUUID, err.Error())
+				}
+				fmt.Printf("[Controller]%v msg: action: %s, uuid: %s status updata done! \n", reflect.TypeOf(w), flowStep.Spec.ActionRun.ActionName, stepUUID)
+			default:
+				fmt.Printf("[Controller]%v msg: actiontype is not found: %s, uuid: %s \n", reflect.TypeOf(w), actionType, stepUUID)
 			}
 		}
 	}

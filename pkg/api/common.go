@@ -19,6 +19,11 @@ func ResponseError(g *gin.Context, err error) {
 	g.Abort()
 }
 
+func ResponseCodeError(g *gin.Context, err error, code int){
+	g.JSON(http.StatusOK, gin.H{"msg": err.Error(), "code": code, "data": nil})
+	g.Abort()
+}
+
 func ResponseSuccess(g *gin.Context, data interface{}, msg string) {
 	g.JSON(http.StatusOK, gin.H{"msg": msg, "code": http.StatusOK, "data": data})
 	g.Abort()
