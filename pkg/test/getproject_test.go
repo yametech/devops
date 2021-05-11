@@ -7,15 +7,13 @@ import (
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/appservice"
+	ser "github.com/yametech/devops/pkg/service/appservice"
 	"github.com/yametech/devops/pkg/resource/workorder"
+	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/store/mongo"
-	"github.com/yametech/devops/pkg/utils"
 	"io/ioutil"
-	"log"
-	"net/http"
 	"reflect"
 	"testing"
-	"time"
 )
 
 type BusinessLine struct {
@@ -121,6 +119,8 @@ func TestGetNamespace(t *testing.T) {
 	json.Unmarshal(b, &datas)
 
 	store, _, _ := mongo.NewMongo("mongodb://10.200.10.46:27017/devops")
+	baseService := service.NewBaseService(store)
+	namespaceService := ser.NewNamespaceService(baseService)
 
 	for _, data := range datas {
 		buinessLine := &appservice.AppProject{}
@@ -132,16 +132,12 @@ func TestGetNamespace(t *testing.T) {
 		store.Apply(common.DefaultNamespace, common.AppProject, buinessLine.UUID, buinessLine, true)
 
 		for _, child := range data.Children{
-			namespace := &appservice.Namespace{
-				Metadata: core.Metadata{
-					Name: child.Env,
-				},
-				Spec: appservice.NamespaceSpec{
-					Desc: child.Namespace,
-					ParentApp: buinessLine.UUID,
-				},
+			namespace := &apiResource.Request{
+				Name: child.Env,
+				Desc: child.Namespace,
+				ParentApp: buinessLine.UUID,
 			}
-			store.Create(common.DefaultNamespace, common.Namespace, namespace)
+			namespaceService.Update(namespace)
 		}
 	}
 
@@ -158,32 +154,11 @@ func TestGenerateNumber(t *testing.T) {
 }
 
 func TestRequest(t *testing.T) {
-	r := utils.NewRequest(http.Client{Timeout: 30 * time.Second}, "http", "cmdb-service-test.compass.ym", map[string]string{
-		"Content-Type": "application/json",
-	})
-
-	resp, err := r.Post("/cmdb/web/resource-list", map[string]interface{}{
-		"modelUid": "business_service",
-		"current": 1,
-		"pageSize": 20,
-	})
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	data := make(map[string]interface{})
-	json.Unmarshal(resp, &data)
-	fmt.Println(data)
-	fmt.Println(resp)
-	if d, ok := data["data"]; ok {
-		if l, e := d.(map[string]interface{})["list"]; e {
-			app := make([]apiResource.Base, 0)
-			utils.UnstructuredObjectToInstanceObj(l, &app)
-			fmt.Println(app)
-		}
-	}
-
+	//store, _, _ := mongo.NewMongo("mongodb://10.200.10.46:27017/devops")
+	//baseService := service.NewBaseService(store)
+	//namespaceService := app.NewNamespaceService(baseService)
+	////data, _ := namespaceService.GetFromCMDB()
+	//fmt.Println(data)
 }
 
 func TestEqual(t *testing.T) {

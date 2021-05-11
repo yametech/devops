@@ -1,6 +1,7 @@
 package appservice
 
 import (
+	"encoding/json"
 	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 	"github.com/yametech/devops/pkg/common"
@@ -10,6 +11,8 @@ import (
 	"github.com/yametech/devops/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"net/http"
+	"time"
 )
 
 type AppProjectService struct {
@@ -99,7 +102,6 @@ func (a *AppProjectService) Update(uuid string, request *apiResource.Request) (c
 	dbObj.Spec.Desc = req.Spec.Desc
 	dbObj.Spec.Owner = req.Spec.Owner
 
-	dbObj.GenerateVersion()
 	return a.IService.Apply(common.DefaultNamespace, common.AppProject, uuid, dbObj, false)
 }
 
@@ -217,4 +219,142 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.R
 		}
 	}
 	return parents, nil
+}
+
+func (a *AppProjectService) UpdateFromCMDB() error {
+
+	return nil
+}
+
+func (a *AppProjectService) CheckCMDBData(){
+
+}
+
+func (a *AppProjectService) GetFromCMDB() ([]*apiResource.Response, error) {
+	req := utils.NewRequest(http.Client{Timeout: 30 * time.Second}, "http", "cmdb-service-test.compass.ym", map[string]string{
+		"Content-Type": "application/json",
+	})
+	resp, err := req.Post("/cmdb/web/resource-list", map[string]interface{}{
+		"modelUid": apiResource.BusinessUuid,
+		"current":  1,
+		"pageSize": 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	respData := make(map[string]interface{})
+	if err = json.Unmarshal(resp, &respData); err != nil {
+		return nil, err
+	}
+
+	cmdbList := make([]apiResource.Business, 0)
+	if data, ok := respData["data"]; ok {
+		if list, exists := data.(map[string]interface{})["list"]; exists {
+			if err = utils.UnstructuredObjectToInstanceObj(list, &cmdbList); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	line := make([]*apiResource.Response, 0)
+	for _, cmdbObj := range cmdbList {
+		businessNode := &apiResource.Response{
+			AppProject: appservice.AppProject{
+				Metadata: core.Metadata{
+					Name: cmdbObj.BusinessName,
+				},
+				Spec: appservice.AppSpec{
+					Owner: []string{cmdbObj.BusinessMaster},
+				},
+			},
+		}
+
+		resp, err = req.Post("/cmdb/web/resource-list", map[string]interface{}{
+			"modelUid": apiResource.ServiceUuid,
+			"uuid": cmdbObj.UUID,
+			"hasRelation":1,
+			"modelRelationUid":"business_including_business_domain",
+			"current":1,
+			"pageSize":1000,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		respData = make(map[string]interface{})
+		if err = json.Unmarshal(resp, &respData); err != nil {
+			return nil, err
+		}
+
+		cmdbServiceList := make([]apiResource.Service, 0)
+		if data, ok := respData["data"]; ok {
+			if list, exists := data.(map[string]interface{})["list"]; exists {
+				if err = utils.UnstructuredObjectToInstanceObj(list, &cmdbServiceList); err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		serviceList := make([]*apiResource.Response, 0)
+		for _, service := range cmdbServiceList {
+			serviceNode := &apiResource.Response{
+				AppProject: appservice.AppProject{
+					Metadata: core.Metadata{
+						Name: service.DomainName,
+					},
+					Spec: appservice.AppSpec{
+						Owner: []string{},
+					},
+				},
+			}
+
+			resp, err = req.Post("/cmdb/web/resource-list", map[string]interface{}{
+				"modelUid": apiResource.AppUuid,
+				"uuid": service.UUID,
+				"hasRelation":1,
+				"modelRelationUid":"business_domain_including_business_service",
+				"current":1,
+				"pageSize":1000,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			respData = make(map[string]interface{})
+			if err = json.Unmarshal(resp, &respData); err != nil {
+				return nil, err
+			}
+
+			cmdbAppList := make([]apiResource.App, 0)
+			if data, ok := respData["data"]; ok {
+				if list, exists := data.(map[string]interface{})["list"]; exists {
+					if err = utils.UnstructuredObjectToInstanceObj(list, &cmdbAppList); err != nil {
+						return nil, err
+					}
+				}
+			}
+
+			appList := make([]*apiResource.Response, 0)
+			for _, app := range cmdbAppList {
+				appNode := &apiResource.Response{
+					AppProject: appservice.AppProject{
+						Metadata: core.Metadata{
+							Name: app.ServiceDescribe,
+						},
+						Spec: appservice.AppSpec{
+							Desc: app.ServiceId,
+							Owner: []string{},
+						},
+					},
+				}
+				appList = append(appList, appNode)
+			}
+			serviceNode.Children = appList
+			serviceList = append(serviceList, serviceNode)
+		}
+		businessNode.Children = serviceList
+		line = append(line, businessNode)
+	}
+
+	return line, nil
 }

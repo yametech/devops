@@ -27,11 +27,6 @@ const (
 	AppUuid      = "business_service"
 )
 
-var Handle = []string{
-	BusinessUuid,
-	ServiceUuid,
-	AppUuid,
-}
 
 type Data struct {
 	TotalCount int                      `json:"totalCount"`

@@ -1,8 +1,6 @@
 package appservice
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 	"github.com/yametech/devops/pkg/common"
@@ -14,8 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
-	"net/http"
-	"time"
 )
 
 type NamespaceService struct {
@@ -173,7 +169,6 @@ func (n *NamespaceService) Update(request *apiResource.Request) (core.IObject, e
 	obj.Spec.ParentApp = request.ParentApp
 	obj.Spec.Desc = request.Desc
 
-	req.GenerateVersion()
 	result, _, err := n.IService.Apply(common.DefaultNamespace, common.Namespace, obj.UUID, obj, true)
 	if err != nil {
 		return nil, err
@@ -185,7 +180,23 @@ func (n *NamespaceService) Update(request *apiResource.Request) (core.IObject, e
 		"memory": request.Memory,
 	}
 
+	history.GenerateVersion()
 	if _, err = n.IService.Create(common.DefaultNamespace, common.History, history); err != nil {
+		return nil, err
+	}
+
+	dbObj := &appservice.AppResource{}
+	if err = n.IService.GetByFilter(common.DefaultNamespace, common.AppResource, dbObj, map[string]interface{}{
+		"spec.app": obj.Metadata.UUID,
+	}); err != nil {
+		log.Printf("Update AppResource Not Found Create New One: %v\n", err)
+	}
+
+	dbObj.Spec.App = obj.Metadata.UUID
+	dbObj.Spec.Threshold = 80
+	dbObj.Spec.Approval = false
+
+	if _, _, err = n.IService.Apply(common.DefaultNamespace, common.AppResource, dbObj.UUID, dbObj, false); err != nil {
 		return nil, err
 	}
 
@@ -219,58 +230,4 @@ func (n *NamespaceService) OrderToNamespaceSuccess(obj *workorder.WorkOrder) err
 	}
 
 	return nil
-}
-
-func (n *NamespaceService) UpdateFromCMDB() error {
-
-	menuLevel := 3
-	for i := 0; i < menuLevel; i++ {
-		dbData, err := n.ListByLevel(i, "", "")
-		if err != nil {
-			return err
-		}
-		dbList := make([]*appservice.AppProject, 0)
-		if err = utils.UnstructuredObjectToInstanceObj(dbData, &dbList); err != nil {
-			return err
-		}
-
-
-	}
-}
-
-func (n *NamespaceService) UpdateAppProjectFromCMDB(level int) error{
-	dbData, err := n.ListByLevel(level, "", "")
-	if err != nil {
-		return err
-	}
-
-	dbList := make([]*appservice.AppProject, 0)
-	if err = utils.UnstructuredObjectToInstanceObj(dbData, &dbList); err != nil {
-		return err
-	}
-
-	req := utils.NewRequest(http.Client{Timeout: 30 * time.Second}, "http", "cmdb-service-test.compass.ym", map[string]string{
-		"Content-Type": "application/json",
-	})
-	resp, err := req.Post("/cmdb/web/resource-list", map[string]interface{}{
-		"modelUid": apiResource.Handle[level],
-		"current": 1,
-		"pageSize": 1000,
-	})
-	if err != nil {
-		return err
-	}
-	respData := make(map[string]interface{})
-	if err = json.Unmarshal(resp, &respData); err != nil {
-		return err
-	}
-
-	cmdbList := make([]apiResource.Base, 0)
-	if data, ok := respData["data"]; ok {
-		if list, exists := data.(map[string]interface{})["list"]; exists {
-			if err = utils.UnstructuredObjectToInstanceObj(list, &cmdbList); err != nil {
-				return err
-			}
-		}
-	}
 }

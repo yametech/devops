@@ -17,18 +17,20 @@ var _ Controller = &AppServiceController{}
 
 type AppServiceController struct {
 	store.IKVStore
-	proc *proc.Proc
-	handlerMap map[workorder.OrderType]map[workorder.OrderStatus]func(obj *workorder.WorkOrder) error
+	proc              *proc.Proc
+	handlerMap        map[workorder.OrderType]map[workorder.OrderStatus]func(obj *workorder.WorkOrder) error
+	appProjectService *appservice.AppProjectService
+	namespaceService  *appservice.NamespaceService
 }
 
 func NewPipelineController(store store.IKVStore) *AppServiceController {
 	baseService := service.NewBaseService(store)
- 	appConfigService := appservice.NewAppConfigService(baseService)
- 	namespaceService := appservice.NewNamespaceService(baseService)
+	appConfigService := appservice.NewAppConfigService(baseService)
+	namespaceService := appservice.NewNamespaceService(baseService)
 	rsHandlerMap := map[workorder.OrderStatus]func(obj *workorder.WorkOrder) error{
 		workorder.Checking: appConfigService.OrderToResourceCheck,
 		workorder.Rejected: appConfigService.OrderToResourceFailed,
-		workorder.Finish: appConfigService.OrderToResourceSuccess,
+		workorder.Finish:   appConfigService.OrderToResourceSuccess,
 	}
 
 	nsHandlerMap := map[workorder.OrderStatus]func(obj *workorder.WorkOrder) error{
@@ -36,14 +38,15 @@ func NewPipelineController(store store.IKVStore) *AppServiceController {
 	}
 
 	server := &AppServiceController{
-		IKVStore: store,
-		proc:     proc.NewProc(),
+		IKVStore:          store,
+		proc:              proc.NewProc(),
+		appProjectService: appservice.NewAppProjectService(baseService),
+		namespaceService:  namespaceService,
 		handlerMap: map[workorder.OrderType]map[workorder.OrderStatus]func(obj *workorder.WorkOrder) error{
 			workorder.Resources: rsHandlerMap,
 			workorder.Namespace: nsHandlerMap,
 		},
 	}
-
 
 	return server
 }
@@ -88,7 +91,7 @@ func (a *AppServiceController) recvWorkOrder(errC chan<- error) {
 func (a *AppServiceController) handleWorkOrder(obj *workorder.WorkOrder) {
 	//TODO: get workOrder if its AppService config and apply it
 
-	if order, exist := a.handlerMap[obj.Spec.OrderType]; exist{
+	if order, exist := a.handlerMap[obj.Spec.OrderType]; exist {
 		if handler, ok := order[obj.Spec.OrderStatus]; ok {
 			if err := handler(obj); err != nil {
 				log.Printf("controller handleWorkOrder error: %s\n", err)
@@ -97,7 +100,7 @@ func (a *AppServiceController) handleWorkOrder(obj *workorder.WorkOrder) {
 	}
 }
 
-func (a *AppServiceController) GetCMDBAppService(errC chan<- error)  {
+func (a *AppServiceController) GetCMDBAppService(errC chan<- error) {
 	go func() {
 
 	}()
