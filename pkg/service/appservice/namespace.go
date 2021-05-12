@@ -104,18 +104,18 @@ func (n *NamespaceService) ListAppProjectLevel(level int, search string, parentA
 
 func (n *NamespaceService) ListResourcePoolLevel(level int, search string, parentApp string) (interface{}, error) {
 	filter := make(map[string]interface{})
-	if parentApp != ""{
+	if parentApp != "" {
 		filter["$or"] = []map[string]interface{}{
 			{
-				"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+				"metadata.name":   bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 				"spec.parent_app": parentApp,
 			},
 			{
-				"spec.desc": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+				"spec.desc":       bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 				"spec.parent_app": parentApp,
 			},
 		}
-	}else{
+	} else {
 		filter["$or"] = []map[string]interface{}{
 			{
 				"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
@@ -144,7 +144,7 @@ func (n *NamespaceService) Update(request *apiResource.Request) (core.IObject, e
 	}
 
 	filter := map[string]interface{}{
-		"spec.desc": request.Desc,
+		"spec.desc":     request.Desc,
 		"metadata.uuid": bson.M{"$ne": request.UUID},
 	}
 
@@ -161,7 +161,7 @@ func (n *NamespaceService) Update(request *apiResource.Request) (core.IObject, e
 	memory := 10024000
 
 	history.Spec.Before = map[string]interface{}{
-		"cpu": cpus,
+		"cpu":    cpus,
 		"memory": memory,
 	}
 
@@ -169,7 +169,6 @@ func (n *NamespaceService) Update(request *apiResource.Request) (core.IObject, e
 	obj.Spec.ParentApp = request.ParentApp
 	obj.Spec.Desc = request.Desc
 
-	req.GenerateVersion()
 	result, _, err := n.IService.Apply(common.DefaultNamespace, common.Namespace, obj.UUID, obj, true)
 	if err != nil {
 		return nil, err
@@ -177,11 +176,27 @@ func (n *NamespaceService) Update(request *apiResource.Request) (core.IObject, e
 
 	history.Spec.App = obj.UUID
 	history.Spec.Now = map[string]interface{}{
-		"cpu": request.Cpu,
+		"cpu":    request.Cpu,
 		"memory": request.Memory,
 	}
 
+	history.GenerateVersion()
 	if _, err = n.IService.Create(common.DefaultNamespace, common.History, history); err != nil {
+		return nil, err
+	}
+
+	dbObj := &appservice.AppResource{}
+	if err = n.IService.GetByFilter(common.DefaultNamespace, common.AppResource, dbObj, map[string]interface{}{
+		"spec.app": obj.Metadata.UUID,
+	}); err != nil {
+		log.Printf("Update AppResource Not Found Create New One: %v\n", err)
+	}
+
+	dbObj.Spec.App = obj.Metadata.UUID
+	dbObj.Spec.Threshold = 80
+	dbObj.Spec.Approval = false
+
+	if _, _, err = n.IService.Apply(common.DefaultNamespace, common.AppResource, dbObj.UUID, dbObj, false); err != nil {
 		return nil, err
 	}
 

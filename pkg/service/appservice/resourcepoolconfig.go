@@ -57,7 +57,6 @@ func (n *ResourcePoolConfigService) Update(data *apiResource.NamespaceRequest) (
 	dbObj.Spec.Memory = data.Memory
 	dbObj.Spec.Pod = data.Pod
 
-	dbObj.GenerateVersion()
 	return n.IService.Apply(common.DefaultNamespace, common.AppResource, dbObj.UUID, dbObj, false)
 }
 

@@ -156,6 +156,7 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 
 	history.Spec.Now = newAppResource
 	history.Spec.App = newAppResource.Spec.App
+	history.GenerateVersion()
 	if _, err = a.IService.Create(common.DefaultNamespace, common.History, history); err != nil {
 		return nil, false, http.StatusBadRequest, err
 	}
@@ -182,7 +183,6 @@ func (a *AppConfigService) UpdateAppConfig(data *apiResource.AppConfigRequest) (
 
 	dbObj.Spec.Config = data.Config
 	dbObj.Spec.App = data.App
-	dbObj.GenerateVersion()
 	return a.IService.Apply(common.DefaultNamespace, common.AppConfig, dbObj.UUID, dbObj, true)
 
 }
@@ -276,6 +276,7 @@ func (a *AppConfigService) OrderToResourceSuccess(obj *workorder.WorkOrder) erro
 		newHistory.Spec.Before = oldHistory[0].Spec.Now
 	}
 
+	newHistory.GenerateVersion()
 	if _, err = a.IService.Create(common.DefaultNamespace, common.History, newHistory); err != nil {
 		return err
 	}
