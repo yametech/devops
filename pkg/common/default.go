@@ -14,13 +14,21 @@ const (
 	Deploy      = "deploy"
 	Artifactory = "artifactory"
 
+	// Appservice
 	AppConfig    = "appconfig"
 	AppProject   = "appproject"
 	Namespace    = "namespace"
 	History      = "history"
 	AppResource  = "appresource"
 	GlobalConfig = "globalconfig"
+
+	// WorkOrder
 	WorkOrder    = "workorder"
+
+	// Base
+	GlobalModule = "globalmodule"
+	CollectionModule = "collectionmodule"
+	AllModule = "allmodule"
 )
 
 var (

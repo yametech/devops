@@ -8,37 +8,40 @@ import (
 
 type baseServer struct {
 	*api.Server
-	*baseService.UserService
-	*baseService.UserProjectService
+	*baseService.GlobalModuleService
+	*baseService.CollectionModuleService
+	*baseService.AllModuleService
 }
 
 func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 	base := &baseServer{
-		Server:             server,
-		UserService:        baseService.NewUser(server.IService),
-		UserProjectService: baseService.NewUserProjectService(server.IService),
+		Server:                  server,
+		GlobalModuleService:     baseService.NewGlobalModuleService(server.IService),
+		CollectionModuleService: baseService.NewCollectionModuleService(server.IService),
+		AllModuleService:        baseService.NewAllModuleService(server.IService),
 	}
 	group := base.Group(fmt.Sprintf("/%s", serviceName))
 
-	// watch
+	// globalmodule
 	{
-		group.GET("/userwatch", base.WatchUser)
+		group.GET("/globalmodule", base.ListGlobalModule)
+		group.POST("/globalmodule", base.CreateGlobalModule)
+		group.DELETE("/globalmodule/:uuid", base.DeleteGlobalModule)
 	}
 
-	//UserProjectService
+	// collectionmodule
 	{
-		group.GET("/users", base.ListUser)
-		group.GET("/user/:uuid", base.GetUser)
-		group.POST("/user", base.CreateUser)
-		group.PUT("/user/:uuid", base.UpdateUser)
-		group.DELETE("/user/:uuid", base.DeleteUser)
+		group.GET("/collectionmodule", base.ListCollectionModule)
+		group.POST("/collectionmodule", base.AddCollectionModule)
+		group.DELETE("/collectionmodule", base.DeleteCollectionModule)
 	}
 
-	// UserProject
+	// allmodule
 	{
-		group.POST("/project", base.CreateProject)
-		group.GET("/project", base.ListProject)
-
+		group.GET("/allmodule", base.ListAll)
+		group.POST("/allmodule/group", base.CreateGroup)
+		group.POST("/allmodule", base.CreateModule)
+		group.DELETE("/allmodule", base.DeleteGroupAndModule)
 	}
 
 	return base

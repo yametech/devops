@@ -47,6 +47,8 @@ func (a *AppConfigService) GetAppResources(appid string) ([]interface{}, error) 
 
 func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceRequest) (core.IObject, bool, int, error) {
 
+
+
 	namespaceFilter := map[string]interface{}{
 		"metadata.name": data.Name,
 		"spec.app":      data.App,
