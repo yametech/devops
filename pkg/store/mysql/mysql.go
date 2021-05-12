@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"fmt"
-	"github.com/yametech/devops/pkg/resource"
 	"github.com/yametech/devops/pkg/store"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -104,11 +103,7 @@ func Setup(uri, user, pw, database string, errC chan<- error) (*Mysql, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = conn.AutoMigrate(&resource.User{},)
 
-	if err != nil {
-		return nil, err
-	}
 
 	sqlDB.SetMaxIdleConns(5)
 	sqlDB.SetMaxOpenConns(100)
