@@ -14,8 +14,7 @@ func main() {
 	flag.StringVar(&storageUri, "storage_uri", "mongodb://10.200.10.46:27017/admin", "127.0.0.1:3306")
 	flag.Parse()
 
-	//errC := make(chan error)
-	//store, err := mysql.Setup(storageUri, user, pw, database, errC)
+
 	store, err, errC := mongo.NewMongo(storageUri)
 	if err != nil {
 		panic(err)
