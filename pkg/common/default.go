@@ -21,6 +21,11 @@ const (
 	AppResource  = "appresource"
 	GlobalConfig = "globalconfig"
 	WorkOrder    = "workorder"
+
+	GlobalModule     = "globalmodule"
+	CollectionModule = "collectionmodule"
+	AllModule        = "allmodule"
+	ModuleEntry      = "moduleentry"
 )
 
 var (
