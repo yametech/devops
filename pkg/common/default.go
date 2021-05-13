@@ -26,6 +26,7 @@ const (
 	CollectionModule = "collectionmodule"
 	AllModule        = "allmodule"
 	ModuleEntry      = "moduleentry"
+	RecentVisit      = "recentvisit"
 )
 
 var (
@@ -40,6 +41,7 @@ var (
 	GitPW        = "gitpw"
 	RegistryUser = "username"
 	RegistryPW   = "password"
+	DevopsUser   = "devopsuser"
 )
 
 //func init() {
@@ -62,4 +64,5 @@ func init() {
 	flag.StringVar(&GitPW, "gitpw", "devops-git_ABC312", "-gitpw=git_password")
 	flag.StringVar(&RegistryUser, "registryuser", "sushaolin", "-registryuser=registry_user")
 	flag.StringVar(&RegistryPW, "registrypw", "Ssl19960511.", "-registrypw=registry_password")
+	flag.StringVar(&DevopsUser, "devopsuser", DevopsUser, "-devopsuser=devops_user")
 }
