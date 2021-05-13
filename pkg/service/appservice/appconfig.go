@@ -48,6 +48,20 @@ func (a *AppConfigService) GetAppResources(appid string) ([]interface{}, error) 
 func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceRequest) (core.IObject, bool, int, error) {
 
 
+	resourceFilter := map[string]interface{}{
+		"spec.parent_app": data.ParentApp,
+		"spec.app": data.App,
+		"metadata.uuid": bson.M{"$ne": data.UUID},
+	}
+
+	 count, err := a.IService.Count(common.DefaultNamespace, common.AppResource, resourceFilter)
+	 if err != nil {
+	 	log.Printf("UpdateConfigResource parentApp count error: %v\n", err)
+	 }
+
+	 if count > 0 {
+	 	return nil, false, http.StatusForbidden, errors.New("该命名空间已被当前应用的其他资源配置所使用")
+	 }
 
 	namespaceFilter := map[string]interface{}{
 		"metadata.name": data.Name,
@@ -56,18 +70,18 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 	}
 
 	exist := &appservice.AppResource{}
-	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, exist, namespaceFilter); err == nil {
-		return nil, false, http.StatusBadRequest ,errors.New("this config resource is exist")
+	if err = a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, exist, namespaceFilter); err == nil {
+		return nil, false, http.StatusBadRequest ,errors.New("该资源配置信息已存在")
 	}
 
 	appResource := &appservice.AppResource{}
-	if err := a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, data.UUID, appResource); err != nil {
+	if err = a.IService.GetByUUID(common.DefaultNamespace, common.AppResource, data.UUID, appResource); err != nil {
 		log.Printf("UpdateConfigResource not found Create New one: %v\n", err)
 	}
 
 	// check the order status
 	if appResource.Spec.ResourceStatus == appservice.Checking {
-		return nil, false, http.StatusUnauthorized, errors.New("the workorder is checking")
+		return nil, false, http.StatusUnauthorized, errors.New("该资源工单正在审核中")
 	}
 
 	// Get Cpus and Memories from cmdb
@@ -79,8 +93,8 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 	parentFilter := map[string]interface{}{
 		"spec.app": data.ParentApp,
 	}
-	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, appParentResource, parentFilter); err != nil {
-		return nil, false, http.StatusBadRequest, errors.New("have no this namespace")
+	if err = a.IService.GetByFilter(common.DefaultNamespace, common.AppResource, appParentResource, parentFilter); err != nil {
+		return nil, false, http.StatusBadRequest, errors.New("没有该命名空间")
 	}
 
 	filter := map[string]interface{}{
@@ -111,22 +125,22 @@ func (a *AppConfigService) UpdateConfigResource(data *apiResource.NamespaceReque
 	newMemories += data.Memory
 
 	if appParentResource.Spec.Threshold < int((newCpus/cmdbCpus)*100) {
-		return nil, false, http.StatusPaymentRequired,errors.New("The total CPU resource exceeds the limit")
+		return nil, false, http.StatusPaymentRequired,errors.New("命名空间CPU使用总量超过阈值限制")
 	}
 	if appParentResource.Spec.Threshold < int((newMemories/cmdbMemories)*100) {
-		return nil, false, http.StatusPaymentRequired, errors.New("The total Memory resource exceeds the limit")
+		return nil, false, http.StatusPaymentRequired, errors.New("命名空间内存使用总量超过阈值限制")
 	}
 
 	// check the other resources
 	if appParentResource.Spec.Approval {
 		if data.Cpu > appParentResource.Spec.Cpu {
-			return nil, false, http.StatusPaymentRequired, errors.New("the Cpu resource exceeds the limit")
+			return nil, false, http.StatusPaymentRequired, errors.New("CPU超过使用限制")
 		}
 		if data.Memory > appParentResource.Spec.Memory {
-			return nil, false, http.StatusPaymentRequired, errors.New("the Memory resource exceeds the limit")
+			return nil, false, http.StatusPaymentRequired, errors.New("内存超过使用限制")
 		}
 		if data.Pod > appParentResource.Spec.Pod {
-			return nil, false, http.StatusPaymentRequired, errors.New("the Pod resource exceeds the limit")
+			return nil, false, http.StatusPaymentRequired, errors.New("Pod副本超过使用限制")
 		}
 	}
 
