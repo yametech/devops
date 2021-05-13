@@ -20,9 +20,11 @@ func UnstructuredObjectToInstanceObj(src interface{}, dst interface{}) error {
 	return json.Unmarshal(data, dst)
 }
 
-func RecentVisit(user string, service service.IService) gin.HandlerFunc {
+func RecentVisit(service service.IService) gin.HandlerFunc {
 	return func(g *gin.Context) {
 		uuid := g.Query("uuid")
+		userspace := g.Request.Header["user"]
+		user := userspace[0]
 		page := 1
 		pageSize := 10
 		offset := (page - 1) * pageSize

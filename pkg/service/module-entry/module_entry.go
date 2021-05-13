@@ -55,31 +55,30 @@ func (m *ModuleEntry) Create(user, uuid string, page, pageSize int64) ([]*base.M
 			moduleSlice = append(moduleSlice, module)
 			return moduleSlice, nil
 		}
-	} else {
-		uuidSlice := make([]string, 0)
-		uuidSlice = append(uuidSlice, uuid)
-		me := &base.PrivateModule{
-			Metadata: core.Metadata{},
-			Spec: base.PrivateModuleSpec{
-				User:    user,
-				Modules: uuidSlice,
-			},
-		}
-
-		_, err := m.IService.Create(common.DefaultNamespace, common.ModuleEntry, me)
-		if err != nil {
-			return nil, err
-		}
-		module := &base.Module{}
-		moduleSlice := make([]*base.Module, 0)
-		err = m.IService.GetByUUID(common.DefaultNamespace, common.AllModule, uuid, module)
-		if err != nil {
-			return nil, err
-		}
-		moduleSlice = append(moduleSlice, module)
-		return moduleSlice, nil
 	}
-	return nil, err
+
+	uuidSlice := make([]string, 0)
+	uuidSlice = append(uuidSlice, uuid)
+	me := &base.PrivateModule{
+		Metadata: core.Metadata{},
+		Spec: base.PrivateModuleSpec{
+			User:    user,
+			Modules: uuidSlice,
+		},
+	}
+
+	_, err = m.IService.Create(common.DefaultNamespace, common.ModuleEntry, me)
+	if err != nil {
+		return nil, err
+	}
+	module := &base.Module{}
+	moduleSlice := make([]*base.Module, 0)
+	err = m.IService.GetByUUID(common.DefaultNamespace, common.AllModule, uuid, module)
+	if err != nil {
+		return nil, err
+	}
+	moduleSlice = append(moduleSlice, module)
+	return moduleSlice, nil
 }
 
 func (m *ModuleEntry) Delete(user, uuid string, page, pageSize int64) ([]*base.Module, error) {

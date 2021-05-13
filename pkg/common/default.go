@@ -41,7 +41,6 @@ var (
 	GitPW        = "gitpw"
 	RegistryUser = "username"
 	RegistryPW   = "password"
-	DevopsUser   = "devopsuser"
 
 	//gateway etcd
 	EtcdAddress = "http://10.200.65.200:2379"
@@ -56,5 +55,4 @@ func init() {
 	flag.StringVar(&GitPW, "gitpw", "devops-git_ABC312", "-gitpw=git_password")
 	flag.StringVar(&RegistryUser, "registryuser", "sushaolin", "-registryuser=registry_user")
 	flag.StringVar(&RegistryPW, "registrypw", "Ssl19960511.", "-registrypw=registry_password")
-	flag.StringVar(&DevopsUser, "devopsuser", DevopsUser, "-devopsuser=devops_user")
 }
