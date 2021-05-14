@@ -44,6 +44,7 @@ func NewArBaseServer(serviceName string, server *api.Server) *baseServer {
 	//Deploy
 	{
 		group.GET("/deploy", base.ListDeploy)
+		group.GET("/deploy/:uuid", base.GetDeploy)
 		group.POST("/deploy", base.CreateDeploy)
 
 	}
