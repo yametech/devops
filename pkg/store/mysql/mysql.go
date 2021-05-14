@@ -104,7 +104,6 @@ func Setup(uri, user, pw, database string, errC chan<- error) (*Mysql, error) {
 		return nil, err
 	}
 
-
 	sqlDB.SetMaxIdleConns(5)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxIdleTime(time.Second * 600)

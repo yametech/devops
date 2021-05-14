@@ -1,4 +1,4 @@
-all: build-appservice build-artifactory build-globalconfig build-watch-controller build-workorder build-appservice-controller
+all: build-appservice build-artifactory build-globalconfig build-watch-controller build-workorder build-appservice-controller build-base
 
 
 build-appservice:
@@ -25,3 +25,7 @@ build-workorder:
 build-appservice-controller:
 	docker build -t harbor.ym/devops/devops-appservice-controller:v0.0.1 -f docker/Dockerfile.appservice-controller .
 	docker push harbor.ym/devops/devops-appservice-controller:v0.0.1
+
+build-base:
+	docker build -t harbor.ym/devops/devops-base:v0.0.1 -f docker/Dockerfile.base .
+	docker push harbor.ym/devops/devops-base:v0.0.1
