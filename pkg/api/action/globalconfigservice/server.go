@@ -3,8 +3,8 @@ package globalconfigservice
 import (
 	"fmt"
 	"github.com/yametech/devops/pkg/api"
+	"github.com/yametech/devops/pkg/recentvisit"
 	allConfigService "github.com/yametech/devops/pkg/service/globalservice"
-	"github.com/yametech/devops/pkg/utils"
 )
 
 type Server struct {
@@ -18,7 +18,7 @@ func NewGlobalServiceServer(serviceName string, server *api.Server) *Server {
 		allConfigService.NewAllConfigService(server.IService),
 	}
 	group := allServer.Group(fmt.Sprintf("/%s", serviceName))
-	group.Use(utils.RecentVisit(server))
+	group.Use(recentvisit.RecentVisit(server))
 	//allConfigProject
 	{
 		group.GET("/globalconfig-project", allServer.ListGlobalConfig)
