@@ -1,4 +1,4 @@
-package recentvisit
+package base
 
 import (
 	"github.com/pkg/errors"
@@ -6,8 +6,6 @@ import (
 	"github.com/yametech/devops/pkg/resource/base"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/utils"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type RecentVisit struct {
@@ -18,12 +16,13 @@ func NewRecentVisit(i service.IService) *RecentVisit {
 	return &RecentVisit{i}
 }
 
-func (r *RecentVisit) List(user string, page, pageSize int64) ([]*base.Module, error) {
+func (r *RecentVisit) ListRecent(user string, page, pageSize int64) ([]*base.Module, error) {
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
-	if user != "" {
-		filter["spec.User"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + user + ".*", Options: "i"}}
-	}
+	//if user != "" {
+	//	filter["spec.User"] = user
+	//}
+	filter["spec.User"] = user
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}

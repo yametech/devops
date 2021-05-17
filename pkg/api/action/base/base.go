@@ -3,6 +3,7 @@ package base
 import (
 	"fmt"
 	"github.com/yametech/devops/pkg/api"
+	"github.com/yametech/devops/pkg/recentvisit"
 	baseService "github.com/yametech/devops/pkg/service/base"
 )
 
@@ -11,6 +12,9 @@ type baseServer struct {
 	*baseService.GlobalModuleService
 	*baseService.CollectionModuleService
 	*baseService.AllModuleService
+	*baseService.ModuleEntry
+	*baseService.RecentVisit
+	*baseService.ShowAllGroupModule
 }
 
 func NewBaseServer(serviceName string, server *api.Server) *baseServer {
@@ -19,12 +23,15 @@ func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 		GlobalModuleService:     baseService.NewGlobalModuleService(server.IService),
 		CollectionModuleService: baseService.NewCollectionModuleService(server.IService),
 		AllModuleService:        baseService.NewAllModuleService(server.IService),
+		ModuleEntry:             baseService.NewModuleEntry(server.IService),
+		RecentVisit:             baseService.NewRecentVisit(server.IService),
+		ShowAllGroupModule:      baseService.NewShowAllGroupModule(server.IService),
 	}
 	group := base.Group(fmt.Sprintf("/%s", serviceName))
-
+	//group.Use(recentvisit.RecentVisit(server))
 	// globalmodule
 	{
-		group.GET("/globalmodule", base.ListGlobalModule)
+		group.GET("/globalmodule", recentvisit.RecentVisit(server), base.ListGlobalModule)
 		group.POST("/globalmodule", base.CreateGlobalModule)
 		group.DELETE("/globalmodule/:uuid", base.DeleteGlobalModule)
 	}
@@ -42,6 +49,24 @@ func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 		group.POST("/allmodule/group", base.CreateGroup)
 		group.POST("/allmodule", base.CreateModule)
 		group.DELETE("/allmodule", base.DeleteGroupAndModule)
+	}
+
+	// module_entry
+	{
+		group.GET("module_entry", base.QueryModuleEntry)
+		group.POST("module_entry/:uuid", base.CreateModuleEntry)
+		group.DELETE("module_entry/:uuid", base.DeleteModuleEntry)
+	}
+
+	//recent_visit
+	{
+		group.GET("recent_visit", base.ListRecentVisit)
+	}
+
+	//showallgroupmodule
+	{
+		group.GET("showallgroup", base.ListGroup)
+		group.GET("showallmodule", base.ListModule)
 	}
 
 	return base

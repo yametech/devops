@@ -13,15 +13,17 @@ import (
 func RecentVisit(service service.IService) gin.HandlerFunc {
 	return func(g *gin.Context) {
 		uuid := g.Query("uuid")
-		userspace := g.Request.Header["user"]
-		user := userspace[0]
+		//userspace := g.Request.Header["user"]
+		//user := userspace[0]
+		user := ""
 		page := 1
 		pageSize := 10
 		offset := (page - 1) * pageSize
 		filter := map[string]interface{}{}
-		if user != "" {
-			filter["spec.User"] = user
-		}
+		//if user != "" {
+		//	filter["spec.User"] = user
+		//}
+		filter["spec.User"] = user
 		sort := map[string]interface{}{
 			"metadata.created_time": -1,
 		}
