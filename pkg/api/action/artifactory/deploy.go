@@ -19,7 +19,6 @@ func (b *baseServer) WatchDeploy(g *gin.Context) {
 		case <-g.Writer.CloseNotify():
 			closed <- struct{}{}
 			close(closed)
-			g.SSEvent("", streamEndEvent)
 			return false
 		case object, ok := <-objectChan:
 			if !ok {
