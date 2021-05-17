@@ -14,6 +14,7 @@ type RequestArtifact struct {
 	Registry    string `json:"registry"`
 	ProjectFile string `json:"project_file"`
 	ProjectPath string `json:"project_path"`
+	UserName    string `json:"user_name"`
 }
 
 type ArtifactSpec struct {

@@ -12,11 +12,11 @@ import (
 	arResource "github.com/yametech/devops/pkg/resource/artifactory"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/utils"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
+	"io/ioutil"
 	"net/http"
 	urlPkg "net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -36,11 +36,14 @@ func (a *ArtifactService) Watch(version string) (chan core.IObject, chan struct{
 	return objectChan, closed
 }
 
-func (a *ArtifactService) List(name string, page, pageSize int64) ([]interface{}, int64, error) {
+func (a *ArtifactService) List(name, status string, page, pageSize int64) ([]interface{}, int64, error) {
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
 	if name != "" {
-		filter["spec.app_name"] = bson.M{"$regex": primitive.Regex{Pattern: ".*" + name + ".*", Options: "i"}}
+		filter["spec.app_name"] = name
+	}
+	if status != "" {
+		filter["spec.artifact_status"], _ = strconv.Atoi(status)
 	}
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
@@ -97,23 +100,24 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 		reqAr.Tag = strings.ToLower(reqAr.Tag)
 	}
 
-	appName := fmt.Sprintf("%s-%d", reqAr.AppName, time.Now().UnixNano())
+	appName := fmt.Sprintf("%s-%d", reqAr.AppName, time.Now().Unix())
 
 	ar := &arResource.Artifact{
 		Metadata: core.Metadata{
 			Name: appName,
 		},
 		Spec: arResource.ArtifactSpec{
-			GitUrl:      reqAr.GitUrl,
-			AppName:     reqAr.AppName,
-			Branch:      reqAr.Branch,
-			Tag:         reqAr.Tag,
-			Remarks:     reqAr.Remarks,
-			Language:    reqAr.Language,
-			Registry:    registry,
-			ProjectFile: reqAr.ProjectFile,
-			ProjectPath: reqAr.ProjectPath,
-			Images:      imageUrl,
+			GitUrl:       reqAr.GitUrl,
+			AppName:      reqAr.AppName,
+			Branch:       reqAr.Branch,
+			Tag:          reqAr.Tag,
+			Remarks:      reqAr.Remarks,
+			Language:     reqAr.Language,
+			Registry:     registry,
+			ProjectFile:  reqAr.ProjectFile,
+			ProjectPath:  reqAr.ProjectPath,
+			Images:       imageUrl,
+			CreateUserId: reqAr.UserName,
 		},
 	}
 	err := a.CheckRegistryProject(ar)
@@ -155,6 +159,8 @@ func (a *ArtifactService) CheckRegistryProject(ar *arResource.Artifact) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode == 404 {
 		err = a.CreateRegistryProject(HarborAddress, catalogue)
 		if err != nil {
@@ -194,6 +200,8 @@ func (a *ArtifactService) CreateRegistryProject(HarborAddress, projectName strin
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode == 201 {
 		return nil
 	}
@@ -280,7 +288,7 @@ func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
 	req, err := http.NewRequest("GET", url, strings.NewReader(urlPkg.Values{}.Encode()))
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 	req.SetBasicAuth(common.GitUser, common.GitPW)
 	tr := &http.Transport{
@@ -289,7 +297,12 @@ func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
 	res, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		return nil, errors.New("git连接出错")
 	}
 
 	if res != nil {
@@ -321,4 +334,41 @@ func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 		return sliceBranch, err
 	}
 	return nil, nil
+}
+
+func (a *ArtifactService) GetBranchByGithub(org string, name string) ([]string, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/branches", org, name)
+	req, err := http.NewRequest("GET", url, strings.NewReader(urlPkg.Values{}.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	client := &http.Client{Timeout: 30 * time.Second}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		return nil, errors.New("git连接出错")
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	if res.Body == nil {
+		return nil, nil
+	}
+	type branch struct {
+		Name string `json:"name"`
+	}
+	var branches []branch
+	err = json.Unmarshal(body, &branches)
+	if err != nil {
+		return nil, err
+	}
+	sliceBrancher := make([]string, 0)
+	for _, v := range branches {
+		sliceBrancher = append(sliceBrancher, v.Name)
+	}
+	return sliceBrancher, nil
 }

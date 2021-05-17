@@ -7,6 +7,7 @@ import (
 	"github.com/yametech/devops/pkg/core"
 	arResource "github.com/yametech/devops/pkg/resource/artifactory"
 	"github.com/yametech/devops/pkg/service"
+	"github.com/yametech/devops/pkg/utils"
 	"strings"
 	"time"
 )
@@ -26,12 +27,16 @@ func (a *DeployService) Watch(version string) (chan core.IObject, chan struct{})
 	return objectChan, closed
 }
 
-func (a *DeployService) List(name string, page, pageSize int64) ([]interface{}, int64, error) {
+func (a *DeployService) List(name map[string]interface{}, page, pageSize int64) ([]interface{}, int64, error) {
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
-	if name != "" {
-		filter["spec.app_name"] = name
+
+	for k, v := range name {
+		if v != "" {
+			filter[k] = v
+		}
 	}
+
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
@@ -48,25 +53,78 @@ func (a *DeployService) List(name string, page, pageSize int64) ([]interface{}, 
 
 }
 
+func (a *DeployService) GetByUUID(uuid string) (*arResource.Deploy, error) {
+	dp := &arResource.Deploy{}
+	err := a.IService.GetByUUID(common.DefaultNamespace, common.Deploy, uuid, dp)
+	if err != nil {
+		return nil, err
+	}
+
+	return dp, nil
+}
+
+func (a *DeployService) GetByAppName(appName, namespace string) (*arResource.Deploy, error) {
+	dp := &arResource.Deploy{}
+
+	filter := map[string]interface{}{
+		"spec.app_name":         appName,
+		"spec.artifact_status":  arResource.Deployed,
+		"spec.deploy_namespace": namespace,
+	}
+	sort := map[string]interface{}{
+		"metadata.created_time": -1,
+	}
+	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.Deploy, filter, sort, 0, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(data) < 1 {
+		return nil, nil
+	}
+	err = utils.UnstructuredObjectToInstanceObj(data[0], dp)
+	if err != nil {
+		return nil, err
+	}
+
+	return dp, nil
+}
+
 func (a *DeployService) Create(request *apiResource.RequestDeploy) error {
+	if request.Name == "" {
+		request.Name = fmt.Sprintf("%d", time.Now().Unix())
+	}
+
 	deploy := &arResource.Deploy{
 		Metadata: core.Metadata{
-			Name: fmt.Sprintf("%s-%d", request.AppName, time.Now().Unix()),
+			Name: request.Name,
 		},
 		Spec: arResource.DeploySpec{
-			DeployNamespace: request.DeployNamespace,
-			Replicas:        request.Replicas,
-			AppName:         request.AppName,
-			DeploySpace:     request.DeploySpace,
-			ServicePorts:    request.ServicePorts,
-			Containers:      request.Containers,
-			StorageClaims:   request.StorageClaims,
+			DeployNamespace:     request.DeployNamespace,
+			DeployNamespaceUUID: request.DeployNamespaceUUID,
+			Replicas:            request.Replicas,
+			AppName:             request.AppName,
+			DeploySpace:         request.DeploySpace,
+			ServicePorts:        request.ServicePorts,
+			Containers:          request.Containers,
+			StorageClaims:       request.StorageClaims,
+			CreateUserId:        request.UserName,
+			CreateTeam:          request.Team,
 		},
+	}
+	for k, _ := range deploy.Spec.Containers {
+		MergeEnvVar(&deploy.Spec.Containers[k])
+	}
+
+	for k, _ := range deploy.Spec.ServicePorts {
+		deploy.Spec.ServicePorts[k].Protocol = strings.ToUpper(deploy.Spec.ServicePorts[k].Protocol)
+	}
+
+	if err := a.GetArInfo(deploy); err != nil {
+		return err
 	}
 
 	deploy.GenerateVersion()
-	_, err := a.IService.Create(common.DefaultNamespace, common.Deploy, deploy)
-	if err != nil {
+	if _, err := a.IService.Create(common.DefaultNamespace, common.Deploy, deploy); err != nil {
 		return err
 	}
 	go a.sendCD(deploy)
@@ -84,7 +142,7 @@ func (a *DeployService) sendCD(deploy *arResource.Deploy) {
 		if volume.VolumeMountType == arResource.ConfigMap {
 			volumeNameList := strings.Split(volume.Path, "/")
 			volumeName := volumeNameList[len(volumeNameList)-1]
-
+			volume.Key = strings.ReplaceAll(volumeName, ".", "-")
 			configVolume["mountName"] = volume.Name
 			configVolume["mountPath"] = volume.Path
 			configVolume["kind"] = "configmap"
@@ -114,26 +172,17 @@ func (a *DeployService) sendCD(deploy *arResource.Deploy) {
 
 	cdInfo := &arResource.ArtifactCDInfo{
 		ArtifactInfo:    artifactInfo,
-		CPULimit:        container.LimitCPU,
-		CPURequests:     container.RequiredCPU,
+		CPULimit:        Strval(container.LimitCPU),
+		CPURequests:     Strval(container.RequiredCPU),
 		DeployNamespace: deploy.Spec.DeployNamespace,
 		DeployType:      "web", //useless key
-		MemLimit:        container.LimitMemory,
-		MemRequests:     container.RequiredMemory,
+		MemLimit:        fmt.Sprintf("%dM", container.LimitMemory),
+		MemRequests:     fmt.Sprintf("%dM", container.RequiredMemory),
 		Policy:          container.ImagePullPolicy,
 		Replicas:        deploy.Spec.Replicas,
 		ServiceImage:    container.Images,
 		ServiceName:     deploy.Spec.AppName,
 		StorageCapacity: "100m", //useless key
-	}
-	sendCDInfo, err := core.ToMap(cdInfo)
-	if err != nil {
-		deploy.Spec.DeployStatus = arResource.DeployFail
-		_, _, err = a.IService.Apply(common.DefaultNamespace, common.Deploy, deploy.UUID, deploy, false)
-		if err != nil {
-			fmt.Printf("sendcd initialize save error %s", err)
-		}
-		return
 	}
 
 	var actionName string
@@ -142,8 +191,20 @@ func (a *DeployService) sendCD(deploy *arResource.Deploy) {
 		actionName = common.SmartCityCD
 	case arResource.Azure:
 		actionName = common.AzureCD
+		ReplaceRegistry(&cdInfo.ServiceImage)
 	case arResource.TungChung:
 		actionName = common.TungChungCD
+		ReplaceRegistry(&cdInfo.ServiceImage)
+	}
+
+	sendCDInfo, err := core.ToMap(cdInfo)
+	if err != nil {
+		deploy.Spec.DeployStatus = arResource.DeployFail
+		_, _, err = a.IService.Apply(common.DefaultNamespace, common.Deploy, deploy.UUID, deploy, false)
+		if err != nil {
+			fmt.Printf("sendcd initialize save error %s", err)
+		}
+		return
 	}
 
 	stepName := fmt.Sprintf("%s_%s", common.CD, deploy.UUID)
@@ -162,4 +223,20 @@ func (a *DeployService) sendCD(deploy *arResource.Deploy) {
 		fmt.Printf("sendcd sendEchoer success save error %s", err)
 	}
 
+}
+
+func ReplaceRegistry(old *string) {
+	newReg := strings.Replace(*old, "registry-d.ym", "registry-t.iauto360.cn", 1)
+	*old = newReg
+}
+
+func (a *DeployService) GetArInfo(deploy *arResource.Deploy) error {
+
+	for k, v := range deploy.Spec.Containers {
+		err := a.IService.GetByUUID(common.DefaultNamespace, common.Artifactory, v.ImagesUUID, &deploy.Spec.Containers[k].ImagesInfo)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
