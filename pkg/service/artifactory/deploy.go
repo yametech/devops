@@ -91,7 +91,7 @@ func (a *DeployService) GetByAppName(appName, namespace string) (*arResource.Dep
 
 func (a *DeployService) Create(request *apiResource.RequestDeploy) error {
 	if request.Name == "" {
-		request.Name = fmt.Sprintf("%d", time.Now().Unix())
+		request.Name = time.Now().Format("20060102-1504-05")
 	}
 
 	deploy := &arResource.Deploy{
