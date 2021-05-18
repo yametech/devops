@@ -29,11 +29,10 @@ func (a *DeployService) Watch(version string) (chan core.IObject, chan struct{})
 
 func (a *DeployService) List(name map[string]interface{}, page, pageSize int64) ([]interface{}, int64, error) {
 	offset := (page - 1) * pageSize
-	filter := map[string]interface{}{}
 
 	for k, v := range name {
-		if v != "" {
-			filter[k] = v
+		if v == "" {
+			delete(name, k)
 		}
 	}
 
@@ -41,11 +40,11 @@ func (a *DeployService) List(name map[string]interface{}, page, pageSize int64) 
 		"metadata.created_time": -1,
 	}
 
-	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.Deploy, filter, sort, offset, pageSize)
+	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.Deploy, name, sort, offset, pageSize)
 	if err != nil {
 		return nil, 0, err
 	}
-	count, err := a.IService.Count(common.DefaultNamespace, common.Deploy, filter)
+	count, err := a.IService.Count(common.DefaultNamespace, common.Deploy, name)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -91,7 +90,7 @@ func (a *DeployService) GetByAppName(appName, namespace string) (*arResource.Dep
 
 func (a *DeployService) Create(request *apiResource.RequestDeploy) error {
 	if request.Name == "" {
-		request.Name = fmt.Sprintf("%d", time.Now().Unix())
+		request.Name = time.Now().Format("20060102-1504-05")
 	}
 
 	deploy := &arResource.Deploy{
@@ -137,13 +136,13 @@ func (a *DeployService) sendCD(deploy *arResource.Deploy) {
 	container := deploy.Spec.Containers[0]
 	configVolumes := make([]map[string]interface{}, 0)
 
-	for _, volume := range container.VolumeMount {
+	for k, volume := range container.VolumeMount {
 		configVolume := make(map[string]interface{})
 		if volume.VolumeMountType == arResource.ConfigMap {
 			volumeNameList := strings.Split(volume.Path, "/")
 			volumeName := volumeNameList[len(volumeNameList)-1]
 			volume.Key = strings.ReplaceAll(volumeName, ".", "-")
-			configVolume["mountName"] = volume.Name
+			configVolume["mountName"] = fmt.Sprintf("%s-%d", volume.Name, k)
 			configVolume["mountPath"] = volume.Path
 			configVolume["kind"] = "configmap"
 			configVolume["cmItems"] = []map[string]interface{}{
