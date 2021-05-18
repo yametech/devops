@@ -22,7 +22,7 @@ func (r *RecentVisit) ListRecent(user string, page, pageSize int64) ([]*base.Mod
 	//if user != "" {
 	//	filter["spec.User"] = user
 	//}
-	filter["spec.User"] = user
+	filter["spec.user"] = user
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
@@ -43,13 +43,13 @@ func (r *RecentVisit) ListRecent(user string, page, pageSize int64) ([]*base.Mod
 		reverse(privateModule.Spec.Modules)
 		for _, v := range privateModule.Spec.Modules {
 			module := &base.Module{}
-			err := r.IService.GetByUUID(common.DefaultNamespace, common.RecentVisit, v, module)
+			err := r.IService.GetByUUID(common.DefaultNamespace, common.AllModule, v, module)
 			if err != nil {
 				return nil, err
 			}
 			moduleSlice = append(moduleSlice, module)
-			return moduleSlice, nil
 		}
+		return moduleSlice, nil
 	}
 	return nil, errors.New("该用户没有最近访问记录！")
 }

@@ -23,7 +23,7 @@ func (m *ModuleEntry) CreateEntry(user, uuid string, page, pageSize int64) ([]*b
 	//if user != "" {
 	//	filter["spec.User"] = user
 	//}
-	filter["spec.User"] = user
+	filter["spec.user"] = user
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
@@ -53,8 +53,8 @@ func (m *ModuleEntry) CreateEntry(user, uuid string, page, pageSize int64) ([]*b
 				return nil, err
 			}
 			moduleSlice = append(moduleSlice, module)
-			return moduleSlice, nil
 		}
+		return moduleSlice, nil
 	}
 
 	uuidSlice := make([]string, 0)
@@ -87,7 +87,7 @@ func (m *ModuleEntry) DeleteEntry(user, uuid string, page, pageSize int64) ([]*b
 	//if user != "" {
 	//	filter["spec.User"] =user
 	//}
-	filter["spec.User"] = user
+	filter["spec.user"] = user
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
@@ -122,8 +122,8 @@ func (m *ModuleEntry) DeleteEntry(user, uuid string, page, pageSize int64) ([]*b
 				return nil, err
 			}
 			moduleSlice = append(moduleSlice, module)
-			return moduleSlice, nil
 		}
+		return moduleSlice, nil
 	}
 	return nil, errors.New("删除错误！")
 }
@@ -134,7 +134,7 @@ func (m *ModuleEntry) QueryEntry(user string, page, pageSize int64) ([]*base.Mod
 	//if user != "" {
 	//	filter["spec.User"] =user
 	//}
-	filter["spec.User"] = user
+	filter["spec.user"] = user
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
@@ -159,8 +159,8 @@ func (m *ModuleEntry) QueryEntry(user string, page, pageSize int64) ([]*base.Mod
 				return nil, err
 			}
 			moduleSlice = append(moduleSlice, module)
-			return moduleSlice, nil
 		}
+		return moduleSlice, nil
 	}
-	return nil, errors.New("查询错误！")
+	return nil, errors.New("查询错误,该用户没有添加快捷入口！")
 }

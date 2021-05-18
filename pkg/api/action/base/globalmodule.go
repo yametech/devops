@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func (b *baseServer) CreateGlobalModule(g *gin.Context)  {
+func (b *baseServer) CreateGlobalModule(g *gin.Context) {
 	request := &apiResource.ModuleRequest{}
 	if err := g.ShouldBindJSON(request); err != nil {
 		api.ResponseError(g, err)
@@ -24,7 +24,7 @@ func (b *baseServer) CreateGlobalModule(g *gin.Context)  {
 	api.ResponseSuccess(g, response, "")
 }
 
-func (b *baseServer) ListGlobalModule(g *gin.Context)  {
+func (b *baseServer) ListGlobalModule(g *gin.Context) {
 	search := g.Query("search")
 	page, err := strconv.ParseInt(g.DefaultQuery("page", "1"), 10, 64)
 	if err != nil {

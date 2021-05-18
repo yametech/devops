@@ -3,7 +3,6 @@ package base
 import (
 	"fmt"
 	"github.com/yametech/devops/pkg/api"
-	"github.com/yametech/devops/pkg/recentvisit"
 	baseService "github.com/yametech/devops/pkg/service/base"
 )
 
@@ -28,10 +27,9 @@ func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 		ShowAllGroupModule:      baseService.NewShowAllGroupModule(server.IService),
 	}
 	group := base.Group(fmt.Sprintf("/%s", serviceName))
-	//group.Use(recentvisit.RecentVisit(server))
 	// globalmodule
 	{
-		group.GET("/globalmodule", recentvisit.RecentVisit(server), base.ListGlobalModule)
+		group.GET("/globalmodule", base.ListGlobalModule)
 		group.POST("/globalmodule", base.CreateGlobalModule)
 		group.DELETE("/globalmodule/:uuid", base.DeleteGlobalModule)
 	}
@@ -54,8 +52,8 @@ func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 	// module_entry
 	{
 		group.GET("module_entry", base.QueryModuleEntry)
-		group.POST("module_entry/:uuid", base.CreateModuleEntry)
-		group.DELETE("module_entry/:uuid", base.DeleteModuleEntry)
+		group.POST("module_entry", base.CreateModuleEntry)
+		group.DELETE("module_entry", base.DeleteModuleEntry)
 	}
 
 	//recent_visit
@@ -63,6 +61,7 @@ func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 		group.GET("recent_visit", base.ListRecentVisit)
 	}
 
+	//group.Use(recentvisit.RecentVisit(server))
 	//showallgroupmodule
 	{
 		group.GET("showallgroup", base.ListGroup)
