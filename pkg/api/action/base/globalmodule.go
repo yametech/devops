@@ -26,12 +26,12 @@ func (b *baseServer) CreateGlobalModule(g *gin.Context) {
 
 func (b *baseServer) ListGlobalModule(g *gin.Context) {
 	search := g.Query("search")
-	page, err := strconv.ParseInt(g.DefaultQuery("page", "1"), 10, 64)
+	page, err := strconv.ParseInt(g.DefaultQuery("page", "0"), 10, 64)
 	if err != nil {
 		api.ResponseError(g, errors.New("page need int type"))
 		return
 	}
-	pageSize, err := strconv.ParseInt(g.DefaultQuery("page_size", "10"), 10, 64)
+	pageSize, err := strconv.ParseInt(g.DefaultQuery("page_size", "0"), 10, 64)
 	if err != nil {
 		api.ResponseError(g, errors.New("pageSize need int type"))
 		return

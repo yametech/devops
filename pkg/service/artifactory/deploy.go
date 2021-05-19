@@ -206,7 +206,9 @@ func (a *DeployService) sendCD(deploy *arResource.Deploy) {
 		return
 	}
 
-	stepName := fmt.Sprintf("%s_%s", common.CD, deploy.UUID)
+	appName := strings.Replace(deploy.Spec.AppName, "_", "", -1)
+	appName = strings.Replace(appName, "-", "", -1)
+	stepName := fmt.Sprintf("%s_%s_%s", common.CD, deploy.UUID, appName)
 	if !SendEchoer(stepName, actionName, sendCDInfo) {
 		deploy.Spec.DeployStatus = arResource.DeployFail
 		_, _, err = a.IService.Apply(common.DefaultNamespace, common.Deploy, deploy.UUID, deploy, false)
