@@ -27,6 +27,8 @@ const (
 	GlobalModule     = "globalmodule"
 	CollectionModule = "collectionmodule"
 	AllModule        = "allmodule"
+	ModuleEntry      = "moduleentry"
+	RecentVisit      = "recentvisit"
 )
 
 var (

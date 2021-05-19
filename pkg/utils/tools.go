@@ -1,6 +1,8 @@
 package utils
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 func UnstructuredObjectToInstanceObj(src interface{}, dst interface{}) error {
 	data, err := json.Marshal(src)
