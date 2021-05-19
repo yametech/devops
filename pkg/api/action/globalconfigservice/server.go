@@ -17,7 +17,6 @@ func NewGlobalServiceServer(serviceName string, server *api.Server) *Server {
 		allConfigService.NewAllConfigService(server.IService),
 	}
 	group := allServer.Group(fmt.Sprintf("/%s", serviceName))
-
 	//allConfigProject
 	{
 		group.GET("/globalconfig-project", allServer.ListGlobalConfig)
