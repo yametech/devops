@@ -11,10 +11,10 @@ const DeployKind core.Kind = "deploy"
 type DeployStatus uint8
 
 const (
-	NotDeployed DeployStatus = iota
-	Deploying
-	Deployed
-	DeployFail
+	NotDeployed DeployStatus = iota //未部署
+	Deploying                       //部署中
+	Deployed                        //部署成功
+	DeployFail                      //部署失败
 )
 
 type DeploySpace uint8
@@ -43,16 +43,19 @@ type VolumeMount struct {
 
 type Container struct {
 	Name            string                   `json:"name" bson:"name"`
-	Images          string                   `json:"images" bson:"images"`
+	AppUUID         string                   `json:"app_uuid" bson:"app_uuid"`
+	Images          string                   `json:"images" bson:"images"`           //镜像路径
+	ImagesUUID      string                   `json:"images_uuid" bson:"images_uuid"` //镜像uuid
 	ImagePullPolicy string                   `json:"image_pull_policy" bson:"image_pull_policy"`
-	LimitCPU        string                   `json:"limit_cpu" bson:"limit_cpu"`
-	RequiredCPU     string                   `json:"required_cpu" bson:"required_cpu"`
-	LimitMemory     string                   `json:"limit_memory" bson:"limit_memory"`
-	RequiredMemory  string                   `json:"required_memory" bson:"required_memory"`
+	LimitCPU        float64                  `json:"limit_cpu" bson:"limit_cpu"`
+	RequiredCPU     float64                  `json:"required_cpu" bson:"required_cpu"`
+	LimitMemory     int                      `json:"limit_memory" bson:"limit_memory"`
+	RequiredMemory  int                      `json:"required_memory" bson:"required_memory"`
 	Environment     []map[string]interface{} `json:"environment" bson:"environment"`
 	Command         []string                 `json:"command" bson:"command"`
 	Argument        []string                 `json:"argument" bson:"argument"`
 	VolumeMount     []VolumeMount            `json:"volume_mounts" bson:"volume_mounts"`
+	ImagesInfo      Artifact                 `json:"images_info,omitempty" bson:"images_info,omitempty"`
 }
 
 type ServicePort struct {
@@ -68,13 +71,16 @@ type StorageClaim struct {
 }
 
 type DeploySpec struct {
-	DeployNamespace string       `json:"deploy_namespace" bson:"deploy_namespace"`
-	Replicas        int          `json:"replicas" bson:"replicas"`
-	CreateUserId    string       `json:"create_user_id" bson:"create_user_id"`
-	AppName         string       `json:"app_name" bson:"app_name"` // 只存英文名，appCode不需要，用name搜索
-	DeployStatus    DeployStatus `json:"artifact_status" bson:"artifact_status"`
-	DeploySpace     DeploySpace  `json:"deploy_space" bson:"deploy_space"` //部署环境
+	CreateTeam          string       `json:"create_team" bson:"create_team"`
+	CreateUser          string       `json:"create_user" bson:"create_user"`
+	CreateUserId        string       `json:"create_user_id" bson:"create_user_id"`
+	DeployNamespace     string       `json:"deploy_namespace" bson:"deploy_namespace"`
+	DeployNamespaceUUID string       `json:"deploy_namespace_uuid" bson:"deploy_namespace_uuid"` //命名空间uuid，前端回填用
+	Replicas            int          `json:"replicas" bson:"replicas"`
+	AppName             string       `json:"app_name" bson:"app_name"` // 只存英文名，appCode不需要，用name搜索
+	DeployStatus        DeployStatus `json:"artifact_status" bson:"artifact_status"`
 
+	DeploySpace   DeploySpace    `json:"deploy_space" bson:"deploy_space"` //部署环境
 	ServicePorts  []ServicePort  `json:"service_ports" bson:"service_ports"`
 	Containers    []Container    `json:"containers" bson:"containers"`         //one pod may have multiple container
 	StorageClaims []StorageClaim `json:"storage_claims" bson:"storage_claims"` //pod may mount multiple storage

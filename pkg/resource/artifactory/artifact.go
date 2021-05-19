@@ -30,6 +30,7 @@ type ArtifactSpec struct {
 	ProjectFile    string `json:"project_file" bson:"project_file"` // 项目CI时Dockerfile路径
 	AppName        string `json:"app_name" bson:"app_name"`         // 只存英文名，appCode不需要，用name搜索
 	CreateUserId   string `json:"create_user_id" bson:"create_user_id"`
+	CreateUser     string `json:"create_user" bson:"create_user"`
 	Remarks        string `json:"remarks" bson:"remarks"`
 }
 

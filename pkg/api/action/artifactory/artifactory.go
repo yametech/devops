@@ -41,8 +41,9 @@ func (b *baseServer) ListArtifact(g *gin.Context) {
 	pageInt, _ := strconv.Atoi(g.DefaultQuery("page", "1"))
 	pageSizeInt, _ := strconv.Atoi(g.DefaultQuery("pagesize", "10"))
 	name := g.DefaultQuery("name", "")
+	status := g.DefaultQuery("status", "")
 
-	results, count, err := b.ArtifactService.List(name, int64(pageInt), int64(pageSizeInt))
+	results, count, err := b.ArtifactService.List(name, status, int64(pageInt), int64(pageSizeInt))
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
@@ -63,6 +64,10 @@ func (b *baseServer) CreateArtifact(g *gin.Context) {
 	if err := json.Unmarshal(rawData, request); err != nil {
 		api.RequestParamsError(g, "unmarshal json error", err)
 		return
+	}
+
+	if len(g.Request.Header["Username"]) > 0 {
+		request.UserName = g.Request.Header["Username"][0]
 	}
 
 	res, err := b.ArtifactService.Create(request)
@@ -135,7 +140,14 @@ func (b *baseServer) GetBranchList(g *gin.Context) {
 		return
 	}
 
-	results, err := b.ArtifactService.GetBranch(org, name)
+	var results []string
+	var err error
+	if strings.Contains(gitPath, "github") {
+		results, err = b.GetBranchByGithub(org, name)
+	} else {
+		results, err = b.ArtifactService.GetBranch(org, name)
+	}
+
 	if err != nil {
 		api.RequestParamsError(g, "error", err)
 		return
