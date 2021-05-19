@@ -8,6 +8,8 @@ import (
 	"github.com/yametech/devops/pkg/resource/base"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/utils"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AllModuleService struct {
@@ -20,7 +22,8 @@ func NewAllModuleService(i service.IService) *AllModuleService {
 
 func (a *AllModuleService) CreateGroup(req *apiResource.ModuleRequest) (core.IObject, error) {
 
-	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AllModule, base.Module{}, map[string]interface{}{
+	dbModule := &base.Module{}
+	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AllModule, dbModule, map[string]interface{}{
 		"metadata.name": req.Name,
 	}); err == nil {
 		return nil, errors.New("The module name is exists")
@@ -39,7 +42,8 @@ func (a *AllModuleService) CreateGroup(req *apiResource.ModuleRequest) (core.IOb
 }
 
 func (a *AllModuleService) CreateModule(req *apiResource.ModuleRequest) (core.IObject, error) {
-	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AllModule, base.Module{}, map[string]interface{}{
+	dbModule := &base.Module{}
+	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AllModule, dbModule, map[string]interface{}{
 		"spec.parent": req.Parent,
 		"metadata.name": req.Name,
 	}); err == nil {
@@ -66,7 +70,7 @@ func (a *AllModuleService) DeleteGroupAndModule(uuid string) (bool, error) {
 	return true, nil
 }
 
-func (a *AllModuleService) ListAll() ([]*apiResource.ModuleResponse, error) {
+func (a *AllModuleService) ListAll(search string) ([]*apiResource.ModuleResponse, error) {
 	filter := map[string]interface{}{
 		"spec.parent": "",
 	}
@@ -85,9 +89,11 @@ func (a *AllModuleService) ListAll() ([]*apiResource.ModuleResponse, error) {
 		return nil, err
 	}
 
-	for _, group := range groups{
+
+	for i := len(groups) - 1; i >= 0; i-- {
 		data, err = a.IService.ListByFilter(common.DefaultNamespace, common.AllModule, map[string]interface{}{
-			"spec.parent": group.UUID,
+			"spec.parent": groups[i].UUID,
+			"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 		}, sort, 0, 0)
 		if err != nil {
 			return nil, err
@@ -96,7 +102,12 @@ func (a *AllModuleService) ListAll() ([]*apiResource.ModuleResponse, error) {
 		if err = utils.UnstructuredObjectToInstanceObj(data, &modules); err != nil {
 			return nil, err
 		}
-		group.Children = modules
+
+		if len(modules) > 0 {
+			groups[i].Children = modules
+		}else{
+			groups = append(groups[:i], groups[i+1:]...)
+		}
 	}
 
 	return groups, nil
