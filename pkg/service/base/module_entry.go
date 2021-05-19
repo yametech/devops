@@ -32,12 +32,21 @@ func (m *ModuleEntry) CreateEntry(user, uuid string, page, pageSize int64) ([]*b
 	if err != nil {
 		return nil, err
 	}
+	modulates := &base.Module{}
+	if err := m.IService.GetByUUID(common.DefaultNamespace, common.AllModule, uuid, modulates); err != nil {
+		return nil, errors.New("此模块的uuid在数据库中不存在！")
+	}
 	if data != nil {
 		privateModule := &base.PrivateModule{}
 		for _, v := range data {
 			err := utils.UnstructuredObjectToInstanceObj(v, privateModule)
 			if err != nil {
 				return nil, err
+			}
+		}
+		for _, v := range privateModule.Spec.Modules {
+			if v == uuid {
+				return nil, errors.New("此模块快捷入口已经存在！")
 			}
 		}
 		privateModule.Spec.Modules = append(privateModule.Spec.Modules, uuid)
@@ -95,6 +104,10 @@ func (m *ModuleEntry) DeleteEntry(user, uuid string, page, pageSize int64) ([]*b
 	data, err := m.IService.ListByFilter(common.DefaultNamespace, common.ModuleEntry, filter, sort, offset, pageSize)
 	if err != nil {
 		return nil, err
+	}
+	modulates := &base.Module{}
+	if err := m.IService.GetByUUID(common.DefaultNamespace, common.AllModule, uuid, modulates); err != nil {
+		return nil, errors.New("此模块的uuid在数据库中不存在")
 	}
 	if data != nil {
 		privateModule := &base.PrivateModule{}
