@@ -230,7 +230,8 @@ func (a *ArtifactService) SendCI(ar *arResource.Artifact, output string) {
 		return
 	}
 
-	appName := strings.Replace(ar.Spec.AppName, "_", "-", -1)
+	appName := strings.Replace(ar.Spec.AppName, "-", "", -1)
+	appName = strings.Replace(appName, "_", "", -1)
 	stepName := fmt.Sprintf("%s_%s_%s", common.CI, ar.UUID, appName)
 	if !SendEchoer(stepName, common.EchoerCI, sendCIInfo) {
 		ar.Spec.ArtifactStatus = arResource.InitializeFail
