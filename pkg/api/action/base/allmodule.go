@@ -55,7 +55,8 @@ func (b *baseServer) DeleteGroupAndModule(g *gin.Context) {
 }
 
 func (b *baseServer) ListAll(g *gin.Context)  {
-	data, err := b.AllModuleService.ListAll()
+	search := g.DefaultQuery("search", "")
+	data, err := b.AllModuleService.ListAll(search)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
