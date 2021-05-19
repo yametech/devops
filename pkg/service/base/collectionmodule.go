@@ -3,6 +3,7 @@ package base
 import (
 	"github.com/pkg/errors"
 	"github.com/yametech/devops/pkg/common"
+	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/base"
 	"github.com/yametech/devops/pkg/service"
 )
@@ -15,15 +16,12 @@ func NewCollectionModuleService(i service.IService) *CollectionModuleService {
 	return &CollectionModuleService{IService: i}
 }
 
-func (c *CollectionModuleService) AddCollectionModule(uuid string) ([]interface{}, error) {
+func (c *CollectionModuleService) AddCollectionModule(uuid string, user string) (core.IObject, bool, error) {
 	// Check the uuid
 	module := &base.Module{}
 	if err := c.IService.GetByUUID(common.DefaultNamespace, common.AllModule, uuid, module); err != nil {
-		return nil, errors.New("The module uuid is not exist")
+		return nil, false, errors.New("The module uuid is not exist")
 	}
-
-	// Get the user
-	user := ""
 
 	dbObj := &base.PrivateModule{}
 	if err := c.IService.GetByFilter(common.DefaultNamespace, common.CollectionModule, dbObj, map[string]interface{}{
@@ -34,16 +32,10 @@ func (c *CollectionModuleService) AddCollectionModule(uuid string) ([]interface{
 	}
 
 	dbObj.Spec.Modules = append(dbObj.Spec.Modules, uuid)
-	if _, _, err := c.IService.Apply(common.DefaultNamespace, common.CollectionModule, dbObj.UUID, dbObj, true); err != nil {
-		return nil, err
-	}
-
-	return c.ListCollectionModule()
+	return c.IService.Apply(common.DefaultNamespace, common.CollectionModule, dbObj.UUID, dbObj, true)
 }
 
-func (c *CollectionModuleService) ListCollectionModule() ([]interface{}, error) {
-	// Get the user
-	user := ""
+func (c *CollectionModuleService) ListCollectionModule(user string) ([]interface{}, error) {
 
 	collection := &base.PrivateModule{}
 	response := make([]interface{}, 0)
@@ -65,15 +57,13 @@ func (c *CollectionModuleService) ListCollectionModule() ([]interface{}, error) 
 	return response, nil
 }
 
-func (c *CollectionModuleService) DeleteCollectionModule(uuid string) ([]interface{}, error) {
-	// Get the user
-	user := ""
+func (c *CollectionModuleService) DeleteCollectionModule(uuid string, user string) (core.IObject, bool, error) {
 
 	collection := &base.PrivateModule{}
 	if err := c.IService.GetByFilter(common.DefaultNamespace, common.CollectionModule, collection, map[string]interface{}{
 		"spec.user": user,
 	}); err != nil {
-		return c.ListCollectionModule()
+		return nil, false, err
 	}
 
 	for i := len(collection.Spec.Modules) - 1; i >= 0; i-- {
@@ -82,9 +72,5 @@ func (c *CollectionModuleService) DeleteCollectionModule(uuid string) ([]interfa
 		}
 	}
 
-	if _, _, err := c.IService.Apply(common.DefaultNamespace, common.CollectionModule, collection.UUID, collection, true); err != nil {
-		return nil, err
-	}
-
-	return c.ListCollectionModule()
+	return c.IService.Apply(common.DefaultNamespace, common.CollectionModule, collection.UUID, collection, true)
 }

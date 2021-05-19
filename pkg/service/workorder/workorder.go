@@ -110,6 +110,9 @@ func (s *Service) Update(uuid string, request *apiResource.Request) (core.IObjec
 	dbObj.Spec.Extends = request.Extends
 
 	dbObj.GenerateVersion()
+
+	// dingding messages
+
 	return s.IService.Apply(common.DefaultNamespace, common.WorkOrder, dbObj.UUID, dbObj, true)
 }
 
