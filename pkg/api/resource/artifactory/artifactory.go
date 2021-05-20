@@ -1,6 +1,9 @@
 package artifactory
 
-import "github.com/yametech/devops/pkg/core"
+import (
+	"github.com/yametech/devops/pkg/core"
+	"time"
+)
 
 type ArtifactStatus uint8
 
@@ -35,3 +38,43 @@ type RespArtifact struct {
 	core.Metadata `json:"metadata"`
 	Spec          ArtifactSpec `json:"spec"`
 }
+
+type RegistryArtifacts []struct {
+	AdditionLinks struct {
+		BuildHistory struct {
+			Absolute bool   `json:"absolute"`
+			Href     string `json:"href"`
+		} `json:"build_history"`
+	} `json:"addition_links"`
+	Digest     string `json:"digest"`
+	ExtraAttrs struct {
+		Architecture string      `json:"architecture"`
+		Author       interface{} `json:"author"`
+		Created      time.Time   `json:"created"`
+		Os           string      `json:"os"`
+	} `json:"extra_attrs"`
+	Icon              string      `json:"icon"`
+	ID                int         `json:"id"`
+	Labels            interface{} `json:"labels"`
+	ManifestMediaType string      `json:"manifest_media_type"`
+	MediaType         string      `json:"media_type"`
+	ProjectID         int         `json:"project_id"`
+	PullTime          time.Time   `json:"pull_time"`
+	PushTime          time.Time   `json:"push_time"`
+	References        interface{} `json:"references"`
+	RepositoryID      int         `json:"repository_id"`
+	Size              int         `json:"size"`
+	Tags              []struct {
+		ArtifactID   int       `json:"artifact_id"`
+		ID           int       `json:"id"`
+		Immutable    bool      `json:"immutable"`
+		Name         string    `json:"name"`
+		PullTime     time.Time `json:"pull_time"`
+		PushTime     time.Time `json:"push_time"`
+		RepositoryID int       `json:"repository_id"`
+		Signed       bool      `json:"signed"`
+	} `json:"tags"`
+	Type string `json:"type"`
+}
+
+
