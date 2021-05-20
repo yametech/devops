@@ -40,31 +40,11 @@ type RespArtifact struct {
 }
 
 type RegistryArtifacts []struct {
-	AdditionLinks struct {
-		BuildHistory struct {
-			Absolute bool   `json:"absolute"`
-			Href     string `json:"href"`
-		} `json:"build_history"`
-	} `json:"addition_links"`
-	Digest     string `json:"digest"`
-	ExtraAttrs struct {
-		Architecture string      `json:"architecture"`
-		Author       interface{} `json:"author"`
-		Created      time.Time   `json:"created"`
-		Os           string      `json:"os"`
-	} `json:"extra_attrs"`
-	Icon              string      `json:"icon"`
-	ID                int         `json:"id"`
-	Labels            interface{} `json:"labels"`
-	ManifestMediaType string      `json:"manifest_media_type"`
-	MediaType         string      `json:"media_type"`
-	ProjectID         int         `json:"project_id"`
-	PullTime          time.Time   `json:"pull_time"`
-	PushTime          time.Time   `json:"push_time"`
-	References        interface{} `json:"references"`
-	RepositoryID      int         `json:"repository_id"`
-	Size              int         `json:"size"`
-	Tags              []struct {
+	Digest     string      `json:"digest"`
+	PullTime   time.Time   `json:"pull_time"`
+	PushTime   time.Time   `json:"push_time"`
+	References interface{} `json:"references"`
+	Tags       []struct {
 		ArtifactID   int       `json:"artifact_id"`
 		ID           int       `json:"id"`
 		Immutable    bool      `json:"immutable"`
@@ -74,7 +54,4 @@ type RegistryArtifacts []struct {
 		RepositoryID int       `json:"repository_id"`
 		Signed       bool      `json:"signed"`
 	} `json:"tags"`
-	Type string `json:"type"`
 }
-
-
