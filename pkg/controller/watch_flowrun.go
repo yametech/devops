@@ -119,6 +119,8 @@ func (w *WatchFlowRun) HandleFlowRun(run *FlowRun) {
 					step.Spec.ArtifactStatus = artifactory.Built
 				} else if flowStep.Spec.Response.State == "FAIL" {
 					step.Spec.ArtifactStatus = artifactory.BuiltFAIL
+				} else if flowStep.Spec.Response.State == "TIMEOUT" {
+					step.Spec.ArtifactStatus = artifactory.BuildTimeOut
 				}
 				_, _, err = w.Apply(common.DefaultNamespace, common.Artifactory, step.Metadata.UUID, step, false)
 				if err != nil {
@@ -136,6 +138,8 @@ func (w *WatchFlowRun) HandleFlowRun(run *FlowRun) {
 					step.Spec.DeployStatus = artifactory.Deployed
 				} else if flowStep.Spec.Response.State == "FAIL" {
 					step.Spec.DeployStatus = artifactory.DeployFail
+				} else if flowStep.Spec.Response.State == "TIMEOUT" {
+					step.Spec.DeployStatus = artifactory.DeployTimeOut
 				}
 				_, _, err = w.Apply(common.DefaultNamespace, common.Deploy, step.Metadata.UUID, step, false)
 				if err != nil {

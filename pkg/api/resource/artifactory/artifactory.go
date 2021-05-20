@@ -1,6 +1,9 @@
 package artifactory
 
-import "github.com/yametech/devops/pkg/core"
+import (
+	"github.com/yametech/devops/pkg/core"
+	"time"
+)
 
 type ArtifactStatus uint8
 
@@ -34,4 +37,21 @@ type ArtifactSpec struct {
 type RespArtifact struct {
 	core.Metadata `json:"metadata"`
 	Spec          ArtifactSpec `json:"spec"`
+}
+
+type RegistryArtifacts []struct {
+	Digest     string      `json:"digest"`
+	PullTime   time.Time   `json:"pull_time"`
+	PushTime   time.Time   `json:"push_time"`
+	References interface{} `json:"references"`
+	Tags       []struct {
+		ArtifactID   int       `json:"artifact_id"`
+		ID           int       `json:"id"`
+		Immutable    bool      `json:"immutable"`
+		Name         string    `json:"name"`
+		PullTime     time.Time `json:"pull_time"`
+		PushTime     time.Time `json:"push_time"`
+		RepositoryID int       `json:"repository_id"`
+		Signed       bool      `json:"signed"`
+	} `json:"tags"`
 }
