@@ -11,10 +11,12 @@ const DeployKind core.Kind = "deploy"
 type DeployStatus uint8
 
 const (
-	NotDeployed DeployStatus = iota //未部署
-	Deploying                       //部署中
-	Deployed                        //部署成功
-	DeployFail                      //部署失败
+	NotDeployed   DeployStatus = iota //未部署
+	Deploying                         //部署中
+	Deployed                          //部署成功
+	DeployFail                        //部署失败
+	DeployTimeOut                     //超时
+
 )
 
 type DeploySpace uint8

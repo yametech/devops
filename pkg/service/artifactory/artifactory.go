@@ -14,6 +14,7 @@ import (
 	"github.com/yametech/devops/pkg/utils"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	urlPkg "net/url"
 	"strconv"
@@ -130,6 +131,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 		return nil, err
 	}
 	go a.SendCI(ar, projectPath)
+	go a.HandleRegistryArtifacts(ar)
 	return ar, nil
 }
 
@@ -373,4 +375,81 @@ func (a *ArtifactService) GetBranchByGithub(org string, name string) ([]string, 
 		sliceBrancher = append(sliceBrancher, v.Name)
 	}
 	return sliceBrancher, nil
+}
+
+func (a *ArtifactService) HandleRegistryArtifacts(ar *arResource.Artifact) {
+	SliceImage := strings.Split(ar.Spec.Images, "/")
+	if len(SliceImage) != 3 {
+		log.Println("cant read artifact images type ", ar.Spec.Images)
+		return
+	}
+	registry := ar.Spec.Registry
+	projectName := SliceImage[1]
+	repo := SliceImage[2]
+	url := fmt.Sprintf("https://%s/api/v2.0/projects/%s/repositories/%s/artifacts", registry, projectName, repo)
+	artifacts, err := a.GetRegistryArtifacts(url)
+	if err != nil {
+		log.Println("get registry Artifacts error, ", err.Error())
+		return
+	}
+	a.deleteArtifacts(url, artifacts)
+}
+
+func (a *ArtifactService) GetRegistryArtifacts(url string) (apiResource.RegistryArtifacts, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	dataByte, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	artifacts := apiResource.RegistryArtifacts{}
+	err = json.Unmarshal(dataByte, &artifacts)
+	if err != nil {
+		return nil, err
+	}
+	return artifacts, nil
+
+}
+
+func (a *ArtifactService) deleteArtifacts(url string, artifacts apiResource.RegistryArtifacts) {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
+	if len(artifacts) > 5 {
+		for _, artifact := range artifacts[5:] {
+			reference := artifact.Digest
+			deleteURL := fmt.Sprintf("%s/%s", url, reference)
+			deleteREQ, _ := http.NewRequest("DELETE", deleteURL, nil)
+			deleteREQ.SetBasicAuth(common.RegistryUser, common.RegistryPW)
+			_, err := client.Do(deleteREQ)
+			if err != nil {
+				log.Println("HandleRegistryArtifacts delete artifact error, ", err.Error())
+			}
+		}
+	}
+
+	for _, artifact := range artifacts {
+		if artifact.Tags == nil {
+			reference := artifact.Digest
+			deleteURL := fmt.Sprintf("%s/%s", url, reference)
+			deleteREQ, _ := http.NewRequest("DELETE", deleteURL, nil)
+			deleteREQ.SetBasicAuth(common.RegistryUser, common.RegistryPW)
+			_, err := client.Do(deleteREQ)
+			if err != nil {
+				log.Println("HandleRegistryArtifacts delete no tag artifact error, ", err.Error())
+			}
+		}
+	}
 }
