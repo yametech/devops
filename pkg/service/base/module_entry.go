@@ -154,7 +154,7 @@ func (m *ModuleEntry) QueryEntry(user string, page, pageSize int64) ([]*base.Mod
 
 	data, err := m.IService.ListByFilter(common.DefaultNamespace, common.ModuleEntry, filter, sort, offset, pageSize)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("找不到此用户数据！")
 	}
 	if data != nil {
 		privateModule := &base.PrivateModule{}
