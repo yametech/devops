@@ -339,6 +339,7 @@ func (a *ArtifactService) GetBranchByGithub(org string, name string) ([]string, 
 	return sliceBrancher, nil
 }
 
+
 func (a *ArtifactService) GetCommitByBranch(gitUrl, org, name, branch string) string {
 	var (
 		url     string
