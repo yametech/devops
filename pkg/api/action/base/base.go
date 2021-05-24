@@ -58,6 +58,7 @@ func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 
 	//recent_visit
 	{
+		group.POST("recent_visit", base.CreateRecentVisit)
 		group.GET("recent_visit", base.ListRecentVisit)
 	}
 
