@@ -16,7 +16,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	urlPkg "net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -96,7 +95,10 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 	imageUrl := fmt.Sprintf("%s/%s", projectPath, gitName)
 
 	if len(reqAr.Tag) == 0 {
-		reqAr.Tag = strings.ToLower(utils.NewSUID().String())
+		reqAr.Tag = fmt.Sprintf(
+			"%s-%s", reqAr.AppName,
+			a.GetCommitByBranch(reqAr.GitUrl, gitDirectory, gitName, reqAr.Branch),
+		)
 	} else {
 		reqAr.Tag = strings.ToLower(reqAr.Tag)
 	}
@@ -144,26 +146,15 @@ func (a *ArtifactService) CheckRegistryProject(ar *arResource.Artifact) error {
 		catalogue = SliceTemp[1]
 	}
 	url := fmt.Sprintf("https://%s/api/v2.0/projects?project_name=%s", HarborAddress, catalogue)
-	data := urlPkg.Values{}
-	req, err := http.NewRequest("HEAD", url, strings.NewReader(data.Encode()))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
 
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-
-	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
-	resp, err := client.Do(req)
+	resp, err := connectYm("HEAD", url, nil, []string{common.RegistryUser, common.RegistryPW})
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
+		fmt.Println("仓库没有该路径，准备创建")
 		err = a.CreateRegistryProject(HarborAddress, catalogue)
 		if err != nil {
 			return err
@@ -182,23 +173,8 @@ func (a *ArtifactService) CreateRegistryProject(HarborAddress, projectName strin
 			"public": "true",
 		},
 	}
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return err
-	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(common.RegistryUser, common.RegistryPW)
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
-	resp, err := client.Do(req)
+	resp, err := connectYm("POST", url, body, []string{common.RegistryUser, common.RegistryPW})
 	if err != nil {
 		return err
 	}
@@ -207,7 +183,7 @@ func (a *ArtifactService) CreateRegistryProject(HarborAddress, projectName strin
 	if resp.StatusCode == 201 {
 		return nil
 	}
-	return errors.New("构建镜像仓库目录失败！")
+	return errors.New("创建镜像仓库目录失败！")
 }
 
 func (a *ArtifactService) SendCI(ar *arResource.Artifact, output string) {
@@ -290,16 +266,7 @@ func (a *ArtifactService) Delete(uuid string) error {
 
 func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches", org, name)
-	req, err := http.NewRequest("GET", url, strings.NewReader(urlPkg.Values{}.Encode()))
-	if err != nil {
-		return nil, err
-	}
-	req.SetBasicAuth(common.GitUser, common.GitPW)
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Timeout: 30 * time.Second, Transport: tr}
-	res, err := client.Do(req)
+	res, err := connectYm("GET", url, nil, []string{common.GitUser, common.GitPW})
 	if err != nil {
 		return nil, err
 	}
@@ -342,12 +309,7 @@ func (a *ArtifactService) GetBranch(org string, name string) ([]string, error) {
 
 func (a *ArtifactService) GetBranchByGithub(org string, name string) ([]string, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/branches", org, name)
-	req, err := http.NewRequest("GET", url, strings.NewReader(urlPkg.Values{}.Encode()))
-	if err != nil {
-		return nil, err
-	}
-	client := &http.Client{Timeout: 30 * time.Second}
-	res, err := client.Do(req)
+	res, err := connectYm("GET", url, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -375,6 +337,94 @@ func (a *ArtifactService) GetBranchByGithub(org string, name string) ([]string, 
 		sliceBrancher = append(sliceBrancher, v.Name)
 	}
 	return sliceBrancher, nil
+}
+
+
+func (a *ArtifactService) GetCommitByBranch(gitUrl, org, name, branch string) string {
+	var (
+		url     string
+		account []string
+	)
+
+	if strings.Contains(gitUrl, "github.com") {
+		url = fmt.Sprintf("https://api.github.com/repos/%s/%s/branches/%s", org, name, branch)
+	} else if strings.Contains(gitUrl, "git.ym") {
+		url = fmt.Sprintf("http://git.ym/api/v1/repos/%s/%s/branches/%s", org, name, branch)
+		account = []string{common.GitUser, common.GitPW}
+	} else {
+		return strings.ToLower(utils.NewSUID().String())
+	}
+
+	res, err := connectYm("GET", url, nil, account)
+	if err != nil {
+		fmt.Println(err)
+		return strings.ToLower(utils.NewSUID().String())
+	}
+
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		return strings.ToLower(utils.NewSUID().String())
+	}
+	if res.Body == nil {
+		return strings.ToLower(utils.NewSUID().String())
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err)
+		return strings.ToLower(utils.NewSUID().String())
+	}
+
+	var CommitID struct {
+		Commit struct {
+			ID  string `json:"id"`
+			Sha string `json:"sha"`
+		} `json:"commit"`
+	}
+
+	err = json.Unmarshal(body, &CommitID)
+	if err != nil {
+		fmt.Println(err)
+		return strings.ToLower(utils.NewSUID().String())
+	}
+
+	if CommitID.Commit.Sha != "" {
+		return CommitID.Commit.Sha
+	} else {
+		return CommitID.Commit.ID
+	}
+
+}
+
+func connectYm(method, url string, body interface{}, account []string) (*http.Response, error) {
+	bodyReader := bytes.NewReader([]byte{})
+	if body != nil {
+		a, err := json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
+		bodyReader = bytes.NewReader(a)
+	}
+
+	req, err := http.NewRequest(method, url, bodyReader)
+	if err != nil {
+		return nil, err
+	}
+	if len(account) == 2 {
+		req.SetBasicAuth(account[0], account[1])
+	}
+	req.Header.Set("Content-Type", "application/json")
+	res, err := (&http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (a *ArtifactService) HandleRegistryArtifacts(ar *arResource.Artifact) {
