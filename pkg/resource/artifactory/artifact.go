@@ -16,6 +16,7 @@ const (
 	Building                             //构建中
 	Built                                //构建完成
 	BuiltFAIL                            //构建失败
+	BuildTimeOut                         //构建超时
 )
 
 type ArtifactSpec struct {
