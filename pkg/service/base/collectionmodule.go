@@ -31,6 +31,12 @@ func (c *CollectionModuleService) AddCollectionModule(uuid string, user string) 
 		dbObj.Spec.User = user
 	}
 
+	for _, dbModule := range dbObj.Spec.Modules {
+		if dbModule == uuid{
+			return nil, false, errors.New("The module uuid is collected by this user")
+		}
+	}
+
 	dbObj.Spec.Modules = append(dbObj.Spec.Modules, uuid)
 	return c.IService.Apply(common.DefaultNamespace, common.CollectionModule, dbObj.UUID, dbObj, true)
 }
