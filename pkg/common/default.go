@@ -24,7 +24,7 @@ const (
 	WorkOrder = "workorder"
 
 	// Base
-	GlobalModule     = "globalmodule"
+	ChildModule      = "childmodule"
 	CollectionModule = "collectionmodule"
 	AllModule        = "allmodule"
 	ModuleEntry      = "moduleentry"
