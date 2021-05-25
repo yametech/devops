@@ -42,6 +42,11 @@ func (g *ChildModuleService) CreateChildModule(request *apiResource.ModuleReques
 }
 
 func (g *ChildModuleService) ListChildModule(parent, search string, page, pageSize int64) ([]interface{}, int64, error) {
+	title := &base.Module{}
+	if err := g.IService.GetByUUID(common.DefaultNamespace, common.AllModule, parent, title); err != nil {
+		return nil, 0, err
+	}
+
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
 	filter["spec.parent"] = parent
@@ -60,7 +65,12 @@ func (g *ChildModuleService) ListChildModule(parent, search string, page, pageSi
 	if err != nil {
 		return nil, 0, err
 	}
-	return data, count, nil
+
+	result := make([]interface{}, 0)
+	result = append(result, title)
+	result = append(result, data...)
+
+	return result, count, nil
 }
 
 func (g *ChildModuleService) DeleteChildModule(uuid string) (bool, error) {
