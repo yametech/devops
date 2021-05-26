@@ -29,6 +29,7 @@ const (
 	AllModule        = "allmodule"
 	ModuleEntry      = "moduleentry"
 	RecentVisit      = "recentvisit"
+	Topmodule        = "topmodule"
 )
 
 var (
