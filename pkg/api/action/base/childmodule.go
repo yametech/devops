@@ -15,7 +15,7 @@ func (b *baseServer) CreateGlobalModule(g *gin.Context) {
 		return
 	}
 
-	response, err := b.GlobalModuleService.CreateGlobalModule(request)
+	response, err := b.ChildModuleService.CreateChildModule(request)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
@@ -26,6 +26,7 @@ func (b *baseServer) CreateGlobalModule(g *gin.Context) {
 
 func (b *baseServer) ListGlobalModule(g *gin.Context) {
 	search := g.Query("search")
+	parent := g.Query("parent")
 	page, err := strconv.ParseInt(g.DefaultQuery("page", "0"), 10, 64)
 	if err != nil {
 		api.ResponseError(g, errors.New("page need int type"))
@@ -37,7 +38,7 @@ func (b *baseServer) ListGlobalModule(g *gin.Context) {
 		return
 	}
 
-	response, count, err := b.GlobalModuleService.ListGlobalModule(search, page, pageSize)
+	response, count, err := b.ChildModuleService.ListChildModule(parent, search, page, pageSize)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
@@ -48,7 +49,7 @@ func (b *baseServer) ListGlobalModule(g *gin.Context) {
 
 func (b *baseServer) DeleteGlobalModule(g *gin.Context) {
 	uuid := g.Param("uuid")
-	response, err := b.GlobalModuleService.DeleteGlobalModule(uuid)
+	response, err := b.ChildModuleService.DeleteChildModule(uuid)
 	if err != nil {
 		api.ResponseError(g, err)
 		return

@@ -8,7 +8,7 @@ import (
 
 type baseServer struct {
 	*api.Server
-	*baseService.GlobalModuleService
+	*baseService.ChildModuleService
 	*baseService.CollectionModuleService
 	*baseService.AllModuleService
 	*baseService.ModuleEntry
@@ -19,7 +19,7 @@ type baseServer struct {
 func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 	base := &baseServer{
 		Server:                  server,
-		GlobalModuleService:     baseService.NewGlobalModuleService(server.IService),
+		ChildModuleService:      baseService.NewChildModuleService(server.IService),
 		CollectionModuleService: baseService.NewCollectionModuleService(server.IService),
 		AllModuleService:        baseService.NewAllModuleService(server.IService),
 		ModuleEntry:             baseService.NewModuleEntry(server.IService),
@@ -27,11 +27,11 @@ func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 		ShowAllGroupModule:      baseService.NewShowAllGroupModule(server.IService),
 	}
 	group := base.Group(fmt.Sprintf("/%s", serviceName))
-	// globalmodule
+	// childmodule
 	{
-		group.GET("/globalmodule", base.ListGlobalModule)
-		group.POST("/globalmodule", base.CreateGlobalModule)
-		group.DELETE("/globalmodule/:uuid", base.DeleteGlobalModule)
+		group.GET("/childmodule", base.ListGlobalModule)
+		group.POST("/childmodule", base.CreateGlobalModule)
+		group.DELETE("/childmodule/:uuid", base.DeleteGlobalModule)
 	}
 
 	// collectionmodule
