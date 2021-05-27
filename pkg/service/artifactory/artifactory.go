@@ -105,6 +105,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 
 	appName := fmt.Sprintf("%s-%d", reqAr.AppName, time.Now().Unix())
 
+	//todo:CreateUser后面要换成中文名
 	ar := &arResource.Artifact{
 		Metadata: core.Metadata{
 			Name: appName,
@@ -121,6 +122,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 			ProjectPath:  reqAr.ProjectPath,
 			Images:       imageUrl,
 			CreateUserId: reqAr.UserName,
+			CreateUser:   reqAr.UserName,
 		},
 	}
 	err := a.CheckRegistryProject(ar)
@@ -339,7 +341,6 @@ func (a *ArtifactService) GetBranchByGithub(org string, name string) ([]string, 
 	return sliceBrancher, nil
 }
 
-
 func (a *ArtifactService) GetCommitByBranch(gitUrl, org, name, branch string) string {
 	var (
 		url     string
@@ -483,10 +484,11 @@ func (a *ArtifactService) deleteArtifacts(url string, artifacts apiResource.Regi
 			deleteURL := fmt.Sprintf("%s/%s", url, reference)
 			deleteREQ, _ := http.NewRequest("DELETE", deleteURL, nil)
 			deleteREQ.SetBasicAuth(common.RegistryUser, common.RegistryPW)
-			_, err := client.Do(deleteREQ)
+			res, err := client.Do(deleteREQ)
 			if err != nil {
 				log.Println("HandleRegistryArtifacts delete artifact error, ", err.Error())
 			}
+			fmt.Println(res)
 		}
 	}
 

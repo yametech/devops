@@ -93,6 +93,8 @@ func (a *DeployService) Create(request *apiResource.RequestDeploy) error {
 		request.Name = time.Now().Format("20060102-1504-05")
 	}
 
+	//todo:CreateUser后面要换成中文名
+
 	deploy := &arResource.Deploy{
 		Metadata: core.Metadata{
 			Name: request.Name,
@@ -107,14 +109,15 @@ func (a *DeployService) Create(request *apiResource.RequestDeploy) error {
 			Containers:          request.Containers,
 			StorageClaims:       request.StorageClaims,
 			CreateUserId:        request.UserName,
+			CreateUser:          request.UserName,
 			CreateTeam:          request.Team,
 		},
 	}
-	for k, _ := range deploy.Spec.Containers {
+	for k := range deploy.Spec.Containers {
 		MergeEnvVar(&deploy.Spec.Containers[k])
 	}
 
-	for k, _ := range deploy.Spec.ServicePorts {
+	for k := range deploy.Spec.ServicePorts {
 		deploy.Spec.ServicePorts[k].Protocol = strings.ToUpper(deploy.Spec.ServicePorts[k].Protocol)
 	}
 

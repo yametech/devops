@@ -65,10 +65,8 @@ func (b *baseServer) CreateArtifact(g *gin.Context) {
 		api.RequestParamsError(g, "unmarshal json error", err)
 		return
 	}
-
-	if len(g.Request.Header["Username"]) > 0 {
-		request.UserName = g.Request.Header["Username"][0]
-	}
+	//todo:待网关能传中文名字后，要获取中文名
+	request.UserName = g.Request.Header.Get("X-Wrapper-Username")
 
 	res, err := b.ArtifactService.Create(request)
 	if err != nil {
