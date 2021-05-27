@@ -37,13 +37,14 @@ var (
 	EchoerCI = "artifactoryCI"
 
 	//Artifactory
-	SmartCityCD  = "artifactoryCD"
-	AzureCD      = "artifactoryAzureCD"
-	TungChungCD  = "artifactoryTungChungCD"
-	GitUser      = "gituser"
-	GitPW        = "gitpw"
-	RegistryUser = "username"
-	RegistryPW   = "password"
+	SmartCityCD      = "artifactoryCD"
+	AzureCD          = "artifactoryAzureCD"
+	TungChungCD      = "artifactoryTungChungCD"
+	GitUser          = "gituser"
+	GitPW            = "gitpw"
+	RegistryUser     = "username"
+	RegistryPW       = "password"
+	StoreImagesCount = 5
 
 	//gateway etcd
 	EtcdAddress = "http://10.200.65.200:2379"
@@ -58,4 +59,5 @@ func init() {
 	flag.StringVar(&GitPW, "gitpw", GitPW, "-gitpw=git_password")
 	flag.StringVar(&RegistryUser, "registryuser", RegistryUser, "-registryuser=registry_user")
 	flag.StringVar(&RegistryPW, "registrypw", RegistryPW, "-registrypw=registry_password")
+	flag.IntVar(&StoreImagesCount, "storeimgescount", StoreImagesCount, "-storeimagescount=5")
 }

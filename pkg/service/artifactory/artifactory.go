@@ -136,6 +136,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 	}
 	go a.SendCI(ar, projectPath)
 	go a.HandleRegistryArtifacts(ar)
+	go a.CheckImagesCount(reqAr.AppName)
 	return ar, nil
 }
 
@@ -484,11 +485,11 @@ func (a *ArtifactService) deleteArtifacts(url string, artifacts apiResource.Regi
 			deleteURL := fmt.Sprintf("%s/%s", url, reference)
 			deleteREQ, _ := http.NewRequest("DELETE", deleteURL, nil)
 			deleteREQ.SetBasicAuth(common.RegistryUser, common.RegistryPW)
-			res, err := client.Do(deleteREQ)
+			_, err := client.Do(deleteREQ)
 			if err != nil {
 				log.Println("HandleRegistryArtifacts delete artifact error, ", err.Error())
 			}
-			fmt.Println(res)
+			//fmt.Println(res)
 		}
 	}
 
@@ -502,6 +503,27 @@ func (a *ArtifactService) deleteArtifacts(url string, artifacts apiResource.Regi
 			if err != nil {
 				log.Println("HandleRegistryArtifacts delete no tag artifact error, ", err.Error())
 			}
+		}
+	}
+}
+
+func (a *ArtifactService) CheckImagesCount(appName string) {
+	filter := map[string]interface{}{
+		"spec.app_name":        appName,
+		"spec.artifact_status": arResource.Built, //先考虑删除构建成功的,后面再看怎么清理构建失败的
+	}
+	sort := map[string]interface{}{
+		"metadata.created_time": 1,
+	}
+	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.Artifactory, filter, sort, 0, 0)
+	if err != nil {
+		return
+	}
+	if len(data) > common.StoreImagesCount {
+		deleteList := &[]arResource.Artifact{}
+		err = utils.UnstructuredObjectToInstanceObj(data[:len(data)-common.StoreImagesCount], deleteList)
+		for _, v := range *deleteList {
+			a.IService.Delete(common.DefaultNamespace, common.Artifactory, v.Metadata.UUID)
 		}
 	}
 }
