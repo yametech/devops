@@ -1,7 +1,6 @@
 package globalconfigservice
 
 import (
-	"fmt"
 	"github.com/yametech/devops/pkg/api"
 	allConfigService "github.com/yametech/devops/pkg/service/globalservice"
 )
@@ -11,12 +10,15 @@ type Server struct {
 	*allConfigService.GlobalConfigService
 }
 
+var _ api.Extends = (*Server)(nil)
+
 func NewGlobalServiceServer(serviceName string, server *api.Server) *Server {
 	allServer := &Server{
 		server,
 		allConfigService.NewAllConfigService(server.IService),
 	}
-	group := allServer.Group(fmt.Sprintf("/%s", serviceName))
+	group := allServer.Group("/" + serviceName)
+
 	//allConfigProject
 	{
 		group.GET("/globalconfig-project", allServer.ListGlobalConfig)

@@ -1,16 +1,21 @@
 package base
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/resource/base"
 	"github.com/yametech/devops/pkg/service"
+	"github.com/yametech/devops/pkg/store"
 	"github.com/yametech/devops/pkg/utils"
 )
 
 type RecentVisit struct {
 	service.IService
 }
+
+var _ store.IKVStore = (*RecentVisit)(nil)
+var _ service.IService = (*RecentVisit)(nil)
 
 func NewRecentVisit(i service.IService) *RecentVisit {
 	return &RecentVisit{i}
@@ -34,7 +39,13 @@ func (r *RecentVisit) CreateRecent(user, uuid string, page, pageSize int64) ([]*
 			return nil, errors.New("最近访问更新失败！")
 		}
 	} else {
+		fmt.Printf("%p", privateModule)
 		privateModule.Spec.Modules = append(privateModule.Spec.Modules[1:], uuid)
+		fmt.Printf("%p", privateModule)
+		//privateModule.Spec.Modules = append([]string{uuid},privateModule.Spec.Modules[1:]...)
+		//
+		//privateModule.Spec.Modules = append(privateModule.Spec.Modules[1:len(privateModule.Spec.Modules):len(privateModule.Spec.Modules)-1],uuid)
+
 		_, judge, err := r.Apply(common.DefaultNamespace, common.RecentVisit, privateModule.UUID, privateModule, true)
 		if !judge && err != nil {
 			return nil, errors.New("最近访问更新失败！")
@@ -67,10 +78,9 @@ func (r *RecentVisit) ListRecent(user string, page, pageSize int64) ([]*base.Mod
 			}
 		}
 		moduleSlice := make([]*base.Module, 0)
-		reverse(privateModule.Spec.Modules)
-		for _, v := range privateModule.Spec.Modules {
+		for i := len(privateModule.Spec.Modules) - 1; i >= 0; i-- {
 			module := &base.Module{}
-			err := r.IService.GetByUUID(common.DefaultNamespace, common.AllModule, v, module)
+			err := r.IService.GetByUUID(common.DefaultNamespace, common.AllModule, privateModule.Spec.Modules[i], module)
 			if err != nil {
 				return nil, err
 			}
@@ -79,11 +89,4 @@ func (r *RecentVisit) ListRecent(user string, page, pageSize int64) ([]*base.Mod
 		return moduleSlice, nil
 	}
 	return nil, errors.New("该用户没有最近访问记录！")
-}
-
-func reverse(s []string) []string {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
-	return s
 }
