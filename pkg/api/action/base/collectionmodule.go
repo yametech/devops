@@ -8,7 +8,7 @@ import (
 
 func (b *baseServer) AddCollectionModule(g *gin.Context)  {
 	// Get the user
-	//user := g.Request.Header["user"]
+	user := g.Request.Header["x-wrapper-username"][0]
 
 	request := &apiResource.ModuleRequest{}
 	if err := g.ShouldBindJSON(request); err != nil {
@@ -16,7 +16,7 @@ func (b *baseServer) AddCollectionModule(g *gin.Context)  {
 		return
 	}
 
-	response, _, err := b.CollectionModuleService.AddCollectionModule(request.UUID, "")
+	response, _, err := b.CollectionModuleService.AddCollectionModule(request.UUID, user)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
@@ -27,9 +27,9 @@ func (b *baseServer) AddCollectionModule(g *gin.Context)  {
 
 func (b *baseServer) ListCollectionModule(g *gin.Context)  {
 	// Get the user
-	//user := g.Request.Header["user"]
+	user := g.Request.Header["x-wrapper-username"][0]
 
-	response, err := b.CollectionModuleService.ListCollectionModule("")
+	response, err := b.CollectionModuleService.ListCollectionModule(user)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
@@ -40,7 +40,7 @@ func (b *baseServer) ListCollectionModule(g *gin.Context)  {
 
 func (b *baseServer) DeleteCollectionModule(g *gin.Context) {
 	// Get the user
-	//user := g.Request.Header["user"]
+	user := g.Request.Header["x-wrapper-username"][0]
 
 	request := &apiResource.ModuleRequest{}
 	if err := g.ShouldBindJSON(request); err != nil {
@@ -48,7 +48,7 @@ func (b *baseServer) DeleteCollectionModule(g *gin.Context) {
 		return
 	}
 
-	response, _, err := b.CollectionModuleService.DeleteCollectionModule(request.UUID, "")
+	response, _, err := b.CollectionModuleService.DeleteCollectionModule(request.UUID, user)
 	if err != nil {
 		api.ResponseError(g, err)
 		return

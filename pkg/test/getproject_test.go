@@ -154,11 +154,11 @@ func TestGenerateNumber(t *testing.T) {
 }
 
 func TestRequest(t *testing.T) {
-	//store, _, _ := mongo.NewMongo("mongodb://10.200.10.46:27017/devops")
-	//baseService := service.NewBaseService(store)
-	//namespaceService := app.NewNamespaceService(baseService)
-	////data, _ := namespaceService.GetFromCMDB()
-	//fmt.Println(data)
+	store, _, _ := mongo.NewMongo("mongodb://10.200.10.46:27017/devops")
+	baseService := service.NewBaseService(store)
+	service := ser.NewAppProjectService(baseService)
+	data, _ := service.SyncFromCMDB()
+	fmt.Println(data)
 }
 
 func TestEqual(t *testing.T) {
@@ -168,3 +168,11 @@ func TestEqual(t *testing.T) {
 		fmt.Println("相等")
 	}
 }
+
+func TestName(t *testing.T) {
+	ss := make([]int, 0)
+	ss = append(ss, 1)
+	ss = nil
+	ss = append(ss, 2)
+}
+

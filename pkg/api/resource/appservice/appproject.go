@@ -21,42 +21,10 @@ type Request struct {
 }
 
 // parse from cmdb data
-const (
-	BusinessUuid = "business"
-	ServiceUuid  = "business_domain"
-	AppUuid      = "business_service"
-)
-
-
-type Data struct {
-	TotalCount int                      `json:"totalCount"`
-	List       []map[string]interface{} `json:"list"`
-	Code       int                      `json:"code"`
-	Msg        string                   `json:"msg"`
-}
-
-type Base struct {
-	Id   string `json:"id"`
-	UUID string `json:"uuid"`
-}
-
-type Business struct {
-	Base
-	BusinessDescribe string `json:"business_describe"`
-	BusinessMaster   string `json:"business_master"`
-	BusinessName     string `json:"business_name"`
-}
-
-type Service struct {
-	Base
-	DomainId      string `json:"domain_id"`
-	DomainName    string `json:"domain_name"`
-	DomainRemarks string `json:"domain_remarks"`
-}
-
-type App struct {
-	Base
-	ServiceDescribe string `json:"service_describe"`
-	ServiceGrade    string `json:"service_grade"`
-	ServiceId       string `json:"service_id"`
+type CMDBData struct {
+	Id       int         `json:"id"`
+	Name     string      `json:"name"`
+	Desc     string      `json:"desc"`
+	Owner    string      `json:"owner"`
+	Children []CMDBData `json:"children"`
 }

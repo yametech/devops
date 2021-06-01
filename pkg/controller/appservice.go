@@ -20,7 +20,6 @@ type AppServiceController struct {
 	proc              *proc.Proc
 	handlerMap        map[workorder.OrderType]map[workorder.OrderStatus]func(obj *workorder.WorkOrder) error
 	appProjectService *appservice.AppProjectService
-	namespaceService  *appservice.NamespaceService
 }
 
 func NewPipelineController(store store.IKVStore) *AppServiceController {
@@ -41,7 +40,6 @@ func NewPipelineController(store store.IKVStore) *AppServiceController {
 		IKVStore:          store,
 		proc:              proc.NewProc(),
 		appProjectService: appservice.NewAppProjectService(baseService),
-		namespaceService:  namespaceService,
 		handlerMap: map[workorder.OrderType]map[workorder.OrderStatus]func(obj *workorder.WorkOrder) error{
 			workorder.Resources: rsHandlerMap,
 			workorder.Namespace: nsHandlerMap,
@@ -53,7 +51,7 @@ func NewPipelineController(store store.IKVStore) *AppServiceController {
 
 func (a *AppServiceController) Run() error {
 	a.proc.Add(a.recvWorkOrder)
-
+	a.proc.Add(a.SyncCMDBAppService)
 	return <-a.proc.Start()
 }
 
@@ -100,8 +98,6 @@ func (a *AppServiceController) handleWorkOrder(obj *workorder.WorkOrder) {
 	}
 }
 
-func (a *AppServiceController) GetCMDBAppService(errC chan<- error) {
-	go func() {
-
-	}()
+func (a *AppServiceController) SyncCMDBAppService(errC chan<- error) {
+	a.appProjectService.SyncFromCMDB()
 }
