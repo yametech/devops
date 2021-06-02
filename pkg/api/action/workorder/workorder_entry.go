@@ -38,12 +38,15 @@ func (w *WorkOrder) ListWorkOrder(g *gin.Context) {
 }
 
 func (w *WorkOrder) CreateWorkOrder(g *gin.Context) {
+	// Get the user
+	user := g.Request.Header.Get("x-wrapper-chinese")
+
 	data := &apiResource.Request{}
 	if err := g.ShouldBindJSON(&data); err != nil {
 		api.ResponseError(g, err)
 		return
 	}
-	order, err := w.Service.Create(data)
+	order, err := w.Service.Create(data, user)
 	if err != nil {
 		api.ResponseError(g, err)
 		return
