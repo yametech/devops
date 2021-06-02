@@ -34,10 +34,10 @@ func (s *Service) List(orderType int, orderStatus int, search string, page, page
 				"spec.order_type": orderType,
 				"spec.title":      bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 			},
-			//{
-			//	"spec.order_type": orderType,
-			//	"spec.creator":      bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
-			//},
+			{
+				"spec.order_type": orderType,
+				"spec.creator":    bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+			},
 		}
 	} else {
 		filter["$or"] = []map[string]interface{}{
@@ -51,11 +51,11 @@ func (s *Service) List(orderType int, orderStatus int, search string, page, page
 				"spec.order_status": orderStatus,
 				"spec.title":        bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 			},
-			//{
-			//	"spec.order_type": orderType,
-			//	"spec.order_status": orderStatus,
-			//	"spec.creator":      bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
-			//},
+			{
+				"spec.order_type": orderType,
+				"spec.order_status": orderStatus,
+				"spec.creator":      bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+			},
 		}
 	}
 
@@ -66,9 +66,10 @@ func (s *Service) List(orderType int, orderStatus int, search string, page, page
 	return s.IService.ListByFilter(common.DefaultNamespace, common.WorkOrder, filter, sort, offset, pageSize)
 }
 
-func (s *Service) Create(request *apiResource.Request) (core.IObject, error) {
+func (s *Service) Create(request *apiResource.Request, user string) (core.IObject, error) {
 	req := &workorder.WorkOrder{
 		Spec: workorder.Spec{
+			Creator:     user,
 			OrderType:   request.OrderType,
 			Title:       request.Title,
 			Relation:    request.Relation,
