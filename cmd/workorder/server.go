@@ -4,8 +4,10 @@ import (
 	"flag"
 	"github.com/yametech/devops/pkg/api"
 	"github.com/yametech/devops/pkg/api/action/workorder"
+	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/store/mongo"
+	go_insect "github.com/yametech/go-insect"
 )
 
 var storageUri, user, pw, database string
@@ -27,6 +29,12 @@ func main() {
 
 	baseService := service.NewBaseService(store)
 	server := api.NewServer(baseService)
+
+	//注册网关
+	go_insect.GlobalEtcdAddress = common.EtcdAddress
+	go_insect.INSECT_SERVER_PORT = 8080
+	go_insect.INSECT_SERVER_NAME = "workorder"
+	go go_insect.EtcdProxy()
 
 	workorder.NewWorkOrder("workorder", server)
 

@@ -10,6 +10,7 @@ var storageUri string
 
 func main() {
 	flag.StringVar(&storageUri, "storage_uri", "mongodb://10.200.10.46:27017/devops", "127.0.0.1:3306")
+	//flag.StringVar(&storageUri, "storage_uri", "mongodb://127.0.0.1:27017/devops", "127.0.0.1:3306")
 	flag.Parse()
 
 	store, err, errC := mongo.NewMongo(storageUri)
