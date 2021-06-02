@@ -1,7 +1,6 @@
 package base
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/resource/base"
@@ -39,13 +38,7 @@ func (r *RecentVisit) CreateRecent(user, uuid string, page, pageSize int64) ([]*
 			return nil, errors.New("最近访问更新失败！")
 		}
 	} else {
-		fmt.Printf("%p", privateModule)
-		privateModule.Spec.Modules = append(privateModule.Spec.Modules[1:], uuid)
-		fmt.Printf("%p", privateModule)
-		//privateModule.Spec.Modules = append([]string{uuid},privateModule.Spec.Modules[1:]...)
-		//
-		//privateModule.Spec.Modules = append(privateModule.Spec.Modules[1:len(privateModule.Spec.Modules):len(privateModule.Spec.Modules)-1],uuid)
-
+		privateModule.Spec.Modules = append([]string{uuid}, privateModule.Spec.Modules[1:]...)
 		_, judge, err := r.Apply(common.DefaultNamespace, common.RecentVisit, privateModule.UUID, privateModule, true)
 		if !judge && err != nil {
 			return nil, errors.New("最近访问更新失败！")

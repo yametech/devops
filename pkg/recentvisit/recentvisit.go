@@ -30,7 +30,7 @@ func RecentVisit(service service.IService) gin.HandlerFunc {
 				return
 			}
 		} else {
-			privateModule.Spec.Modules = append(privateModule.Spec.Modules[1:], uuid)
+			privateModule.Spec.Modules = append([]string{uuid}, privateModule.Spec.Modules[1:]...)
 			_, judge, _err := service.Apply(common.DefaultNamespace, common.RecentVisit, privateModule.UUID, privateModule, true)
 			if !judge && _err != nil {
 				api.ResponseError(c, _err)
