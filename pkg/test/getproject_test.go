@@ -154,11 +154,10 @@ func TestGenerateNumber(t *testing.T) {
 }
 
 func TestRequest(t *testing.T) {
-	store, _, _ := mongo.NewMongo("mongodb://10.200.10.46:27017/devops")
+	store, _, _ := mongo.NewMongo("mongodb://127.0.0.1:27017/devops")
 	baseService := service.NewBaseService(store)
 	service := ser.NewAppProjectService(baseService)
-	data, _ := service.SyncFromCMDB()
-	fmt.Println(data)
+	service.SyncFromCMDB()
 }
 
 func TestEqual(t *testing.T) {

@@ -87,7 +87,6 @@ func (a *AppServiceController) recvWorkOrder(errC chan<- error) {
 }
 
 func (a *AppServiceController) handleWorkOrder(obj *workorder.WorkOrder) {
-	//TODO: get workOrder if its AppService config and apply it
 
 	if order, exist := a.handlerMap[obj.Spec.OrderType]; exist {
 		if handler, ok := order[obj.Spec.OrderStatus]; ok {
@@ -99,5 +98,11 @@ func (a *AppServiceController) handleWorkOrder(obj *workorder.WorkOrder) {
 }
 
 func (a *AppServiceController) SyncCMDBAppService(errC chan<- error) {
-	a.appProjectService.SyncFromCMDB()
+	log.Println("SyncCMDBAppService start")
+	for {
+		if err := a.appProjectService.SyncFromCMDB(); err != nil {
+			errC <- err
+		}
+		time.Sleep(time.Second * 2)
+	}
 }

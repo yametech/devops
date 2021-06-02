@@ -22,9 +22,10 @@ type Request struct {
 
 // parse from cmdb data
 type CMDBData struct {
-	Id       int         `json:"id"`
-	Name     string      `json:"name"`
-	Desc     string      `json:"desc"`
-	Owner    string      `json:"owner"`
+	Id       int        `json:"id"`
+	Name     string     `json:"name"`
+	Leader   string     `json:"leader"`
+	Desc     string     `json:"desc"`
+	Owner    string     `json:"owner"`
 	Children []CMDBData `json:"children"`
 }

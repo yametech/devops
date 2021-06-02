@@ -8,7 +8,7 @@ import (
 
 func (b *baseServer) AddCollectionModule(g *gin.Context)  {
 	// Get the user
-	user := g.Request.Header["x-wrapper-username"][0]
+	user := g.Request.Header.Get("x-wrapper-username")
 
 	request := &apiResource.ModuleRequest{}
 	if err := g.ShouldBindJSON(request); err != nil {
@@ -27,7 +27,7 @@ func (b *baseServer) AddCollectionModule(g *gin.Context)  {
 
 func (b *baseServer) ListCollectionModule(g *gin.Context)  {
 	// Get the user
-	user := g.Request.Header["x-wrapper-username"][0]
+	user := g.Request.Header.Get("x-wrapper-username")
 
 	response, err := b.CollectionModuleService.ListCollectionModule(user)
 	if err != nil {
@@ -40,7 +40,7 @@ func (b *baseServer) ListCollectionModule(g *gin.Context)  {
 
 func (b *baseServer) DeleteCollectionModule(g *gin.Context) {
 	// Get the user
-	user := g.Request.Header["x-wrapper-username"][0]
+	user := g.Request.Header.Get("x-wrapper-username")
 
 	request := &apiResource.ModuleRequest{}
 	if err := g.ShouldBindJSON(request); err != nil {

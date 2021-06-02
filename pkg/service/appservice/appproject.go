@@ -11,6 +11,7 @@ import (
 	"github.com/yametech/devops/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
 	"net/http"
 	"time"
 )
@@ -80,6 +81,7 @@ func (a *AppProjectService) Create(request *apiResource.Request) (core.IObject, 
 			req.Spec.RootApp = parent.Metadata.UUID
 		}
 	}
+
 	return a.IService.Create(common.DefaultNamespace, common.AppProject, req)
 }
 
@@ -222,51 +224,203 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.R
 }
 
 
-func (a *AppProjectService) SyncFromCMDB() ([]apiResource.CMDBData, error) {
+func (a *AppProjectService) SyncFromCMDB() error {
 	req := utils.NewRequest(http.Client{Timeout: 30 * time.Second}, "http", "cmdb-api-test.compass.ym", map[string]string{
 		"Content-Type": "application/json",
 	})
 	resp, err := req.Get("/cmdb/api/v1/app-tree", nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	respData := make(map[string]interface{}, 0)
 	if err = json.Unmarshal(resp, &respData); err != nil {
-		return nil, err
+		return err
 	}
 
 	result := make([]apiResource.CMDBData, 0)
 	if data, ok := respData["data"]; ok {
 		if err = utils.UnstructuredObjectToInstanceObj(data, &result); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	checkUpdate := apiResource.CMDBData{
-		Children: result,
+	if err = a.DeleteFromCMDB(result, map[string]interface{}{"spec.app_type": 0}, 0); err != nil {
+		return err
 	}
 
-	if err = a.UpdateFromCMDB(checkUpdate, ""); err != nil{
-		return nil, err
+	for _, businessLine := range result {
+		if err = a.UpdateBusinessFromCMDB(businessLine, "", ""); err != nil {
+			return err
+		}
 	}
 
-
-
-	return result, nil
+	return nil
 }
 
-func (a *AppProjectService) UpdateFromCMDB(data apiResource.CMDBData, parent string) error {
-	if len(data.Children) <= 0{
+func (a *AppProjectService) DeleteFromCMDB(cmdb []apiResource.CMDBData, filter map[string]interface{}, level int) error {
+
+	dbProject := make([]*appservice.AppProject, 0)
+	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, nil, 0, 0)
+	if err != nil {
+		return err
+	}
+
+	if err = utils.UnstructuredObjectToInstanceObj(data, &dbProject); err != nil {
+		return err
+	}
+
+	cmdbMap := make(map[string]struct{}, 0)
+
+
+	for _, obj := range cmdb{
+		if _, ok := cmdbMap[obj.Name]; !ok{
+			cmdbMap[obj.Name] = struct{}{}
+		}
+	}
+
+	for _, dbObj := range dbProject{
+		if level == 2{
+			if _, ok := cmdbMap[dbObj.Spec.Desc]; !ok{
+				if err = a.IService.Delete(common.DefaultNamespace, common.AppProject, dbObj.UUID); err != nil {
+					return err
+				}
+				log.Printf("[Controller] appproject delete: %v\n", dbObj.Spec.Desc)
+			}
+		}else{
+			if _, ok := cmdbMap[dbObj.Name]; !ok{
+				if err = a.IService.Delete(common.DefaultNamespace, common.AppProject, dbObj.UUID); err != nil {
+					return err
+				}
+				log.Printf("[Controller] appproject delete: %v\n", dbObj.Name)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (a *AppProjectService) UpdateBusinessFromCMDB(data apiResource.CMDBData, parent string, root string) error {
+
+	if data.Name == ""{
 		return nil
 	}
 
-	//parentObj := &appservice.AppProject{}
-	//a.IService.GetByFilter(common.DefaultNamespace, common.AppProject, parentObj)
-	//
-	//for _, child := range data.Children{
-	//
-	//}
+	dbObj := &appservice.AppProject{}
+	filter := map[string]interface{}{
+		"metadata.name": data.Name,
+		"spec.parent_app": parent,
+		"spec.root_app": root,
+	}
+
+	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppProject, dbObj, filter); err != nil {
+		dbObj.Metadata.Name = data.Name
+		dbObj.Spec.AppType = 0
+		dbObj.Spec.Owner = []string{data.Leader}
+
+		if _, err = a.IService.Create(common.DefaultNamespace, common.AppProject, dbObj); err != nil {
+			return err
+		}
+
+		log.Printf("[Controller] appproject add new BusinessLine: %v\n", data.Name)
+	}else{
+		if data.Leader != "" && len(dbObj.Spec.Owner) > 0{
+			if dbObj.Spec.Owner[0] != data.Leader{
+				dbObj.Spec.Owner = []string{data.Leader}
+				if _, _, err = a.IService.Apply(common.DefaultNamespace, common.AppProject, dbObj.UUID, dbObj, false); err != nil {
+					return err
+				}
+				log.Printf("[Controller] appproject update BusinessLine: %v\n", data.Name)
+			}
+		}
+	}
+
+	if err := a.DeleteFromCMDB(data.Children, map[string]interface{}{"spec.parent_app": dbObj.UUID, "spec.app_type": 1}, 1); err != nil {
+		return err
+	}
+
+	for _, child := range data.Children{
+		if err := a.UpdateServiceFromCMDB(child, dbObj.UUID, dbObj.UUID); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (a *AppProjectService) UpdateServiceFromCMDB(data apiResource.CMDBData, parent string, root string) error {
+	if data.Name == ""{
+		return nil
+	}
+
+	dbObj := &appservice.AppProject{}
+	filter := map[string]interface{}{
+		"metadata.name": data.Name,
+		"spec.parent_app": parent,
+		"spec.root_app": root,
+	}
+
+	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppProject, dbObj, filter); err != nil {
+		dbObj.Metadata.Name = data.Name
+		dbObj.Spec.ParentApp = parent
+		dbObj.Spec.RootApp = root
+		dbObj.Spec.AppType = 1
+
+		if _, err = a.IService.Create(common.DefaultNamespace, common.AppProject, dbObj); err != nil {
+			return err
+		}
+
+		log.Printf("[Controller] appproject add new Service: %v\n", data.Name)
+	}
+
+	if err := a.DeleteFromCMDB(data.Children, map[string]interface{}{"spec.parent_app": dbObj.UUID, "spec.app_type": 2}, 2); err != nil {
+		return err
+	}
+
+	for _, child := range data.Children{
+		if err := a.UpdateAppFromCMDB(child, dbObj.UUID, root); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (a *AppProjectService) UpdateAppFromCMDB(data apiResource.CMDBData, parent string, root string) error {
+	if data.Desc == ""{
+		return nil
+	}
+
+	dbObj := &appservice.AppProject{}
+	filter := map[string]interface{}{
+		"metadata.name": data.Desc,
+		"spec.parent_app": parent,
+		"spec.root_app": root,
+	}
+
+	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppProject, dbObj, filter); err != nil {
+		dbObj.Metadata.Name = data.Desc
+		dbObj.Spec.Desc = data.Name
+		dbObj.Spec.ParentApp = parent
+		dbObj.Spec.RootApp = root
+		dbObj.Spec.AppType = 2
+		dbObj.Spec.Owner = []string{data.Owner}
+
+		if _, err = a.IService.Create(common.DefaultNamespace, common.AppProject, dbObj); err != nil {
+			return err
+		}
+		log.Printf("[Controller] appproject add new App: %v\n", dbObj.Spec.Desc)
+	}else{
+		if data.Owner != "" && len(dbObj.Spec.Owner) > 0{
+			if dbObj.Spec.Owner[0] != data.Owner{
+				dbObj.Spec.Owner = []string{data.Owner}
+				if _, _, err = a.IService.Apply(common.DefaultNamespace, common.AppProject, dbObj.UUID, dbObj, false); err != nil {
+					return err
+				}
+				log.Printf("[Controller] appproject update App: %v\n", dbObj.Spec.Desc)
+			}
+		}
+	}
 
 	return nil
 }
