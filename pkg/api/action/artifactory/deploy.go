@@ -61,8 +61,8 @@ func (b *baseServer) CreateDeploy(g *gin.Context) {
 		return
 	}
 
-	//todo:待网关能传中文名字后，要获取中文名
-	request.UserName = g.Request.Header.Get("X-Wrapper-Username")
+	request.UserNameID = g.Request.Header.Get("X-Wrapper-Username")
+	request.UserName = g.Request.Header.Get("X-Wrapper-Chinese")
 
 	err = b.DeployService.Create(request)
 	if err != nil {

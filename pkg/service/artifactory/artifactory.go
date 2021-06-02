@@ -105,7 +105,6 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 
 	appName := fmt.Sprintf("%s-%d", reqAr.AppName, time.Now().Unix())
 
-	//todo:CreateUser后面要换成中文名
 	ar := &arResource.Artifact{
 		Metadata: core.Metadata{
 			Name: appName,
@@ -121,7 +120,7 @@ func (a *ArtifactService) Create(reqAr *apiResource.RequestArtifact) (*arResourc
 			ProjectFile:  reqAr.ProjectFile,
 			ProjectPath:  reqAr.ProjectPath,
 			Images:       imageUrl,
-			CreateUserId: reqAr.UserName,
+			CreateUserId: reqAr.UserNameID,
 			CreateUser:   reqAr.UserName,
 		},
 	}
