@@ -19,14 +19,12 @@ func NewModuleEntry(i service.IService) *ModuleEntry {
 
 func (m *ModuleEntry) CreateEntry(user, uuid string, page, pageSize int64) ([]*base.Module, error) {
 	offset := (page - 1) * pageSize
-	filter := map[string]interface{}{}
-	if user != "" {
-		filter["spec.User"] = user
+	filter := map[string]interface{}{
+		"spec.user": user,
 	}
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
-
 	data, err := m.IService.ListByFilter(common.DefaultNamespace, common.ModuleEntry, filter, sort, offset, pageSize)
 	if err != nil {
 		return nil, err
@@ -91,14 +89,12 @@ func (m *ModuleEntry) CreateEntry(user, uuid string, page, pageSize int64) ([]*b
 
 func (m *ModuleEntry) DeleteEntry(user, uuid string, page, pageSize int64) ([]*base.Module, error) {
 	offset := (page - 1) * pageSize
-	filter := map[string]interface{}{}
-	if user != "" {
-		filter["spec.User"] = user
+	filter := map[string]interface{}{
+		"spec.user": user,
 	}
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
-
 	data, err := m.IService.ListByFilter(common.DefaultNamespace, common.ModuleEntry, filter, sort, offset, pageSize)
 	if err != nil {
 		return nil, err
@@ -141,14 +137,12 @@ func (m *ModuleEntry) DeleteEntry(user, uuid string, page, pageSize int64) ([]*b
 
 func (m *ModuleEntry) QueryEntry(user string, page, pageSize int64) ([]*base.Module, error) {
 	offset := (page - 1) * pageSize
-	filter := map[string]interface{}{}
-	if user != "" {
-		filter["spec.User"] = user
+	filter := map[string]interface{}{
+		"spec.user": user,
 	}
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
-
 	data, err := m.IService.ListByFilter(common.DefaultNamespace, common.ModuleEntry, filter, sort, offset, pageSize)
 	if err != nil {
 		return nil, errors.New("找不到此用户数据！")

@@ -49,15 +49,10 @@ func (r *RecentVisit) CreateRecent(user, uuid string, page, pageSize int64) ([]*
 
 func (r *RecentVisit) ListRecent(user string, page, pageSize int64) ([]*base.Module, error) {
 	offset := (page - 1) * pageSize
-	filter := map[string]interface{}{}
-	if user != "" {
-		filter["spec.User"] = user
-	}
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
-
-	data, err := r.IService.ListByFilter(common.DefaultNamespace, common.RecentVisit, filter, sort, offset, pageSize)
+	data, err := r.IService.ListByFilter(common.DefaultNamespace, common.RecentVisit, map[string]interface{}{"spec.user": user}, sort, offset, pageSize)
 	if err != nil {
 		return nil, err
 	}
