@@ -50,10 +50,9 @@ func (r *RecentVisit) CreateRecent(user, uuid string, page, pageSize int64) ([]*
 func (r *RecentVisit) ListRecent(user string, page, pageSize int64) ([]*base.Module, error) {
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
-	//if user != "" {
-	//	filter["spec.User"] = user
-	//}
-	filter["spec.user"] = user
+	if user != "" {
+		filter["spec.User"] = user
+	}
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}

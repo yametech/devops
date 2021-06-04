@@ -20,10 +20,9 @@ func NewModuleEntry(i service.IService) *ModuleEntry {
 func (m *ModuleEntry) CreateEntry(user, uuid string, page, pageSize int64) ([]*base.Module, error) {
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
-	//if user != "" {
-	//	filter["spec.User"] = user
-	//}
-	filter["spec.user"] = user
+	if user != "" {
+		filter["spec.User"] = user
+	}
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
@@ -93,10 +92,9 @@ func (m *ModuleEntry) CreateEntry(user, uuid string, page, pageSize int64) ([]*b
 func (m *ModuleEntry) DeleteEntry(user, uuid string, page, pageSize int64) ([]*base.Module, error) {
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
-	//if user != "" {
-	//	filter["spec.User"] =user
-	//}
-	filter["spec.user"] = user
+	if user != "" {
+		filter["spec.User"] = user
+	}
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
@@ -144,10 +142,9 @@ func (m *ModuleEntry) DeleteEntry(user, uuid string, page, pageSize int64) ([]*b
 func (m *ModuleEntry) QueryEntry(user string, page, pageSize int64) ([]*base.Module, error) {
 	offset := (page - 1) * pageSize
 	filter := map[string]interface{}{}
-	//if user != "" {
-	//	filter["spec.User"] =user
-	//}
-	filter["spec.user"] = user
+	if user != "" {
+		filter["spec.User"] = user
+	}
 	sort := map[string]interface{}{
 		"metadata.created_time": -1,
 	}
