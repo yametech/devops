@@ -8,7 +8,7 @@ import (
 )
 
 func (b *baseServer) CreateRecentVisit(c *gin.Context) {
-	user := ""
+	user := c.Request.Header.Get("x-wrapper-username")
 	uuid := c.Query("uuid")
 	page, err := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 64)
 	if err != nil {
@@ -29,9 +29,7 @@ func (b *baseServer) CreateRecentVisit(c *gin.Context) {
 }
 
 func (b *baseServer) ListRecentVisit(c *gin.Context) {
-	//userspace := c.Request.Header["user"]
-	//user := userspace[0]
-	user := ""
+	user := c.Request.Header.Get("x-wrapper-username")
 	page, err := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 64)
 	if err != nil {
 		api.ResponseError(c, errors.New("page need int type"))
