@@ -1,7 +1,6 @@
 package base
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"github.com/yametech/devops/pkg/common"
 	"github.com/yametech/devops/pkg/core"
@@ -23,7 +22,6 @@ func (m *ModuleEntry) CreateEntry(user, uuid string) ([]*base.Module, error) {
 	}
 	privateModule := &base.PrivateModule{}
 	if err := m.IService.GetByFilter(common.DefaultNamespace, common.ModuleEntry, privateModule, filter); err != nil {
-		fmt.Println(nil, errors.New("此用户数据在数据库中不存在！"))
 		me := &base.PrivateModule{
 			Metadata: core.Metadata{},
 			Spec: base.PrivateModuleSpec{
