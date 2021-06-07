@@ -38,7 +38,7 @@ func (r *RecentVisit) CreateRecent(user, uuid string, page, pageSize int64) ([]*
 			return nil, errors.New("最近访问更新失败！")
 		}
 	} else {
-		privateModule.Spec.Modules = append([]string{uuid}, privateModule.Spec.Modules[1:]...)
+		privateModule.Spec.Modules = append(privateModule.Spec.Modules[1:], uuid)
 		_, judge, err := r.Apply(common.DefaultNamespace, common.RecentVisit, privateModule.UUID, privateModule, true)
 		if !judge && err != nil {
 			return nil, errors.New("最近访问更新失败！")
