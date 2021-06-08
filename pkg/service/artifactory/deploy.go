@@ -106,15 +106,16 @@ func (a *DeployService) Create(request *apiResource.RequestDeploy) error {
 			ServicePorts:        request.ServicePorts,
 			Containers:          request.Containers,
 			StorageClaims:       request.StorageClaims,
-			CreateUserId:        request.UserName,
+			CreateUserId:        request.UserNameID,
+			CreateUser:          request.UserName,
 			CreateTeam:          request.Team,
 		},
 	}
-	for k, _ := range deploy.Spec.Containers {
+	for k := range deploy.Spec.Containers {
 		MergeEnvVar(&deploy.Spec.Containers[k])
 	}
 
-	for k, _ := range deploy.Spec.ServicePorts {
+	for k := range deploy.Spec.ServicePorts {
 		deploy.Spec.ServicePorts[k].Protocol = strings.ToUpper(deploy.Spec.ServicePorts[k].Protocol)
 	}
 
