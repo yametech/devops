@@ -18,6 +18,7 @@ type RequestArtifact struct {
 	ProjectFile string `json:"project_file"`
 	ProjectPath string `json:"project_path"`
 	UserName    string `json:"user_name"`
+	UserNameID  string `json:"user_name_id"`
 }
 
 type ArtifactSpec struct {

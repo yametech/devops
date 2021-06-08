@@ -101,7 +101,7 @@ func (a *AppServiceController) SyncCMDBAppService(errC chan<- error) {
 	log.Println("SyncCMDBAppService start")
 	for {
 		if err := a.appProjectService.SyncFromCMDB(); err != nil {
-			errC <- err
+			log.Printf("[Controller] SyncCMDBAppService error: %v\n", err)
 		}
 		time.Sleep(time.Second * 2)
 	}
