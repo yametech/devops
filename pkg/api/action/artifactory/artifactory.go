@@ -66,9 +66,8 @@ func (b *baseServer) CreateArtifact(g *gin.Context) {
 		return
 	}
 
-	if len(g.Request.Header["Username"]) > 0 {
-		request.UserName = g.Request.Header["Username"][0]
-	}
+	request.UserNameID = g.Request.Header.Get("X-Wrapper-Username")
+	request.UserName = g.Request.Header.Get("X-Wrapper-Chinese")
 
 	res, err := b.ArtifactService.Create(request)
 	if err != nil {

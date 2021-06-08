@@ -62,7 +62,6 @@ func NewBaseServer(serviceName string, server *api.Server) *baseServer {
 		group.GET("recent_visit", base.ListRecentVisit)
 	}
 
-	//group.Use(recentvisit.RecentVisit(server))
 	//showallgroupmodule
 	{
 		group.GET("showallgroup", base.ListGroup)
