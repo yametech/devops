@@ -6,11 +6,15 @@ import (
 	"github.com/yametech/devops/pkg/core"
 	"github.com/yametech/devops/pkg/resource/base"
 	"github.com/yametech/devops/pkg/service"
+	"github.com/yametech/devops/pkg/store"
 )
 
 type TopNavigation struct {
 	service.IService
 }
+
+var _ service.IService = (*TopNavigation)(nil)
+var _ store.IKVStore = (*TopNavigation)(nil)
 
 func NewTopNavigation(i service.IService) *TopNavigation {
 	return &TopNavigation{i}

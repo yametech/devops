@@ -9,6 +9,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/r3labs/sse/v2 v2.3.2
 	github.com/serialx/hashring v0.0.0-20200727003509-22c0c7ab6b1b
+	github.com/spf13/cast v1.3.1
 	github.com/yametech/go-flowrun v0.0.12
 	github.com/yametech/go-insect v0.0.6
 	go.mongodb.org/mongo-driver v1.5.1

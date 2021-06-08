@@ -21,10 +21,7 @@ func (a *GlobalConfigService) List(page, pageSize int64) ([]interface{}, error) 
 	sort := map[string]interface{}{
 		"metadata.version": -1,
 	}
-
-	unStruct, err := a.IService.List(common.DefaultNamespace, common.GlobalConfig, "", sort, offset, pageSize)
-
-	return unStruct, err
+	return a.IService.List(common.DefaultNamespace, common.GlobalConfig, "", sort, offset, pageSize)
 }
 
 func (a *GlobalConfigService) Create(reqAll *globalconfigproject.RequestGlobalConfig) (core.IObject, error) {
@@ -35,8 +32,7 @@ func (a *GlobalConfigService) Create(reqAll *globalconfigproject.RequestGlobalCo
 		},
 	}
 	autoconfigure.GenerateVersion()
-	res, err := a.IService.Create(common.DefaultNamespace, common.GlobalConfig, autoconfigure)
-	return res, err
+	return a.IService.Create(common.DefaultNamespace, common.GlobalConfig, autoconfigure)
 }
 
 func (a *GlobalConfigService) Update(uuid string, reqAll *globalconfigproject.RequestGlobalConfig) (core.IObject, bool, error) {
@@ -49,12 +45,10 @@ func (a *GlobalConfigService) Update(uuid string, reqAll *globalconfigproject.Re
 			SortString: reqAll.SortString,
 		},
 	}
-
 	autoconfigure.GenerateVersion()
 	_, whether, err := a.IService.Apply(common.DefaultNamespace, common.GlobalConfig, uuid, autoconfigure, true)
 	if autoconfigure.Name == "" {
 		autoconfigure.Name = "全局配置服务"
 	}
-
 	return autoconfigure, whether, err
 }
