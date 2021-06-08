@@ -11,6 +11,7 @@ import (
 	"github.com/yametech/devops/pkg/resource/workorder"
 	"github.com/yametech/devops/pkg/service"
 	"github.com/yametech/devops/pkg/store/mongo"
+	"github.com/yametech/devops/pkg/utils"
 	"io/ioutil"
 	"reflect"
 	"testing"
@@ -160,6 +161,35 @@ func TestRequest(t *testing.T) {
 	service.SyncFromCMDB()
 }
 
+func TestCleanData(t *testing.T) {
+	store, _, _ := mongo.NewMongo("mongodb://10.200.10.46:27017/devops")
+	//store, _, _ := mongo.NewMongo("mongodb://127.0.0.1:27017/devops")
+	appConfigs := make([]*appservice.AppConfig, 0)
+	data, _ := store.ListByFilter(common.DefaultNamespace, common.AppConfig, nil, nil, 0, 0)
+	utils.UnstructuredObjectToInstanceObj(data, &appConfigs)
+	appsMap := make(map[string]*appservice.AppProject, 0)
+	for _, appConfig := range appConfigs {
+		app := &appservice.AppProject{}
+		store.GetByUUID(common.DefaultNamespace, common.AppProject, appConfig.Spec.App, app)
+		if app.UUID != ""{
+			appsMap[app.UUID] = app
+		}
+	}
+
+	apps := make([]*appservice.AppProject, 0)
+	filter := map[string]interface{}{
+		"spec.app_type": 2,
+	}
+	datas, _ := store.ListByFilter(common.DefaultNamespace, common.AppProject, filter, nil, 0, 0)
+	utils.UnstructuredObjectToInstanceObj(datas, &apps)
+
+	for _, app := range apps{
+		if _, ok := appsMap[app.UUID]; !ok{
+			store.Delete(common.DefaultNamespace, common.AppProject, app.UUID)
+		}
+	}
+}
+
 func TestEqual(t *testing.T) {
 	m1 := map[string]interface{}{"1": []int{1, 2, 3}, "2": 3, "3": "a", "4": map[int]interface{}{1: 1, 2: 2}}
 	m2 := map[string]interface{}{"1": []int{1, 2, 3}, "2": 3, "3": "a", "4": map[int]interface{}{1: 1, 2: 2}}
@@ -174,4 +204,5 @@ func TestName(t *testing.T) {
 	ss = nil
 	ss = append(ss, 2)
 }
+
 
