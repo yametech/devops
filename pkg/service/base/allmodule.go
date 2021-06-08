@@ -105,9 +105,6 @@ func (a *AllModuleService) ListAll(search string) ([]*apiResource.ModuleResponse
 		if len(modules) > 0 {
 			groups[i].Children = modules
 		}
-		// else{
-		// 	groups = append(groups[:i], groups[i+1:]...)
-		// }
 	}
 
 	return groups, nil
