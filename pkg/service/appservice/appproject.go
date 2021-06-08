@@ -2,6 +2,7 @@ package appservice
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 	"github.com/yametech/devops/pkg/common"
@@ -174,7 +175,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.R
 				"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 			},
 			{
-				"spec.desc":     bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
+				"spec.desc": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 			},
 		}
 
@@ -223,7 +224,6 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.R
 	return parents, nil
 }
 
-
 func (a *AppProjectService) SyncFromCMDB() error {
 	req := utils.NewRequest(http.Client{Timeout: 30 * time.Second}, "http", "cmdb-api-test.compass.ym", map[string]string{
 		"Content-Type": "application/json",
@@ -236,6 +236,12 @@ func (a *AppProjectService) SyncFromCMDB() error {
 	respData := make(map[string]interface{}, 0)
 	if err = json.Unmarshal(resp, &respData); err != nil {
 		return err
+	}
+
+	if code, ok := respData["code"]; ok {
+		if code.(float64) != 200 {
+			return fmt.Errorf("request cmdb response code: %v", code)
+		}
 	}
 
 	result := make([]apiResource.CMDBData, 0)
@@ -272,28 +278,53 @@ func (a *AppProjectService) DeleteFromCMDB(cmdb []apiResource.CMDBData, filter m
 
 	cmdbMap := make(map[string]struct{}, 0)
 
-
-	for _, obj := range cmdb{
-		if _, ok := cmdbMap[obj.Name]; !ok{
+	for _, obj := range cmdb {
+		if _, ok := cmdbMap[obj.Name]; !ok {
 			cmdbMap[obj.Name] = struct{}{}
 		}
 	}
 
-	for _, dbObj := range dbProject{
-		if level == 2{
-			if _, ok := cmdbMap[dbObj.Spec.Desc]; !ok{
-				if err = a.IService.Delete(common.DefaultNamespace, common.AppProject, dbObj.UUID); err != nil {
+	for _, dbObj := range dbProject {
+		if level == 2 {
+			if _, ok := cmdbMap[dbObj.Spec.Desc]; !ok {
+				if err = a.DeleteEveryLevel(dbObj); err != nil {
 					return err
 				}
-				log.Printf("[Controller] appproject delete: %v\n", dbObj.Spec.Desc)
 			}
-		}else{
-			if _, ok := cmdbMap[dbObj.Name]; !ok{
-				if err = a.IService.Delete(common.DefaultNamespace, common.AppProject, dbObj.UUID); err != nil {
+		} else {
+			if _, ok := cmdbMap[dbObj.Name]; !ok {
+				if err = a.DeleteEveryLevel(dbObj); err != nil {
 					return err
 				}
-				log.Printf("[Controller] appproject delete: %v\n", dbObj.Name)
 			}
+		}
+	}
+
+	return nil
+}
+
+func (a *AppProjectService) DeleteEveryLevel(req *appservice.AppProject) error {
+
+	if err := a.IService.Delete(common.DefaultNamespace, common.AppProject, req.UUID); err != nil {
+		return err
+	}
+	log.Printf("[Controller] appproject delete: [Name: %v, Desc: %v]\n", req.Name, req.Spec.Desc)
+	children := make([]*appservice.AppProject, 0)
+	filter := map[string]interface{}{
+		"spec.parent_app": req.UUID,
+	}
+	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.AppProject, filter, nil, 0, 0)
+	if err != nil {
+		return nil
+	}
+
+	if err = utils.UnstructuredObjectToInstanceObj(data, &children); err != nil {
+		return err
+	}
+
+	for _, child := range children {
+		if err = a.DeleteEveryLevel(child); err != nil {
+			return err
 		}
 	}
 
@@ -302,15 +333,15 @@ func (a *AppProjectService) DeleteFromCMDB(cmdb []apiResource.CMDBData, filter m
 
 func (a *AppProjectService) UpdateBusinessFromCMDB(data apiResource.CMDBData, parent string, root string) error {
 
-	if data.Name == ""{
+	if data.Name == "" {
 		return nil
 	}
 
 	dbObj := &appservice.AppProject{}
 	filter := map[string]interface{}{
-		"metadata.name": data.Name,
+		"metadata.name":   data.Name,
 		"spec.parent_app": parent,
-		"spec.root_app": root,
+		"spec.root_app":   root,
 	}
 
 	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppProject, dbObj, filter); err != nil {
@@ -323,14 +354,14 @@ func (a *AppProjectService) UpdateBusinessFromCMDB(data apiResource.CMDBData, pa
 		}
 
 		log.Printf("[Controller] appproject add new BusinessLine: %v\n", data.Name)
-	}else{
-		if data.Leader != "" && len(dbObj.Spec.Owner) > 0{
-			if dbObj.Spec.Owner[0] != data.Leader{
+	} else {
+		if data.Leader != "" && len(dbObj.Spec.Owner) > 0 {
+			if dbObj.Spec.Owner[0] != data.Leader {
 				dbObj.Spec.Owner = []string{data.Leader}
 				if _, _, err = a.IService.Apply(common.DefaultNamespace, common.AppProject, dbObj.UUID, dbObj, false); err != nil {
 					return err
 				}
-				log.Printf("[Controller] appproject update BusinessLine: %v\n", data.Name)
+				log.Printf("[Controller] appproject update BusinessLine: %v---Leader: %v\n", dbObj.Name, dbObj.Spec.Owner)
 			}
 		}
 	}
@@ -339,7 +370,7 @@ func (a *AppProjectService) UpdateBusinessFromCMDB(data apiResource.CMDBData, pa
 		return err
 	}
 
-	for _, child := range data.Children{
+	for _, child := range data.Children {
 		if err := a.UpdateServiceFromCMDB(child, dbObj.UUID, dbObj.UUID); err != nil {
 			return err
 		}
@@ -349,15 +380,15 @@ func (a *AppProjectService) UpdateBusinessFromCMDB(data apiResource.CMDBData, pa
 }
 
 func (a *AppProjectService) UpdateServiceFromCMDB(data apiResource.CMDBData, parent string, root string) error {
-	if data.Name == ""{
+	if data.Name == "" {
 		return nil
 	}
 
 	dbObj := &appservice.AppProject{}
 	filter := map[string]interface{}{
-		"metadata.name": data.Name,
+		"metadata.name":   data.Name,
 		"spec.parent_app": parent,
-		"spec.root_app": root,
+		"spec.root_app":   root,
 	}
 
 	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppProject, dbObj, filter); err != nil {
@@ -377,7 +408,7 @@ func (a *AppProjectService) UpdateServiceFromCMDB(data apiResource.CMDBData, par
 		return err
 	}
 
-	for _, child := range data.Children{
+	for _, child := range data.Children {
 		if err := a.UpdateAppFromCMDB(child, dbObj.UUID, root); err != nil {
 			return err
 		}
@@ -387,15 +418,15 @@ func (a *AppProjectService) UpdateServiceFromCMDB(data apiResource.CMDBData, par
 }
 
 func (a *AppProjectService) UpdateAppFromCMDB(data apiResource.CMDBData, parent string, root string) error {
-	if data.Desc == ""{
+	if data.Desc == "" {
 		return nil
 	}
 
 	dbObj := &appservice.AppProject{}
 	filter := map[string]interface{}{
-		"metadata.name": data.Desc,
+		"metadata.name":   data.Desc,
 		"spec.parent_app": parent,
-		"spec.root_app": root,
+		"spec.root_app":   root,
 	}
 
 	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AppProject, dbObj, filter); err != nil {
@@ -410,14 +441,14 @@ func (a *AppProjectService) UpdateAppFromCMDB(data apiResource.CMDBData, parent 
 			return err
 		}
 		log.Printf("[Controller] appproject add new App: %v\n", dbObj.Spec.Desc)
-	}else{
-		if data.Owner != "" && len(dbObj.Spec.Owner) > 0{
-			if dbObj.Spec.Owner[0] != data.Owner{
+	} else {
+		if data.Owner != "" && len(dbObj.Spec.Owner) > 0 {
+			if dbObj.Spec.Owner[0] != data.Owner {
 				dbObj.Spec.Owner = []string{data.Owner}
 				if _, _, err = a.IService.Apply(common.DefaultNamespace, common.AppProject, dbObj.UUID, dbObj, false); err != nil {
 					return err
 				}
-				log.Printf("[Controller] appproject update App: %v\n", dbObj.Spec.Desc)
+				log.Printf("[Controller] appproject update App: %v----Owner: %v\n", dbObj.Spec.Desc, dbObj.Spec.Owner)
 			}
 		}
 	}
