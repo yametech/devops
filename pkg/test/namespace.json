@@ -450,6 +450,22 @@
             }
           ]
         }
+      },
+      {
+        "id": 36,
+        "namespace": "architecture-test",
+        "env": "测试环境",
+        "config": {
+          "threshold": 80,
+          "services": [
+            1,
+            {
+              "pod": "",
+              "cpu": "",
+              "mem": ""
+            }
+          ]
+        }
       }
     ]
   },
