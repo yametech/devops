@@ -52,14 +52,14 @@ func (r *RecentVisit) CreateRecent(user, uuid string, page, pageSize int64) ([]*
 	if len(privateModule.Spec.Modules) < 6 {
 		privateModule.Spec.Modules = append(privateModule.Spec.Modules, uuid)
 		privateModule.Spec.User = user
-		_, judge, err := r.Apply(common.DefaultNamespace, common.RecentVisit, privateModule.UUID, privateModule, true)
-		if !judge && err != nil {
+		_, judge, _err := r.Apply(common.DefaultNamespace, common.RecentVisit, privateModule.UUID, privateModule, true)
+		if !judge && _err != nil {
 			return nil, errors.New("最近访问更新失败！")
 		}
 	} else {
 		privateModule.Spec.Modules = append(privateModule.Spec.Modules[1:], uuid)
-		_, judge, err := r.Apply(common.DefaultNamespace, common.RecentVisit, privateModule.UUID, privateModule, true)
-		if !judge && err != nil {
+		_, judge, _err := r.Apply(common.DefaultNamespace, common.RecentVisit, privateModule.UUID, privateModule, true)
+		if !judge && _err != nil {
 			return nil, errors.New("最近访问更新失败！")
 		}
 	}
@@ -78,17 +78,17 @@ func (r *RecentVisit) ListRecent(user string, page, pageSize int64) ([]*base.Mod
 	if data != nil {
 		privateModule := &base.PrivateModule{}
 		for _, v := range data {
-			err := utils.UnstructuredObjectToInstanceObj(v, privateModule)
-			if err != nil {
-				return nil, err
+			_err := utils.UnstructuredObjectToInstanceObj(v, privateModule)
+			if _err != nil {
+				return nil, _err
 			}
 		}
 		moduleSlice := make([]*base.Module, 0)
 		for i := len(privateModule.Spec.Modules) - 1; i >= 0; i-- {
 			module := &base.Module{}
-			err := r.IService.GetByUUID(common.DefaultNamespace, common.AllModule, privateModule.Spec.Modules[i], module)
-			if err != nil {
-				return nil, err
+			_err := r.IService.GetByUUID(common.DefaultNamespace, common.AllModule, privateModule.Spec.Modules[i], module)
+			if _err != nil {
+				return nil, _err
 			}
 			moduleSlice = append(moduleSlice, module)
 		}
