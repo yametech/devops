@@ -59,5 +59,6 @@ func init() {
 	flag.StringVar(&GitPW, "gitpw", GitPW, "-gitpw=git_password")
 	flag.StringVar(&RegistryUser, "registryuser", RegistryUser, "-registryuser=registry_user")
 	flag.StringVar(&RegistryPW, "registrypw", RegistryPW, "-registrypw=registry_password")
+	flag.StringVar(&EtcdAddress, "etcdaddress", EtcdAddress, "-etcdaddress=etcdaddress")
 	flag.IntVar(&StoreImagesCount, "storeimgescount", StoreImagesCount, "-storeimagescount=5")
 }
