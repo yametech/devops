@@ -237,6 +237,21 @@ func (a *ArtifactService) GetByUUID(uuid string) (*arResource.Artifact, error) {
 	return ar, nil
 }
 
+func (a *ArtifactService) ExistName(name string) (bool, error) {
+	filter := map[string]interface{}{
+		"metadata.name": name,
+	}
+	ar := &arResource.Artifact{}
+	err := a.IService.GetByFilter(common.DefaultNamespace, common.Artifactory, ar, filter)
+	if err != nil {
+		if err.Error() == "notFound" {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 func (a *ArtifactService) Update(uuid string, reqAr *apiResource.RequestArtifact) (core.IObject, bool, error) {
 	ar := &arResource.Artifact{
 		Spec: arResource.ArtifactSpec{
@@ -526,3 +541,44 @@ func (a *ArtifactService) CheckImagesCount(appName string) {
 		}
 	}
 }
+
+
+func (a *ArtifactService) SyncAr(reqAr *apiResource.SyncArtifact) (string, error) {
+	ok, err := a.ExistName(reqAr.Name)
+	if err != nil {
+		return "检查制品出错", err
+	}
+	if ok {
+		return "已存在制品", nil
+	}
+	temp := strings.Split(strings.Replace(reqAr.GitUrl, ".git", "", -1), "/")
+	appName := strings.ToLower(temp[len(temp)-1])
+	ar := &arResource.Artifact{
+		Metadata: core.Metadata{
+			Name:        reqAr.Name,
+			Version:     reqAr.Version,
+			CreatedTime: reqAr.CreateTime,
+		},
+		Spec: arResource.ArtifactSpec{
+			ArtifactStatus: arResource.Built,
+			Branch:         reqAr.Branch,
+			GitUrl:         reqAr.GitUrl,
+			Language:       reqAr.Language,
+			Tag:            reqAr.Tag,
+			Registry:       strings.Split(reqAr.ImagesUrl, "/")[0],
+			Images:         fmt.Sprintf("%s/%s", reqAr.ImagesUrl, appName),
+			ProjectFile:    reqAr.ProjectFile,
+			ProjectPath:    reqAr.ProjectPath,
+			AppName:        reqAr.AppName,
+			CreateUserId:   reqAr.UserNameID,
+			CreateUser:     reqAr.UserName,
+			Remarks:        reqAr.Remarks,
+		},
+	}
+	_, err = a.IService.Create(common.DefaultNamespace, common.Artifactory, ar)
+	if err != nil {
+		return "创建失败", err
+	}
+	return "创建成功", nil
+}
+

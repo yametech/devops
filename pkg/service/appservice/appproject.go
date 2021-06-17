@@ -3,9 +3,11 @@ package appservice
 import (
 	"encoding/json"
 	"fmt"
+
 	"log"
 	"net/http"
 	"time"
+
 
 	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
@@ -32,7 +34,7 @@ func (a *AppProjectService) List(search string) ([]*apiResource.Response, error)
 	}
 
 	sort := map[string]interface{}{
-		"metadata.created_time": 1,
+		"metadata.create": 1,
 	}
 
 	// Get the BusinessLine
@@ -309,7 +311,9 @@ func (a *AppProjectService) DeleteEveryLevel(req *appservice.AppProject) error {
 	if err := a.IService.Delete(common.DefaultNamespace, common.AppProject, req.UUID); err != nil {
 		return err
 	}
-	log.Printf("[Controller] appproject delete: [Name: %v, Desc: %v]\n", req.Name, req.Spec.Desc)
+	
+  
+  .Printf("[Controller] appproject delete: [Name: %v, Desc: %v]\n", req.Name, req.Spec.Desc)
 	children := make([]*appservice.AppProject, 0)
 	filter := map[string]interface{}{
 		"spec.parent_app": req.UUID,
@@ -356,10 +360,15 @@ func (a *AppProjectService) UpdateBusinessFromCMDB(data apiResource.CMDBData, pa
 
 		log.Printf("[Controller] appproject add new BusinessLine: %v\n", data.Name)
 	} else {
-		if dbObj.Spec.Owner[0] != data.Leader {
-			dbObj.Spec.Owner = []string{data.Leader}
-			if _, _, err = a.IService.Apply(common.DefaultNamespace, common.AppProject, dbObj.UUID, dbObj, false); err != nil {
-				return err
+
+		if data.Leader != "" && len(dbObj.Spec.Owner) > 0 {
+			if dbObj.Spec.Owner[0] != data.Leader {
+				dbObj.Spec.Owner = []string{data.Leader}
+				if _, _, err = a.IService.Apply(common.DefaultNamespace, common.AppProject, dbObj.UUID, dbObj, false); err != nil {
+					return err
+				}
+				log.Printf("[Controller] appproject update BusinessLine: %v---Leader: %v\n", dbObj.Name, dbObj.Spec.Owner)
+
 			}
 			log.Printf("[Controller] appproject update BusinessLine: %v---Leader: %v\n", dbObj.Name, dbObj.Spec.Owner)
 		}

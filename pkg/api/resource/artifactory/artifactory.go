@@ -56,3 +56,20 @@ type RegistryArtifacts []struct {
 		Signed       bool      `json:"signed"`
 	} `json:"tags"`
 }
+
+type SyncArtifact struct {
+	GitUrl      string `json:"git_url"`
+	AppName     string `json:"app_name"`
+	Branch      string `json:"branch"`
+	Tag         string `json:"tag"`
+	Remarks     string `json:"remarks"`
+	Language    string `json:"language"`
+	ImagesUrl   string `json:"images_url"`
+	ProjectFile string `json:"project_file"`
+	ProjectPath string `json:"project_path"`
+	UserName    string `json:"user_name"`
+	UserNameID  string `json:"user_name_id"`
+	CreateTime  int64  `json:"create_time"`
+	Version     int64  `json:"version"`
+	Name        string `json:"name"`
+}

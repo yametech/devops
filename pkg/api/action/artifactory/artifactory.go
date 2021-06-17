@@ -2,6 +2,7 @@ package artifactory
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"github.com/yametech/devops/pkg/api"
@@ -155,4 +156,24 @@ func (b *baseServer) GetBranchList(g *gin.Context) {
 	data := map[string]interface{}{"results": results}
 	data["count"] = len(results)
 	api.ResponseSuccess(g, data, "")
+}
+
+func (b *baseServer) SyncArtifact(g *gin.Context) {
+	rawData, err := g.GetRawData()
+	if err != nil {
+		api.RequestParamsError(g, "get rawData error", err)
+		return
+	}
+	request := &apiResource.SyncArtifact{}
+	if err := json.Unmarshal(rawData, request); err != nil {
+		api.RequestParamsError(g, "unmarshal json error", err)
+		return
+	}
+
+	msg, err := b.ArtifactService.SyncAr(request)
+	if err != nil {
+		api.RequestParamsError(g, fmt.Sprintf("create artifact error, %s", msg), err)
+		return
+	}
+	api.ResponseSuccess(g, msg, "")
 }

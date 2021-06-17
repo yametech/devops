@@ -34,6 +34,7 @@ func NewArBaseServer(serviceName string, server *api.Server) *baseServer {
 		group.POST("/artifact", base.CreateArtifact)
 		group.PUT("/artifact/:uuid", base.UpdateArtifact)
 		group.DELETE("/artifact/:uuid", base.DeleteArtifact)
+		group.POST("/syncAr", base.SyncArtifact)
 	}
 
 	//GetBranch
@@ -46,7 +47,6 @@ func NewArBaseServer(serviceName string, server *api.Server) *baseServer {
 		group.GET("/deploy", base.ListDeploy)
 		group.GET("/deploy/:uuid", base.GetDeploy)
 		group.POST("/deploy", base.CreateDeploy)
-
 	}
 	return base
 }
