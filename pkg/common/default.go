@@ -60,4 +60,5 @@ func init() {
 	flag.StringVar(&RegistryUser, "registryuser", RegistryUser, "-registryuser=registry_user")
 	flag.StringVar(&RegistryPW, "registrypw", RegistryPW, "-registrypw=registry_password")
 	flag.IntVar(&StoreImagesCount, "storeimgescount", StoreImagesCount, "-storeimagescount=5")
+	flag.StringVar(&EtcdAddress, "etcdaddress", EtcdAddress, "-etcdaddress=etcdaddress")
 }

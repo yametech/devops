@@ -44,7 +44,7 @@ func (a *AllModuleService) CreateGroup(req *apiResource.ModuleRequest) (core.IOb
 func (a *AllModuleService) CreateModule(req *apiResource.ModuleRequest) (core.IObject, error) {
 	dbModule := &base.Module{}
 	if err := a.IService.GetByFilter(common.DefaultNamespace, common.AllModule, dbModule, map[string]interface{}{
-		"spec.parent": req.Parent,
+		"spec.parent":   req.Parent,
 		"metadata.name": req.Name,
 	}); err == nil {
 		return nil, errors.New("The module name is exists")
@@ -55,7 +55,7 @@ func (a *AllModuleService) CreateModule(req *apiResource.ModuleRequest) (core.IO
 			Name: req.Name,
 		},
 		Spec: base.ModuleSpec{
-			Parent: req.Parent,
+			Parent:  req.Parent,
 			Extends: req.Extends,
 		},
 	}
@@ -80,7 +80,7 @@ func (a *AllModuleService) ListAll(search string) ([]*apiResource.ModuleResponse
 	}
 
 	data, err := a.IService.ListByFilter(common.DefaultNamespace, common.AllModule, filter, sort, 0, 0)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -89,10 +89,9 @@ func (a *AllModuleService) ListAll(search string) ([]*apiResource.ModuleResponse
 		return nil, err
 	}
 
-
 	for i := len(groups) - 1; i >= 0; i-- {
 		data, err = a.IService.ListByFilter(common.DefaultNamespace, common.AllModule, map[string]interface{}{
-			"spec.parent": groups[i].UUID,
+			"spec.parent":   groups[i].UUID,
 			"metadata.name": bson.M{"$regex": primitive.Regex{Pattern: ".*" + search + ".*", Options: "i"}},
 		}, sort, 0, 0)
 		if err != nil {
@@ -105,8 +104,10 @@ func (a *AllModuleService) ListAll(search string) ([]*apiResource.ModuleResponse
 
 		if len(modules) > 0 {
 			groups[i].Children = modules
-		}else{
-			groups = append(groups[:i], groups[i+1:]...)
+		} else {
+			if search != "" {
+				groups = append(groups[:i], groups[i+1:]...)
+			}
 		}
 	}
 
