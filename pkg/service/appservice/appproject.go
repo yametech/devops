@@ -3,6 +3,12 @@ package appservice
 import (
 	"encoding/json"
 	"fmt"
+
+	"log"
+	"net/http"
+	"time"
+
+
 	"github.com/pkg/errors"
 	apiResource "github.com/yametech/devops/pkg/api/resource/appservice"
 	"github.com/yametech/devops/pkg/common"
@@ -12,9 +18,6 @@ import (
 	"github.com/yametech/devops/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"log"
-	"net/http"
-	"time"
 )
 
 type AppProjectService struct {
@@ -31,7 +34,7 @@ func (a *AppProjectService) List(search string) ([]*apiResource.Response, error)
 	}
 
 	sort := map[string]interface{}{
-		"metadata.created_time": 1,
+		"metadata.create": 1,
 	}
 
 	// Get the BusinessLine
@@ -225,7 +228,7 @@ func (a *AppProjectService) Search(search string, level int64) ([]*apiResource.R
 }
 
 func (a *AppProjectService) SyncFromCMDB() error {
-	req := utils.NewRequest(http.Client{Timeout: 30 * time.Second}, "http", "cmdb-api-test.compass.ym", map[string]string{
+	req := utils.NewRequest(http.Client{Timeout: 30 * time.Second}, "http", "cmdb-api.compass.ym", map[string]string{
 		"Content-Type": "application/json",
 	})
 	resp, err := req.Get("/cmdb/api/v1/app-tree", nil)
@@ -308,7 +311,9 @@ func (a *AppProjectService) DeleteEveryLevel(req *appservice.AppProject) error {
 	if err := a.IService.Delete(common.DefaultNamespace, common.AppProject, req.UUID); err != nil {
 		return err
 	}
-	log.Printf("[Controller] appproject delete: [Name: %v, Desc: %v]\n", req.Name, req.Spec.Desc)
+	
+  
+  .Printf("[Controller] appproject delete: [Name: %v, Desc: %v]\n", req.Name, req.Spec.Desc)
 	children := make([]*appservice.AppProject, 0)
 	filter := map[string]interface{}{
 		"spec.parent_app": req.UUID,
@@ -355,6 +360,7 @@ func (a *AppProjectService) UpdateBusinessFromCMDB(data apiResource.CMDBData, pa
 
 		log.Printf("[Controller] appproject add new BusinessLine: %v\n", data.Name)
 	} else {
+
 		if data.Leader != "" && len(dbObj.Spec.Owner) > 0 {
 			if dbObj.Spec.Owner[0] != data.Leader {
 				dbObj.Spec.Owner = []string{data.Leader}
@@ -362,7 +368,9 @@ func (a *AppProjectService) UpdateBusinessFromCMDB(data apiResource.CMDBData, pa
 					return err
 				}
 				log.Printf("[Controller] appproject update BusinessLine: %v---Leader: %v\n", dbObj.Name, dbObj.Spec.Owner)
+
 			}
+			log.Printf("[Controller] appproject update BusinessLine: %v---Leader: %v\n", dbObj.Name, dbObj.Spec.Owner)
 		}
 	}
 

@@ -542,6 +542,7 @@ func (a *ArtifactService) CheckImagesCount(appName string) {
 	}
 }
 
+
 func (a *ArtifactService) SyncAr(reqAr *apiResource.SyncArtifact) (string, error) {
 	ok, err := a.ExistName(reqAr.Name)
 	if err != nil {
@@ -580,3 +581,4 @@ func (a *ArtifactService) SyncAr(reqAr *apiResource.SyncArtifact) (string, error
 	}
 	return "创建成功", nil
 }
+

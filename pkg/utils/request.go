@@ -54,7 +54,10 @@ func (r *Request) Get(url string, data map[string]interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	if resp.Body != nil{
+		defer resp.Body.Close()
+	}
+
 	return ioutil.ReadAll(resp.Body)
 }
 
@@ -81,6 +84,9 @@ func (r *Request) Post(url string, data map[string]interface{}) ([]byte, error) 
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	if resp != nil{
+		defer resp.Body.Close()
+	}
+
 	return ioutil.ReadAll(resp.Body)
 }
